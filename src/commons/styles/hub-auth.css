@@ -1,0 +1,268 @@
+/* GIS 허브 — 인증·헤더용 밝은 회색 톤 (보라/파랑 미사용) */
+:root {
+  --hub-page-bg: #f5f5f7;
+  --hub-hero-bg-start: #ececee;
+  --hub-hero-bg-mid: #e0e0e6;
+  --hub-hero-bg-end: #d6d6dd;
+  --hub-surface: #ffffff;
+  --hub-text: #1c1c22;
+  --hub-text-soft: #5c5c66;
+  --hub-text-muted: #8b8b96;
+  --hub-border: #d5d5dc;
+  --hub-border-input: #cfcfd6;
+  --hub-btn: #2e2e34;
+  --hub-btn-hover: #3f3f48;
+  --hub-btn-active: #25252a;
+  --hub-shape-light: rgba(255, 255, 255, 0.35);
+  --hub-shape-mid: rgba(255, 255, 255, 0.18);
+  --hub-deco-form: rgba(46, 46, 52, 0.06);
+}
+
+/* 레거시 클래스명 유지(헤더 등) — 밝은 회색 */
+.bg-hub-primary {
+  background-color: #ececee !important;
+}
+
+/* ----- 로그인 / 회원가입 공통: 좌우 스플릿 ----- */
+.auth-split-root {
+  min-height: calc(100dvh - 3.5rem);
+  background: var(--hub-page-bg);
+}
+
+.auth-split-row {
+  min-height: calc(100dvh - 3.5rem);
+}
+
+.auth-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: linear-gradient(
+    155deg,
+    var(--hub-hero-bg-start) 0%,
+    var(--hub-hero-bg-mid) 48%,
+    var(--hub-hero-bg-end) 100%
+  );
+  min-height: 200px;
+  padding: clamp(1.5rem, 4vw, 3rem);
+}
+
+@media (min-width: 768px) {
+  .auth-hero {
+    min-height: calc(100dvh - 3.5rem);
+  }
+}
+
+.auth-hero-shapes {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.auth-hero-bar {
+  position: absolute;
+  bottom: -5%;
+  width: 14%;
+  max-width: 72px;
+  background: var(--hub-shape-light);
+  border-radius: 10px 10px 0 0;
+  transform: skewX(-10deg);
+  opacity: 0.9;
+}
+
+.auth-hero-bar:nth-child(1) {
+  left: 8%;
+  height: 42%;
+}
+
+.auth-hero-bar:nth-child(2) {
+  left: 26%;
+  height: 58%;
+  background: var(--hub-shape-mid);
+}
+
+.auth-hero-bar:nth-child(3) {
+  left: 44%;
+  height: 36%;
+}
+
+.auth-hero-bar:nth-child(4) {
+  left: 62%;
+  height: 52%;
+  background: var(--hub-shape-mid);
+}
+
+.auth-hero-bar:nth-child(5) {
+  left: 78%;
+  height: 44%;
+}
+
+.auth-hero-copy {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  max-width: 22rem;
+}
+
+.auth-hero-line1 {
+  color: var(--hub-text-soft);
+  font-size: clamp(1.1rem, 2.5vw, 1.35rem);
+  font-weight: 500;
+  margin-bottom: 0.35rem;
+}
+
+.auth-hero-line2 {
+  color: var(--hub-text);
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.auth-form-panel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--hub-surface);
+  padding: clamp(1.5rem, 4vw, 3rem) clamp(1.25rem, 4vw, 2.75rem);
+  overflow: hidden;
+  min-height: 320px;
+}
+
+@media (min-width: 768px) {
+  .auth-form-panel {
+    min-height: calc(100dvh - 3.5rem);
+  }
+}
+
+.auth-form-deco {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: min(45%, 200px);
+  height: min(35%, 160px);
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at 100% 0%,
+    var(--hub-deco-form) 0%,
+    transparent 72%
+  );
+}
+
+.auth-form-panel-inner {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 400px;
+}
+
+.auth-form-panel-inner--wide {
+  max-width: 560px;
+}
+
+.auth-form-title {
+  color: var(--hub-text);
+  font-size: clamp(1.35rem, 3vw, 1.6rem);
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 1.75rem;
+}
+
+.auth-form-panel .form-label {
+  color: var(--hub-text-soft);
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin-bottom: 0.35rem;
+}
+
+.auth-form-panel .form-control {
+  border-color: var(--hub-border-input);
+  border-radius: 0.45rem;
+  color: var(--hub-text);
+}
+
+.auth-form-panel .form-control::placeholder {
+  color: #a8a8b0;
+}
+
+.auth-form-panel .form-control:focus {
+  border-color: #9a9aa3;
+  box-shadow: 0 0 0 0.2rem rgba(46, 46, 52, 0.12);
+}
+
+.auth-btn-dark {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: var(--hub-btn);
+  --bs-btn-border-color: var(--hub-btn);
+  --bs-btn-hover-bg: var(--hub-btn-hover);
+  --bs-btn-hover-border-color: var(--hub-btn-hover);
+  --bs-btn-active-bg: var(--hub-btn-active);
+  --bs-btn-active-border-color: var(--hub-btn-active);
+  border-radius: 0.45rem;
+  font-weight: 600;
+  padding-block: 0.65rem;
+}
+
+.auth-link-muted {
+  color: var(--hub-text-muted);
+  font-size: 0.875rem;
+}
+
+.auth-link-strong {
+  color: var(--hub-text);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.auth-link-strong:hover {
+  color: var(--hub-btn);
+  text-decoration: underline;
+}
+
+.auth-form-panel.auth-register-scroll {
+  align-items: flex-start;
+}
+
+.auth-register-scroll {
+  max-height: calc(100dvh - 3.5rem);
+  overflow-y: auto;
+  padding-top: clamp(1.25rem, 3vw, 2rem);
+  padding-bottom: clamp(1.25rem, 3vw, 2rem);
+}
+
+@media (max-width: 767.98px) {
+  .auth-register-scroll {
+    max-height: none;
+    overflow-y: visible;
+  }
+}
+
+.auth-register-root {
+  min-height: calc(100dvh - 3.5rem);
+  background: var(--hub-page-bg);
+}
+
+.auth-neutral-scope {
+  --bs-primary: var(--hub-btn);
+  --bs-primary-rgb: 46, 46, 52;
+}
+
+.auth-register-root .card,
+.auth-neutral-scope .card {
+  border-color: var(--hub-border);
+  border-radius: 0.5rem;
+  background: var(--hub-surface);
+}
+
+.auth-register-root .form-control,
+.auth-neutral-scope .form-control {
+  border-color: var(--hub-border-input);
+}
+
+.auth-register-root .form-control:focus,
+.auth-neutral-scope .form-control:focus {
+  border-color: #9a9aa3;
+  box-shadow: 0 0 0 0.2rem rgba(46, 46, 52, 0.12);
+}
