@@ -5,6 +5,8 @@ import LoginPage from './commons/pages/UserLoginPage'
 import useAuthStore from './commons/auth/useAuthStore'
 import { getUserInfoFromTokenApi } from './commons/api/userApi'
 import RegisterPage from './commons/pages/UserRegisterPage'
+import BoardUserRoutes from './board/routes/BoardUserRoutes'
+import BoardAdminRoutes from './board/routes/BoardAdminRoutes'
 
 function App() {
   
@@ -36,6 +38,8 @@ function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/board/*" element={<BoardUserRoutes />} />
+          <Route path="/admin/board/*" element={<BoardAdminRoutes />} />
         </Routes>
       </main>
     </div>
