@@ -7,6 +7,8 @@ import { getUserInfoFromTokenApi } from './commons/api/userApi'
 import RegisterPage from './commons/pages/UserRegisterPage'
 import BoardUserRoutes from './board/routes/BoardUserRoutes'
 import BoardAdminRoutes from './board/routes/BoardAdminRoutes'
+import UserDownloadRouter from './download/user/pages/UserDownloadRouter'
+import AdminDownloadRouter from './download/admin/pages/AdminDownloadRouter'
 
 function App() {
   
@@ -40,6 +42,10 @@ function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/board/*" element={<BoardUserRoutes />} />
           <Route path="/admin/board/*" element={<BoardAdminRoutes />} />
+
+          {/* 다운로드 */}
+          <Route path="/download/user/*" element={<UserDownloadRouter />} />
+          <Route path="/download/admin/*" element={<AdminDownloadRouter />} />
         </Routes>
       </main>
     </div>
