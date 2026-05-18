@@ -11,6 +11,7 @@ import UserDownloadRouter from './download/user/pages/UserDownloadRouter'
 import AdminDownloadRouter from './download/admin/pages/AdminDownloadRouter'
 import UserUploadRouter from './upload/user/pages/UserUploadRouter'
 import AdminUploadRouter from './upload/admin/pages/AdminUploadRouter'
+import DashboardPage from './dashboard/pages/DashboardPage'
 
 function App() {
   
@@ -52,6 +53,9 @@ function App() {
           {/* 업로드 */}
           <Route path="/upload/user/*" element={<UserUploadRouter />} />
           <Route path="/upload/admin/*" element={<AdminUploadRouter />} />
+
+          {/* 대시보드 */}
+          <Route path="/upload/admin/*" element={<DashboardPage />} />
         </Routes>
       </main>
     </div>
