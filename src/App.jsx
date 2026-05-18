@@ -9,6 +9,8 @@ import BoardUserRoutes from './board/routes/BoardUserRoutes'
 import BoardAdminRoutes from './board/routes/BoardAdminRoutes'
 import UserDownloadRouter from './download/user/pages/UserDownloadRouter'
 import AdminDownloadRouter from './download/admin/pages/AdminDownloadRouter'
+import UserUploadRouter from './upload/user/pages/UserUploadRouter'
+import AdminUploadRouter from './upload/admin/pages/AdminUploadRouter'
 
 function App() {
   
@@ -46,6 +48,10 @@ function App() {
           {/* 다운로드 */}
           <Route path="/download/user/*" element={<UserDownloadRouter />} />
           <Route path="/download/admin/*" element={<AdminDownloadRouter />} />
+
+          {/* 업로드 */}
+          <Route path="/upload/user/*" element={<UserUploadRouter />} />
+          <Route path="/upload/admin/*" element={<AdminUploadRouter />} />
         </Routes>
       </main>
     </div>
