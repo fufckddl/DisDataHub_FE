@@ -1,3 +1,6 @@
+import DashboardMap from "../components/DashboardMap";
+import "./DashboardPage.css";
+
 function TopTitle() {
     return (
         <>
@@ -105,6 +108,12 @@ function DashboardPage() {
                     <CardForm color="info" title="API 연동 상태" content="대기">
                         <i className="bi bi-plug-fill fs-3" />
                     </CardForm>
+                </div>
+
+                <div className="row mb-3">
+                    <div className="col">
+                        <DashboardMap />
+                    </div>
                 </div>
 
                 <OpenDataPlaceholder />

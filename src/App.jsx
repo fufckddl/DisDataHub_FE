@@ -55,7 +55,7 @@ function App() {
           <Route path="/upload/admin/*" element={<AdminUploadRouter />} />
 
           {/* 대시보드 */}
-          <Route path="/upload/admin/*" element={<DashboardPage />} />
+          <Route path="/dashboard/*" element={<DashboardPage />} />
         </Routes>
       </main>
     </div>
