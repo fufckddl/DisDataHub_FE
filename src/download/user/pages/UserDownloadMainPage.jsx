@@ -1,33 +1,12 @@
+import { useNavigate } from "react-router-dom";
 import "../../style/download.css";
+import TopTitle from "../../components/TopTitle";
 
-function TopTitle(){
-    return(
-        <>
-            <div className="row align-items-center mb-3">
-                <div className="col "> 
-                    <div className="row">
-                        <div className="col">
-                            <h2 className="fw-bold mb-2">GIS 데이터 다운로드</h2>
-                        </div>
-                        <div className="col-auto">
-                            
-                            <button className="btn btn-light text-secondary">
-                                <i className="bi bi-question-circle me-2"></i>
-                                이용가이드
-                            </button>
-                        </div>
-                    </div>
-                    <div className="text-secondary" style={{fontSize: "12px"}}>
-                        승인된 공공 GIS 데이터를 조회하고 파일을 다운로드 할 수 있습니다.
-                    </div>
-                    
-                </div>
-            </div>
-        </>
-    )
-}
+
 
 function SearchForm({type, title, placeholder, form, options}){
+
+
     return(
         <>
             <div className="col">
@@ -95,24 +74,32 @@ function Search(){
     )
 }
 
-function DatasetForm(){
+function DatasetForm({id}){
+
+    const navigate = useNavigate();
+
+    const handleDetailPageClick = () => {
+        // navigate("/download/user/detail")
+        navigate(`/download/user/${id}`)
+    }
+
     return(
         <>
             <tr>
                 <td className="col-2 text-primary fw-bold ps-3">서울시 CCTV 위치 데이터</td>
-                <td className="col-3 td-text">서울시 공공 CCTV 설치 위치 및 주요 속성 정보</td>
-                <td className="col-1 td-text text-center">서울시</td>
-                <td className="col-1 td-text text-center">2026-05-17</td>
+                <td className="col-3 sm-text">서울시 공공 CCTV 설치 위치 및 주요 속성 정보</td>
+                <td className="col-1 sm-text text-center">서울시</td>
+                <td className="col-1 sm-text text-center">2026-05-17</td>
                 <td className="col-1 text-center">
                     <span className="badge bg-success-subtle text-success border border-success-subtle me-1">CSV</span>
                 </td>
-                <td className="col-1 td-text text-center">12,345</td>
+                <td className="col-1 sm-text text-center">12,345</td>
                 <td className="col-1 text-center">
                     <span className="badge bg-success-subtle text-success border border-success-subtle me-1">승인됨</span>
                 </td>
-                <td className="col-2 td-text text-center">
-                    <button className="btn btn-light btn-sm me-4">상세보기</button>
-                    <button className="btn btn-primary btn-sm">다운로드</button>
+                <td className="col-2 sm-text text-center">
+                    <button className="btn btn-light btn-sm me-4" onClick={handleDetailPageClick}>상세보기</button>
+                    <button className="btn btn-primary btn-sm" >다운로드</button>
                 </td>
             </tr> 
         </>
@@ -164,7 +151,7 @@ function UserDownloadMainPage(){
             <div className="container-fluid px-4 py-3">
 
                 {/* 상단 제목 */}
-                <TopTitle />
+                <TopTitle title="GIS 데이터 다운로드" subTitle="승인된 공공 GIS 데이터를 조회하고 파일을 다운로드 할 수 있습니다." showGuide={true}/>
 
                 {/* 검색창 */}
                 <Search />
@@ -206,12 +193,12 @@ function UserDownloadMainPage(){
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <DatasetForm></DatasetForm>
-                                    <DatasetForm></DatasetForm>
-                                    <DatasetForm></DatasetForm>
-                                    <DatasetForm></DatasetForm>
-                                    <DatasetForm></DatasetForm>
-                                    <DatasetForm></DatasetForm>
+                                    <DatasetForm id="1"></DatasetForm>
+                                    <DatasetForm id="2"></DatasetForm>
+                                    <DatasetForm id="3"></DatasetForm>
+                                    <DatasetForm id="4"></DatasetForm>
+                                    <DatasetForm id="5"></DatasetForm>
+                                    <DatasetForm id="6"></DatasetForm>
                                 </tbody>
                                 
 
