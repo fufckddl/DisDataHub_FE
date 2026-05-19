@@ -4,8 +4,14 @@
 }
 
 .dataset-text{
+    font-size: 10px;   
+    font-weight: bold;
+}
+
+.dataset-text-gray{
     font-size: 10px;
     color: gray;    
+    font-weight: bold;
 }
 
 .line-clamp-2 {
@@ -22,3 +28,39 @@
 .height285{
     height: 285px;
 }
+
+.map-preview-box{
+    background-color: #f8f9fa;
+    height: 200px;
+    border-radius: 12px;
+    border: 1px solid #e9ecef;
+    position: relative;
+
+    
+}
+
+
+.map-control-group {
+    position: absolute;
+
+    top: 70px;
+    right: 5px;
+
+    display: flex;
+    flex-direction: column;
+
+
+    z-index: 10;
+}
+
+.map-control-group button {
+
+
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background-color: rgba(255,255,255,0.95);
+}
+
