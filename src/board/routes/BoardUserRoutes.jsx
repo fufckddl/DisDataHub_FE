@@ -1,3 +1,4 @@
+import { useRoutes } from "react-router-dom";
 import { gisReportRoutes } from "./gisReportRoutes";
 import { inquiryRoutes } from "./inquiryRoutes";
 import { noticeRoutes } from "./noticeRoutes";
