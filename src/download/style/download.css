@@ -1,4 +1,24 @@
-.td-text{
+.sm-text{
     font-size: 13px;
     color: gray;
+}
+
+.dataset-text{
+    font-size: 10px;
+    color: gray;    
+}
+
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.dataset-content{
+    height: 70px;
+}
+
+.height285{
+    height: 285px;
 }

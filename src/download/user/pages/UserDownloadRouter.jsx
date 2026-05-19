@@ -7,7 +7,7 @@ function UserDownloadRouter(){
         <>
             <Routes>
                 <Route path="main" element={<UserDownloadMainPage />} />
-                {/* <Route path="detail" element={<UserDatasetDetailPage />}/> */}
+                <Route path="detail" element={<UserDatasetDetailPage />}/>
                 <Route path=":datasetId" element={<UserDatasetDetailPage />}/>
             </Routes>
         </>
