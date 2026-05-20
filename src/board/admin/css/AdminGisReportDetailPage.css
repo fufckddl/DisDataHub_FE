@@ -1,0 +1,508 @@
+.admin-gis-detail-page {
+  min-height: 100vh;
+  padding: 40px 56px;
+  background: #f4f8fc;
+  color: #17202a;
+  box-sizing: border-box;
+}
+
+.admin-gis-detail-container {
+  max-width: 1220px;
+  margin: 0 auto;
+}
+
+.admin-gis-detail-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 26px;
+}
+
+.admin-gis-detail-top h1 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 34px;
+  font-weight: 800;
+}
+
+.top-list-button {
+  height: 42px;
+  padding: 0 18px;
+  border: 1px solid #d6dee9;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.top-list-button:hover {
+  background: #f8fafc;
+}
+
+/* 상단 제목 카드 */
+.admin-gis-detail-header-card {
+  padding: 30px 34px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.admin-gis-badge-area {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.admin-gis-error-badge,
+.admin-gis-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.error-spatial {
+  background: #e8f1ff;
+  color: #1f6feb;
+}
+
+.error-missing {
+  background: #e8f8ef;
+  color: #16a34a;
+}
+
+.error-attribute {
+  background: #f1e8ff;
+  color: #7c3aed;
+}
+
+.error-update {
+  background: #e6fbff;
+  color: #0891b2;
+}
+
+.error-classify {
+  background: #fff1f2;
+  color: #e11d48;
+}
+
+.error-etc {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.status-received {
+  background: #e8f1ff;
+  color: #1f6feb;
+}
+
+.status-reviewing {
+  background: #e8f1ff;
+  color: #1f6feb;
+}
+
+.status-actioning {
+  background: #fff4e5;
+  color: #f97316;
+}
+
+.status-completed {
+  background: #e8f8ef;
+  color: #16a34a;
+}
+
+.admin-gis-detail-header-card h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.admin-gis-detail-header-card p {
+  margin: 14px 0 0;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+/* 메타 카드 */
+.admin-gis-meta-card {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin-top: 20px;
+  padding: 24px 28px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.admin-gis-meta-card div {
+  padding: 0 22px;
+  border-right: 1px solid #e2e8f0;
+}
+
+.admin-gis-meta-card div:first-child {
+  padding-left: 0;
+}
+
+.admin-gis-meta-card div:last-child {
+  border-right: none;
+}
+
+.admin-gis-meta-card span,
+.admin-gis-location-info span {
+  display: block;
+  margin-bottom: 8px;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.admin-gis-meta-card strong,
+.admin-gis-location-info strong {
+  color: #0f172a;
+  font-size: 16px;
+}
+
+/* 메인 그리드 */
+.admin-gis-main-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) 360px;
+  gap: 22px;
+  margin-top: 22px;
+}
+
+.admin-gis-location-card,
+.admin-gis-history-card,
+.admin-gis-content-card,
+.admin-gis-process-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.admin-gis-location-card,
+.admin-gis-history-card {
+  padding: 26px 28px;
+}
+
+.admin-gis-location-card h3,
+.admin-gis-history-card h3,
+.admin-gis-content-card h3,
+.admin-gis-process-card h3 {
+  margin: 0 0 18px;
+  color: #0f172a;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.admin-gis-location-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) 280px;
+  gap: 18px;
+}
+
+.admin-gis-detail-map {
+  width: 100%;
+  height: 320px;
+  border: 1px solid #d6dee9;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #eef5ff;
+}
+
+.admin-gis-location-info {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.admin-gis-location-info div {
+  padding: 18px 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fbff;
+}
+
+/* OpenLayers 컨트롤 */
+.admin-gis-detail-map .ol-zoom {
+  top: 12px;
+  left: 12px;
+}
+
+.admin-gis-detail-map .ol-zoom button {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #0f172a;
+  border: 1px solid #d6dee9;
+  cursor: pointer;
+}
+
+/* 처리 이력 */
+.admin-gis-timeline {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.timeline-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 14px;
+}
+
+.timeline-dot {
+  width: 12px;
+  height: 12px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: #1f6feb;
+  box-shadow: 0 0 0 4px #e8f1ff;
+}
+
+.timeline-item strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.timeline-item span {
+  display: block;
+  margin-bottom: 6px;
+  color: #1f6feb;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.timeline-item p {
+  margin: 0;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* 하단 그리드 */
+.admin-gis-bottom-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 22px;
+  margin-top: 22px;
+}
+
+.admin-gis-content-card,
+.admin-gis-process-card {
+  padding: 26px 28px;
+}
+
+.admin-gis-content-card p {
+  white-space: pre-line;
+  margin: 0;
+  color: #374151;
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+.admin-gis-file-area {
+  margin-top: 28px;
+}
+
+.admin-gis-file-area h4 {
+  margin: 0 0 12px;
+  color: #0f172a;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.admin-gis-file-item,
+.admin-gis-file-empty {
+  padding: 15px 16px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+.admin-gis-file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid #d6dee9;
+  background: #f8fbff;
+  color: #1f6feb;
+}
+
+.admin-gis-file-item button {
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid #1f6feb;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #1f6feb;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.admin-gis-file-empty {
+  border: 1px dashed #cbd5e1;
+  background: #f8fafc;
+  color: #64748b;
+}
+
+/* 처리 관리 */
+.admin-gis-process-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.admin-gis-process-row label {
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.admin-gis-process-row select {
+  width: 100%;
+  height: 46px;
+  border: 1px solid #d6dee9;
+  border-radius: 8px;
+  padding: 0 14px;
+  color: #1f2937;
+  background: #ffffff;
+  font-size: 15px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.process-textarea-box {
+  position: relative;
+}
+
+.process-textarea-box textarea {
+  width: 100%;
+  min-height: 150px;
+  padding: 14px 16px 38px;
+  border: 1px solid #d6dee9;
+  border-radius: 10px;
+  color: #1f2937;
+  font-size: 15px;
+  line-height: 1.6;
+  resize: vertical;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.admin-gis-process-row select:focus,
+.process-textarea-box textarea:focus {
+  border-color: #1f6feb;
+  box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.12);
+}
+
+.process-textarea-box span {
+  position: absolute;
+  right: 14px;
+  bottom: 12px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.process-save-button {
+  width: 100%;
+  height: 48px;
+  border: none;
+  border-radius: 8px;
+  background: #1f6feb;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.process-save-button:hover {
+  background: #155dcc;
+}
+
+/* not found */
+.admin-gis-not-found {
+  max-width: 700px;
+  margin: 80px auto;
+  padding: 50px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  text-align: center;
+}
+
+.admin-gis-not-found h1 {
+  margin: 0 0 24px;
+  color: #0f172a;
+}
+
+.admin-gis-not-found button {
+  height: 46px;
+  padding: 0 20px;
+  border: none;
+  border-radius: 8px;
+  background: #1f6feb;
+  color: #ffffff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+@media (max-width: 1200px) {
+  .admin-gis-meta-card {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+
+  .admin-gis-meta-card div {
+    border-right: none;
+    padding: 0;
+  }
+
+  .admin-gis-main-grid,
+  .admin-gis-bottom-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-gis-location-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-gis-detail-page {
+    padding: 28px 20px;
+  }
+
+  .admin-gis-detail-top {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .admin-gis-detail-top h1 {
+    font-size: 28px;
+  }
+
+  .admin-gis-meta-card {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-gis-detail-map {
+    height: 280px;
+  }
+}
