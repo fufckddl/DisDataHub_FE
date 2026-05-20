@@ -8,7 +8,7 @@ export const inquiryRoutes = [
         element: <InquiryListPage />,
     },
     {
-        path: "inquiry/wrtite",
+        path: "inquiry/write",
         element: <InquiryWritePage />,
     },
     {

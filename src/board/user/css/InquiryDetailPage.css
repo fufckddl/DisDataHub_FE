@@ -1,0 +1,278 @@
+.inquiry-detail-page {
+  min-height: 100vh;
+  padding: 40px 56px;
+  background: #f4f8fc;
+  color: #17202a;
+  box-sizing: border-box;
+}
+
+.inquiry-detail-container {
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+/* 상단 제목 섹션 */
+.inquiry-detail-header {
+  padding: 34px 40px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.inquiry-detail-badge-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.inquiry-category-badge,
+.inquiry-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.inquiry-category-badge {
+  background: #e8f1ff;
+  color: #1f6feb;
+}
+
+.inquiry-status-badge.status-received {
+  background: #eef2ff;
+  color: #4f46e5;
+}
+
+.inquiry-status-badge.status-checking {
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+.inquiry-status-badge.status-answered {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.inquiry-detail-header h1 {
+  margin: 0;
+  font-size: 34px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.inquiry-detail-header p {
+  margin: 14px 0 0;
+  color: #64748b;
+  font-size: 16px;
+}
+
+/* 메타 정보 */
+.inquiry-detail-meta {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin-top: 22px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.inquiry-detail-meta div {
+  padding: 22px 26px;
+  border-right: 1px solid #e2e8f0;
+}
+
+.inquiry-detail-meta div:last-child {
+  border-right: none;
+}
+
+.inquiry-detail-meta span {
+  display: block;
+  margin-bottom: 8px;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.inquiry-detail-meta strong {
+  color: #0f172a;
+  font-size: 17px;
+}
+
+/* 문의 내용 */
+.inquiry-detail-content {
+  min-height: 260px;
+  margin-top: 22px;
+  padding: 34px 40px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.inquiry-detail-content h2,
+.inquiry-answer-section h2 {
+  margin: 0 0 20px;
+  font-size: 22px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.inquiry-detail-content p {
+  margin: 0;
+  color: #374151;
+  font-size: 17px;
+  line-height: 1.8;
+}
+
+/* 관리자 답변 */
+.inquiry-answer-section {
+  margin-top: 22px;
+  padding: 34px 40px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.answer-complete-box,
+.answer-waiting-box {
+  padding: 24px 26px;
+  border-radius: 12px;
+}
+
+.answer-complete-box {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.answer-waiting-box {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+}
+
+.answer-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.answer-meta strong {
+  color: #0f172a;
+  font-size: 16px;
+}
+
+.answer-meta span {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.answer-complete-box p,
+.answer-waiting-box p {
+  margin: 0;
+  color: #374151;
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.answer-waiting-box strong {
+  display: block;
+  margin-bottom: 10px;
+  color: #0f172a;
+  font-size: 17px;
+}
+
+/* 하단 버튼 */
+.inquiry-detail-button-area {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 30px;
+}
+
+.inquiry-detail-button-area button {
+  min-width: 130px;
+  height: 48px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.inquiry-detail-button-area button:nth-child(1),
+.inquiry-detail-button-area button:nth-child(3) {
+  border: 1px solid #d6dee9;
+  background: #ffffff;
+  color: #334155;
+}
+
+.inquiry-detail-button-area button:nth-child(2) {
+  border: none;
+  background: #1f6feb;
+  color: #ffffff;
+}
+
+.inquiry-detail-button-area button:hover {
+  opacity: 0.9;
+}
+
+/* 게시글 없음 상태 */
+.inquiry-detail-container > p {
+  padding: 40px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  color: #64748b;
+  font-size: 17px;
+  text-align: center;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .inquiry-detail-page {
+    padding: 28px 20px;
+  }
+
+  .inquiry-detail-header,
+  .inquiry-detail-content,
+  .inquiry-answer-section {
+    padding: 28px 24px;
+  }
+
+  .inquiry-detail-header h1 {
+    font-size: 28px;
+  }
+
+  .inquiry-detail-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .inquiry-detail-meta div {
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .inquiry-detail-meta div:last-child {
+    border-bottom: none;
+  }
+
+  .answer-meta {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .inquiry-detail-button-area {
+    flex-direction: column;
+  }
+
+  .inquiry-detail-button-area button {
+    width: 100%;
+  }
+}
