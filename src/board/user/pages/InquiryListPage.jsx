@@ -63,7 +63,7 @@ function InquiryListPage() {
                                     <tr key={inquiry.postId}>
                                         <td>{inquiry.isPinned ? "📌" : inquiry.postId}</td>
                                         <td>
-                                            <Link to={`/board/inqury/${inquiry.postId}`}>
+                                            <Link to={`/board/inquiry/${inquiry.postId}`}>
                                                 {inquiry.title}
                                             </Link>
                                         </td>
