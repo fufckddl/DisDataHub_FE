@@ -1,12 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import "../../style/download.css";
 import TopTitle from "../../components/TopTitle";
+import { datasetMainDummy } from "../../dummy/datasetMainDummy";
+
 
 
 
 function SearchForm({type, title, placeholder, form, options}){
-
-
     return(
         <>
             <div className="col">
@@ -74,6 +74,9 @@ function Search(){
     )
 }
 function DatasetList(){
+
+    const datasetList = datasetMainDummy.datasetList;
+ 
     return(
         <>
             <div className="row ">
@@ -94,12 +97,18 @@ function DatasetList(){
                                 </tr>
                             </thead>
                             <tbody>
-                                <DatasetForm id="1"></DatasetForm>
+                                {/* <DatasetForm id="1"></DatasetForm>
                                 <DatasetForm id="2"></DatasetForm>
                                 <DatasetForm id="3"></DatasetForm>
                                 <DatasetForm id="4"></DatasetForm>
                                 <DatasetForm id="5"></DatasetForm>
-                                <DatasetForm id="6"></DatasetForm>
+                                <DatasetForm id="6"></DatasetForm> */}
+                                {datasetList.map((dataset) => (
+                                    <DatasetForm
+                                        key={dataset.id}
+                                        dataset={dataset}
+                                    />
+                                ))}
                             </tbody>
                             
 
@@ -119,28 +128,28 @@ function DatasetList(){
     )
 }
 
-function DatasetForm({id}){
+function DatasetForm({dataset}){
 
     const navigate = useNavigate();
 
     const handleDetailPageClick = () => {
         // navigate("/download/user/detail")
-        navigate(`/download/user/${id}`)
+        navigate(`/download/user/${dataset.id}`)
     }
 
     return(
         <>
             <tr>
-                <td className="col-2 text-primary fw-bold ps-3">서울시 CCTV 위치 데이터</td>
-                <td className="col-3 sm-text">서울시 공공 CCTV 설치 위치 및 주요 속성 정보</td>
-                <td className="col-1 sm-text text-center">서울시</td>
-                <td className="col-1 sm-text text-center">2026-05-17</td>
+                <td className="col-2 text-primary fw-bold ps-3">{dataset.title}</td>
+                <td className="col-3 sm-text">{dataset.description}</td>
+                <td className="col-1 sm-text text-center">{dataset.provider}</td>
+                <td className="col-1 sm-text text-center">{dataset.createAt}</td>
                 <td className="col-1 text-center">
-                    <span className="badge bg-success-subtle text-success border border-success-subtle me-1">CSV</span>
+                    <span className="badge bg-success-subtle text-success border border-success-subtle me-1">{dataset.fileExtension}</span>
                 </td>
-                <td className="col-1 sm-text text-center">12,345</td>
+                <td className="col-1 sm-text text-center">{dataset.downloadCount}</td>
                 <td className="col-1 text-center">
-                    <span className="badge bg-success-subtle text-success border border-success-subtle me-1">승인됨</span>
+                    <span className="badge bg-success-subtle text-success border border-success-subtle me-1">{dataset.status}</span>
                 </td>
                 <td className="col-2 sm-text text-center">
                     {/* 상세보기 할 때 데이터 조회 권환 확인 필요 */}
@@ -191,6 +200,8 @@ function Paging(){
 }
 
 function UserDownloadMainPage(){
+
+    const summaryCards = datasetMainDummy.summary
     return(
         <>
 
@@ -205,7 +216,17 @@ function UserDownloadMainPage(){
 
                 {/* 중간 데시보드 카드 */}
                 <div className="row mb-3">
-                    <CardForm color="primary" title="전체 데이터 수" content="1,234건">
+                    {summaryCards.map((card, index) => (
+                        <CardForm
+                            key={index}
+                            color={card.color}
+                            title={card.title}
+                            content={card.content}
+                        >
+                            <i className={` bi ${card.icon} fs-3`}></i>    
+                        </CardForm>
+                    ))}
+                    {/* <CardForm color="primary" title="전체 데이터 수" content="1,234건">
                         <i className=" bi bi-layers-fill fs-3"></i>
                     </CardForm>
                     <CardForm color="success" title="오늘 다운로드 수" content="1,234건">
@@ -216,7 +237,7 @@ function UserDownloadMainPage(){
                     </CardForm>
                     <CardForm color="danger" title="인기 데이터" content="서울시 CCTV 위치 데이터">
                         <i className="bi bi-fire fs-3"></i>
-                    </CardForm>
+                    </CardForm> */}
                 </div>
 
 
