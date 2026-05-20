@@ -73,6 +73,51 @@ function Search(){
         </>
     )
 }
+function DatasetList(){
+    return(
+        <>
+            <div className="row ">
+                <div className="col">
+
+                    <div className="card shadow-sm overflow-hidden">
+                        <table className="table table-hover align-middle">
+                            <thead className="table-light">
+                                <tr>
+                                    <th className="col-2 ps-3">데이터셋 명</th>
+                                    <th className="col-3">설명</th>
+                                    <th className="col-1 text-center">지역 정보</th>
+                                    <th className="col-1 text-center">등록일</th>
+                                    <th className="col-1 text-center">파일 형식</th>
+                                    <th className="col-1 text-center">다운로드 수</th>
+                                    <th className="col-1 text-center">상태</th>
+                                    <th className="col-2 text-center">액션</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <DatasetForm id="1"></DatasetForm>
+                                <DatasetForm id="2"></DatasetForm>
+                                <DatasetForm id="3"></DatasetForm>
+                                <DatasetForm id="4"></DatasetForm>
+                                <DatasetForm id="5"></DatasetForm>
+                                <DatasetForm id="6"></DatasetForm>
+                            </tbody>
+                            
+
+
+                        </table>
+                        
+                        {/* 페이징 */}
+                        <div>
+                            <Paging />
+                        </div>
+                        
+                    </div>
+
+                </div>
+            </div>        
+        </>
+    )
+}
 
 function DatasetForm({id}){
 
@@ -98,6 +143,7 @@ function DatasetForm({id}){
                     <span className="badge bg-success-subtle text-success border border-success-subtle me-1">승인됨</span>
                 </td>
                 <td className="col-2 sm-text text-center">
+                    {/* 상세보기 할 때 데이터 조회 권환 확인 필요 */}
                     <button className="btn btn-light btn-sm me-4" onClick={handleDetailPageClick}>상세보기</button>
                     <button className="btn btn-primary btn-sm" >다운로드</button>
                 </td>
@@ -175,45 +221,7 @@ function UserDownloadMainPage(){
 
 
                 {/* 승인 데이터셋 목록 */}
-                <div className="row ">
-                    <div className="col">
-
-                        <div className="card shadow-sm overflow-hidden">
-                            <table className="table table-hover align-middle">
-                                <thead className="table-light">
-                                    <tr>
-                                        <th className="col-2 ps-3">데이터셋 명</th>
-                                        <th className="col-3">설명</th>
-                                        <th className="col-1 text-center">지역 정보</th>
-                                        <th className="col-1 text-center">등록일</th>
-                                        <th className="col-1 text-center">파일 형식</th>
-                                        <th className="col-1 text-center">다운로드 수</th>
-                                        <th className="col-1 text-center">상태</th>
-                                        <th className="col-2 text-center">액션</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <DatasetForm id="1"></DatasetForm>
-                                    <DatasetForm id="2"></DatasetForm>
-                                    <DatasetForm id="3"></DatasetForm>
-                                    <DatasetForm id="4"></DatasetForm>
-                                    <DatasetForm id="5"></DatasetForm>
-                                    <DatasetForm id="6"></DatasetForm>
-                                </tbody>
-                                
-
-
-                            </table>
-                            
-                            {/* 페이징 */}
-                            <div>
-                                <Paging />
-                            </div>
-                            
-                        </div>
-
-                    </div>
-                </div>
+                <DatasetList />
 
 
               
