@@ -6,14 +6,15 @@ import View from "ol/View.js";
 import GeoJSON from "ol/format/GeoJSON.js";
 import TileLayer from "ol/layer/Tile.js";
 import VectorLayer from "ol/layer/Vector.js";
-import { fromLonLat, transformExtent } from "ol/proj.js";
+import { fromLonLat } from "ol/proj.js";
 import OSM from "ol/source/OSM.js";
 import VectorSource from "ol/source/Vector.js";
 import XYZ from "ol/source/XYZ.js";
-import { Fill, Stroke, Style, Text } from "ol/style.js";
+import { Fill, Stroke, Style } from "ol/style.js";
 import axiosInstance from "../../commons/api/axiosinstance.js";
 
 const SEOUL_CENTER = fromLonLat([126.978, 37.5665]);
+const SEOUL_BBOX = "126.76400,37.41300,127.18400,37.71500";
 const VWORLD_KEY = import.meta.env.VITE_VWORLD_KEY;
 const BOUNDARY_LOAD_DELAY_MS = 300;
 const EUPMYEONDONG_MIN_ZOOM = 12;
@@ -50,13 +51,6 @@ function createBoundaryStyle(feature, selectedFeature) {
             color: isSelected ? "#f59e0b" : "#2563eb",
             width: isSelected ? 3 : 1.5,
         }),
-        text: new Text({
-            text: feature.get("name") ?? "",
-            font: "600 12px sans-serif",
-            fill: new Fill({ color: "#111827" }),
-            stroke: new Stroke({ color: "rgba(255, 255, 255, 0.9)", width: 3 }),
-            overflow: true,
-        }),
     });
 }
 
@@ -64,19 +58,13 @@ function getBoundaryLevel(zoom) {
     return zoom >= EUPMYEONDONG_MIN_ZOOM ? "EUPMYEONDONG" : "SIGUNGU";
 }
 
-function createBboxParam(map) {
-    const size = map.getSize();
-    if (!size) return null;
-
-    const extent = map.getView().calculateExtent(size);
-    const [minLon, minLat, maxLon, maxLat] = transformExtent(extent, "EPSG:3857", "EPSG:4326");
-
-    return [minLon, minLat, maxLon, maxLat]
-        .map((value) => Number(value).toFixed(5))
-        .join(",");
+function createBboxParam() {
+    return SEOUL_BBOX;
 }
 
-function DashboardMap() {
+function DashboardMap({ onAreaSelect }) {
+    const onAreaSelectRef = useRef(onAreaSelect);
+    onAreaSelectRef.current = onAreaSelect;
     const mapElementRef = useRef(null);
     const mapRef = useRef(null);
     const boundarySourceRef = useRef(null);
@@ -96,6 +84,7 @@ function DashboardMap() {
             style: (feature) => createBoundaryStyle(feature, selectedFeatureRef.current),
         });
 
+        // 초기 화면 서울 중심
         const map = new Map({
             target: mapElementRef.current,
             layers: [createBaseLayer(), boundaryLayer],
@@ -107,6 +96,7 @@ function DashboardMap() {
             }),
         });
 
+        // 행정구 Polygon 클릭
         map.on("singleclick", (event) => {
             const feature = map.forEachFeatureAtPixel(event.pixel, (item) => item);
 
@@ -114,17 +104,22 @@ function DashboardMap() {
                 selectedFeatureRef.current = null;
                 setSelectedArea(null);
                 boundaryLayer.changed();
+                onAreaSelectRef.current?.(null);
                 return;
             }
 
             selectedFeatureRef.current = feature;
-            setSelectedArea({
+            const area = {
                 areaCode: feature.get("areaCode"),
                 sigunguCode: feature.get("sigunguCode"),
+                eupmyeondongCode: feature.get("eupmyeondongCode"),
                 name: feature.get("name"),
                 fullName: feature.get("fullName"),
-            });
+                level: feature.get("level"),
+            };
+            setSelectedArea(area);
             boundaryLayer.changed();
+            onAreaSelectRef.current?.(area);
         });
 
         map.on("pointermove", (event) => {
@@ -135,7 +130,7 @@ function DashboardMap() {
         boundarySourceRef.current = boundarySource;
 
         async function loadBoundaries() {
-            const bbox = createBboxParam(map);
+            const bbox = createBboxParam();
             if (!bbox) return;
 
             const zoom = map.getView().getZoom() ?? 0;
@@ -166,9 +161,10 @@ function DashboardMap() {
                 selectedFeatureRef.current = null;
                 setSelectedArea(null);
                 boundaryLayer.changed();
+                onAreaSelectRef.current?.(null);
 
                 const levelLabel = level === "EUPMYEONDONG" ? "읍면동" : "시군구";
-                setMapStatus(`현재 화면 ${levelLabel} 행정경계 ${features.length.toLocaleString()}건 표시 중`);
+                setMapStatus(`서울 ${levelLabel} 행정경계 ${features.length.toLocaleString()}건 표시 중`);
             } catch (error) {
                 if (abortController.signal.aborted) return;
                 lastRequestKeyRef.current = "";
@@ -211,9 +207,9 @@ function DashboardMap() {
             <div className="card-body">
                 <div className="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-3">
                     <div>
-                        <h5 className="fw-semibold mb-1">대한민국 행정경계 지도</h5>
+                        <h5 className="fw-semibold mb-1">서울 행정경계 지도</h5>
                         <div className="text-secondary small">
-                            현재 지도 화면 범위에 맞춰 PostgreSQL/PostGIS Polygon을 동적으로 표시합니다.
+                            임시로 서울 범위의 PostgreSQL/PostGIS Polygon만 표시합니다.
                         </div>
                     </div>
                     <span className="badge text-bg-light border">{mapStatus}</span>
