@@ -2,43 +2,31 @@ import { Link } from "react-router-dom";
 import TopTitle from "../../components/TopTitle";
 import "../../style/download.css";
 import mapPreviewImg from "../../../assets/images/map-preview.png";
-function FileSelectButton({type, color}){
-    return(
-        <>
-            <div className="col-6 mb-2">
-                <button className="form-control border p-2 text-start">
-                    <div>
-                        <span className={`badge bg-${color}-subtle text-${color} border border-${color}-subtle me-1`}>{type}</span>
-                        <span className="sm-text">(크기)</span>
-                    </div>
-                </button>
-            </div>        
-        </>
-    )
-}
+import { useState } from "react";
+import { datasetDetailDummy } from "../../dummy/datasetDetailDummy";
+
 
 function DatasetSummaryCard(){
+
+    const datasetSummaryInfo = datasetDetailDummy.datasetSummary
+
     return(
         <>
             <div className="col">
                 <div className="card px-3 py-3">
                     <div className="row">
-                        <DatasetSummaryCardCol title="등록일" content="2026-05-18"> {/* [sd_gis_dataset]created_at */}
-                            <i className="bi bi-calendar-event "></i>
-                        </DatasetSummaryCardCol>
-                        <DatasetSummaryCardCol title="제공기간" content="서울특별시"> {/* [sd_gis_dataset]provider */}
-                            <i className="bi bi-building"></i>
-                        </DatasetSummaryCardCol>
-                        <DatasetSummaryCardCol title="좌표계" content="EPSG:4326"> {/* [sd_gis_dataset]storage_srid*/}
-                            <i className="bi bi-bullseye"></i>
-                        </DatasetSummaryCardCol>
-                        <DatasetSummaryCardCol title="지역정보" content="서울시"> {/*  */}
-                            <i className="bi bi-geo-alt"></i>
-                        </DatasetSummaryCardCol>
-                        <DatasetSummaryCardCol title="다운로드 수" content="12,345" borderShow={false}> {/* [sd_dataset_stat]download_count */}
-                            <i className="bi bi-download"></i>
-                        </DatasetSummaryCardCol>
-                        
+                        {
+                            datasetSummaryInfo.map((item, index) => (
+                                <DatasetSummaryCardCol
+                                    key={index}
+                                    title={item.title}
+                                    content={item.content}
+                                    borderShow={index !== datasetSummaryInfo.length - 1}
+                                >
+                                    <i className={`bi ${item.icon}`}></i>
+                                </DatasetSummaryCardCol>
+                            ))
+                        }
                     </div>
                 </div>
             </div>        
@@ -46,10 +34,10 @@ function DatasetSummaryCard(){
     )
 }
 
-function DatasetSummaryCardCol({children, title, content, borderShow = true}){
+function DatasetSummaryCardCol({children, title, content, borderShow}){
     return(
         <>
-            <div className={`col ${borderShow && "border-end"}`}>
+            <div className={`col ${borderShow ? "border-end" : ""}`}>
                 <div className="row">
                     <div className="col-2 text-primary d-flex align-items-center fs-5">
                         {children}
@@ -65,11 +53,11 @@ function DatasetSummaryCardCol({children, title, content, borderShow = true}){
 }
 
 // 데이터 개요
-function DatasetInfo(){
+function DatasetInfoCard(){
     return(
         <>
             <div className="col-5 pe-0">
-                <div className="card px-3 py-2">
+                <div className="card px-3 py-2 h-100">
                     <div className="row mb-2">
                         <div className="col">
                             <div className="fw-bold">데이터 개요</div>
@@ -79,7 +67,7 @@ function DatasetInfo(){
                         <div className="col-6">
 
                             <DatasetInfoRow type="left" top={true} title="데이터 명" content="서울시 CCTV 위치 데이터"/>{/* [sd_gis_dataset]title */}
-                            <DatasetInfoRow type="left" title="제공기간" content="서울특별시"/>{/* [sd_gis_dataset]provider */}
+                            <DatasetInfoRow type="left" title="제공기관" content="서울특별시"/>{/* [sd_gis_dataset]provider */}
                             <DatasetInfoRow type="left" title="지역" content="서울시"/>{/*  */}
                             <DatasetInfoRow type="left" title="등록일" content="2024-05-20"/>{/* [sd_gis_dataset]created_at */}
                             <DatasetInfoRow type="left" title="업데이트일" content="2024-05-21"/>{/* [sd_gis_dataset]updated_at */}
@@ -103,8 +91,7 @@ function DatasetInfo(){
                             </div>                                            
                         </div>
                     </div>          
-                    <br />
-                    <br />    
+
                 </div>
             </div>        
         </>
@@ -115,7 +102,7 @@ function DatasetInfo(){
 function DatasetInfoRow({title, content, type, top = false}){
     return(
         <>
-            <div className={`row border-bottom ${type == "left" ? "me-0" : "ms-0"} ${top && "border-top"}`} >
+            <div className={`row border-bottom ${type == "left" ? "me-0" : "ms-0"} ${top ? "border-top" : ""}`} >
                 <div className="col-4 bg-light dataset-text p-2" >{title}</div>
                 <div className="col-8 dataset-text-gray p-2 fw-bold">{content}</div>
             </div>       
@@ -124,7 +111,7 @@ function DatasetInfoRow({title, content, type, top = false}){
 }
 
 // 지도 시각화
-function MapVisualization(){
+function MapVisualizationCard(){
     return(
         <>
             <div className="col-7">
@@ -158,20 +145,20 @@ function MapVisualization(){
                             </div>
                         </div>
                     </div>
-                    {/* 시물레이션 이동 버튼 */}
+                    {/* 시뮬레이션 이동 버튼 */}
                     <div className="row">
                         <div className="col">
                             <div className="card bg-primary-subtle border-0 px-2 py-1">
                                 <div className="row">
                                     <div className="col d-flex align-items-center">
                                         <span><i className="bi bi-info-circle text-primary mx-1" style={{fontSize: "15px"}}></i></span>
-                                        <span className="dataset-text-gray">이 데이터를 시물레이션 페이지에서 분석을 진행할 수 있습니다.</span>
+                                        <span className="dataset-text-gray">이 데이터를 시뮬레이션 페이지에서 분석을 진행할 수 있습니다.</span>
                                     </div>
                                     <div className="col-auto text-end">
                                         {/*[sd_gis_dataset]is_spatial(공간 데이터 유무) 가 "T"인가 확인 필요*/}
                                         <Link to="simulation" className="btn btn-primary btn-sm">
                                             <i className="bi bi-bar-chart me-2"></i>
-                                            시물레이션으로 이동                                                                                       
+                                            시뮬레이션으로 이동                                                                                       
                                         </Link>
                                     </div>
                                 </div>
@@ -187,20 +174,6 @@ function MapVisualization(){
 function MapOptionButton(){
     return(
         <>
-
-            {/* <div className="row">
-                <div className="col">
-                    <button className="btn btn-sm border border-end-0 rounded-end-0 ">마커</button>
-                    <button className="btn btn-sm border border-end-0 border-start-0 rounded-0">HeatMap</button>
-                    <button className="btn btn-sm border border-start-0 rounded-start-0 ">영역표시</button>
-                </div>  
-                <div className="col text-end">
-                    <button className="btn btn-sm border sm-text me-2"><i className="bi bi-layers me-1"></i>레이어</button>
-                    <button className="btn btn-sm border sm-text me-2"><i className="bi bi-funnel me-1"></i>필터</button>
-                    <button className="btn btn-sm border sm-text"><i className="bi bi-fullscreen"></i></button>
-                </div>
-            </div> */}
-
 
             <div className="row mb-2">
                 <div className="col">
@@ -239,7 +212,8 @@ function MapControlButton(){
     )
 }
 
-function AttributePreview(){
+// 속성 데이터
+function AttributePreviewCard(){
     return(
         <>
             <div className="col-12 ">
@@ -272,7 +246,6 @@ function AttributePreview(){
                                         <AttributePreviewRow />
                                         <AttributePreviewRow />
                                         <AttributePreviewRow />
-                                        
                                     </tbody>
                                 </table>
                             </div>
@@ -300,8 +273,136 @@ function AttributePreviewRow(){
     )
 }
 
+// 파일 다운로드
+function FileDownloadCard(){
+
+    const [selectFileFormat, setSelectFileFormat] = useState("");
+
+    const downloadFileInfo = datasetDetailDummy.files;
+
+
+
+    // 다운로드 버튼 클릭했을 때 기능 넣기
+    const downloadButtonClick = () => {
+        console.log(selectFileFormat, "다운로드버튼 클릭"); 
+    }
+    return(
+        <>
+            <div className="row mb-2">
+                <div className="col">
+                    <div className="card px-3 py-2">
+                        <div className="row mb-3">
+                            <div className="col">
+                                <div className="fw-bold ">
+                                    <span>파일 다운로드</span>
+                                    <i className="bi bi-info-circle ms-2 text-secondary "></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="row mb-2">
+                            <div className="col sm-text fw-bold">
+                                지원 형식
+                            </div>
+                        </div>
+                        
+                        {/* 파일 형식 목록 */}
+                        <div className="row">
+                            <div className="col">
+                                <div className="row g-2 mb-2">
+                                    {downloadFileInfo.map((item, index) => (
+                                        <FileSelectButton 
+                                            key={index}
+                                            type={item.type}
+                                            color={item.color}
+                                            size={item.size}
+                                            selectFileFormat={selectFileFormat}
+                                            setSelectFileFormat={setSelectFileFormat}     
+                                        />
+                                    ))}
+                                </div>
+                            </div>       
+                        </div>
+
+                        {/* 다운로드 버튼 */}
+                        <div className="row mb-4">
+                            <div className="col">
+                                <button className="btn btn-primary form-control" onClick={downloadButtonClick}>
+                                    <i className="bi bi-download me-2"></i>
+                                    다운로드
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>        
+        </>
+    )
+}
+
+function FileSelectButton({type, color, size, selectFileFormat, setSelectFileFormat}){
+    
+
+    // const fileFormatButtonClick = async () => {
+    //     await setSelectFileFormat(type)
+    //     console.log(selectFileFormat, "파일 형식 클릭");
+    // }
+
+    return(
+        <>
+            <div className="col-6 mb-2">
+                <button className={`btn border w-100 p-2 text-start pe-0 
+                        ${selectFileFormat === type ? `border-${color} border-2 bg-${color}-subtle` : ""}
+                        `} 
+                        onClick={() => setSelectFileFormat(type)}>
+                    <div>
+                        <span className={`badge bg-${color}-subtle text-${color} border border-${color}-subtle me-1`}>{type}</span>
+                        <span className="fw-bold text-secondary" style={{fontSize: "12px"}}>({size})</span>
+                    </div>
+                </button>
+            </div>        
+        </>
+    )
+}
+
+
+// 다운로드 안내
+function DownloadNoticeCard(){
+    return(
+        <>
+            <div className="row mb-2">
+                <div className="col">
+                    <div className="card px-3 py-3 bg-primary-subtle border-0">
+                        <div className="row mb-2">
+                            <div className="col">
+                                <div style={{fontSize: "13px"}} className="fw-bold">
+                                    <i className="bi bi-info-circle me-2 text-primary"></i>
+                                    <span >다운로드 안내</span>
+                                </div>              
+                            </div>
+                        </div>
+                        <div className="row">
+                            <div className="col">
+                                <div className="dataset-text-gray">
+                                    <span>데이터 다운로드는 로그인 없이 가능하며, 이력 저장 혹은 특정 파일은 </span>
+                                    <Link to="/login" className="text-decoration-none">로그인</Link>
+                                    <span>이 필요할 수 있습니다.</span>
+                                </div>
+                            </div>
+                        </div>
+            
+                    </div>
+                </div>
+            </div>        
+        </>
+    )
+}
+
+
 // 관련데이터
 function RelatedDatasetCard(){
+    const relatedDatasetInfo = datasetDetailDummy.relatedDatasets
+
     return(
         <>
             <div className="row">
@@ -312,13 +413,15 @@ function RelatedDatasetCard(){
                                 <div className="fw-bold">관련 데이터</div>
                             </div>
                         </div>
-
-
-                        <div className="row">
-                            <RelatedDatasetCardRow content="버스 정류장 위치 정보"></RelatedDatasetCardRow>
-                            <RelatedDatasetCardRow content="공공 와이파이 위치 데이터"></RelatedDatasetCardRow>
-                            <RelatedDatasetCardRow content="침수 위험 지역 데이터" borderShow={false}></RelatedDatasetCardRow>
-
+                        <div className="row">                            
+                            {relatedDatasetInfo.map((item, index) => (
+                                <RelatedDatasetCardRow 
+                                    key={index}
+                                    id={item.id}
+                                    title={item.title}
+                                    borderShow={index !== relatedDatasetInfo.length - 1}
+                                />
+                            ))}
                         </div>
                     </div>
                 </div>
@@ -327,15 +430,15 @@ function RelatedDatasetCard(){
     )
 }
 
-function RelatedDatasetCardRow({content, borderShow = true}){
+function RelatedDatasetCardRow({id, title, borderShow = true}){
     return(
         <>  
             <div className="col-12 mb-3">
-                <Link to="#" className="text-decoration-none">
-                    <div className={`${borderShow && "border-bottom pb-3"}  `} style={{fontSize: "13px"}}>
+                <Link to={`../${id}`} className="text-decoration-none">
+                    <div className={`${borderShow ? "border-bottom pb-3" : ""}  `} style={{fontSize: "13px"}}>
                         <div className="row">
                             <div className="col text-primary fw-bold">
-                                {content}    
+                                {title}    
                             </div>
                             <div className="col-auto">
                                 <span className="text-dark"><i className="bi bi-chevron-right"></i></span>
@@ -389,11 +492,14 @@ function QuickActionButton({children, content, onClick}){
 
 
 function UserDatasetDetailPage(){
+    
 
     const datasetInfo = {
         title: "서울시 CCTV 위치 데이터",
         subTitle: "서울시 관내에 설치된 CCTV의 위치 및 속성 정보를 제공합니다. 도시 안전, 방범, 교통 관리 등 다양한 정책 및 서비스에 활용할 수 있습니다."
     };
+
+
 
     const handleLoginClick = () =>{
         console.log("클릭")
@@ -420,112 +526,39 @@ function UserDatasetDetailPage(){
                         
                         <div className="row mb-3">
                             {/* 데이터 개요 */}
-                            <DatasetInfo />
+                            <DatasetInfoCard />
                             {/* 지도 시각화 */}
-                            <MapVisualization />
+                            <MapVisualizationCard />
                         </div>
 
                         <div className="row">
                             {/* 속성 데이터 미리보기 */}
-                            <AttributePreview />
+                            <AttributePreviewCard />
                         </div>
                     </div>
 
                     
-
-
-
                     {/* 우측 다운로드 기능 */}
                     <div className="col-3">
                         {/* 파일 형식, 다운로드 */}
-                        <div className="row mb-2">
-                            <div className="col">
-                                <div className="card px-3 py-2">
-                                    <div className="row mb-3">
-                                        <div className="col">
-                                            <div className="fw-bold ">
-                                                <span>파일 다운로드</span>
-                                                <i className="bi bi-info-circle ms-2 text-secondary "></i>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="row mb-2">
-                                        <div className="col sm-text fw-bold">
-                                            지원 형식
-                                        </div>
-                                    </div>
-                                    
-                                    {/* 파일 형식 목록 */}
-                                    <div className="row">
-                                        <div className="col">
-                                            <div className="row g-2 mb-2">
-                                                <FileSelectButton type="CSV" color="success"></FileSelectButton>
-                                                <FileSelectButton type="GeoJson" color="warning"></FileSelectButton>
-                                                <FileSelectButton type="SHP" color="info"></FileSelectButton>
-                                                <FileSelectButton type="GeoTIFF" color="primary"></FileSelectButton>
-                                                <FileSelectButton type="KML" color="danger"></FileSelectButton>
-                                            </div>
-                                        </div>       
-                                    </div>
-
-                                    {/* 다운로드 버튼 */}
-                                    <div className="row mb-4">
-                                        <div className="col">
-                                            <button className="btn btn-primary form-control">
-                                                <i className="bi bi-download me-2"></i>
-                                                다운로드
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <FileDownloadCard />
 
                         {/* 다운로드 안내 */}
-                        <div className="row mb-2">
-                            <div className="col">
-                                <div className="card px-3 py-3 bg-primary-subtle border-0">
-                                    <div className="row mb-2">
-                                        <div className="col">
-                                            <div style={{fontSize: "13px"}} className="fw-bold">
-                                                <i className="bi bi-info-circle me-2 text-primary"></i>
-                                                <span >다운로드 안내</span>
-                                            </div>              
-                                        </div>
-                                    </div>
-                                    <div className="row">
-                                        <div className="col">
-                                            <div className="dataset-text-gray">
-                                                <span>데이터 다운로드는 로그인 없이 가능하며, 이력 저장 혹은 특정 파일은 </span>
-                                                <Link to="/login" className="text-decoration-none">로그인</Link>
-                                                <span>이 필요할 수 있습니다.</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                      
-                                </div>
-                            </div>
-                        </div>
+                        <DownloadNoticeCard />
 
                         {/* 관련 데이터 */}
                         <RelatedDatasetCard />
                         
                         {/* 빠른 기능 버튼 */}
                         <QuickActionCard />
-
-
                     </div>
 
 
 
 
                 </div>
-                
-
-
             </div>
-            
+            <Link to="simulationTest">시뮬레이션 테스트</Link>
         </>
     )
 }
