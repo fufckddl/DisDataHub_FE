@@ -4,7 +4,8 @@ import "../../style/download.css";
 import mapPreviewImg from "../../../assets/images/map-preview.png";
 import { useState } from "react";
 import { datasetDetailDummy } from "../../dummy/datasetDetailDummy";
-
+import {MapContainer, TileLayer, GeoJSON} from "react-leaflet"
+import { dummyCctvGeoJson } from "../../geojson/dummyCctvGeoJson";
 
 function DatasetSummaryCard(){
 
@@ -131,10 +132,23 @@ function MapVisualizationCard(){
                                 {
                                     true ?
                                     <>
-                                        <img    src={mapPreviewImg} 
+                                        {/* <img    src={mapPreviewImg} 
                                                 alt="지도 미리보기" 
                                                 className="img-fluid rounded w-100 h-100 object-fit-cover"/>
-                                        <MapControlButton />
+                                        <MapControlButton /> */}
+
+                                        <MapContainer
+                                            center={[37.5665, 126.9780]}
+                                            zoom={10}
+                                            className="w-100 h-100 rounded"
+                                            
+                                        >
+                                            <TileLayer
+                                                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                                attribution="&copy; OpenStreetMap contributors"
+                                            />                                            
+                                            <GeoJSON data={dummyCctvGeoJson} />
+                                        </MapContainer>
                                     </>
                                     :
                                     <div className="d-flex align-items-center h-100 w-100 justify-content-center">
@@ -517,6 +531,9 @@ function UserDatasetDetailPage(){
                             <div className="col">
                                 <TopTitle title={datasetInfo.title} subTitle={datasetInfo.subTitle} showGuide={false}/>
                             </div>
+                            <div className="col text-end">
+                                <Link to="../main">목록으로</Link>
+                            </div>
                         </div>
 
                         {/* 데이터셋 요약 정보 */}
@@ -558,7 +575,9 @@ function UserDatasetDetailPage(){
 
                 </div>
             </div>
-            <Link to="simulationTest">시뮬레이션 테스트</Link>
+            <Link to="simulationTest">시뮬레이션 테스트</Link><br />
+            <Link to="simulationTest2">시뮬레이션 테스트2</Link><br />
+            <Link to="simulationTest3">시뮬레이션 테스트3</Link>
         </>
     )
 }
