@@ -44,6 +44,63 @@
     font-size: 11px;
 }
 
+.dashboard-population-card {
+    border: 1px solid #dde2ea;
+    min-height: 560px;
+}
+
+.dashboard-population-preview {
+    max-height: 360px;
+    padding: 12px;
+    border-radius: 8px;
+    background: #f8fafc;
+    color: #334155;
+}
+
+.population-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.population-summary-card {
+    padding: 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 12px;
+    background: #f8fafc;
+}
+
+.population-summary-card span {
+    display: block;
+    margin-bottom: 4px;
+    color: #64748b;
+    font-size: 12px;
+}
+
+.population-summary-card strong {
+    color: #0f172a;
+    font-size: 15px;
+}
+
+.population-summary-card.male {
+    background: rgba(37, 99, 235, 0.08);
+    border-color: rgba(37, 99, 235, 0.25);
+}
+
+.population-summary-card.female {
+    background: rgba(236, 72, 153, 0.08);
+    border-color: rgba(236, 72, 153, 0.25);
+}
+
+.population-chart-wrap {
+    position: relative;
+    min-height: 320px;
+    padding: 12px 8px 4px;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    background: #ffffff;
+}
+
 @media (max-width: 768px) {
     .dashboard-map-wrap {
         min-height: 420px;
@@ -56,5 +113,13 @@
     .dashboard-map-info {
         right: 12px;
         bottom: 12px;
+    }
+
+    .dashboard-population-card {
+        min-height: auto;
+    }
+
+    .population-summary-grid {
+        grid-template-columns: 1fr;
     }
 }

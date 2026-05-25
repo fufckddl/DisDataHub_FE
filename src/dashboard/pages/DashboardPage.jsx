@@ -1,4 +1,11 @@
+import { useCallback, useState } from "react";
 import DashboardMap from "../components/DashboardMap";
+import PopulationPanel from "../components/PopulationPanel";
+import {
+    getSeoulLivingPopulationByDongLatest,
+    getSeoulLivingPopulationBySigunguLatest,
+} from "../api/dashBoardApi";
+import { getOpenDataEmptyMessage } from "../utils/openDataResponse";
 import "./DashboardPage.css";
 
 function TopTitle() {
@@ -26,97 +33,102 @@ function TopTitle() {
     );
 }
 
-function CardForm({ color, title, content, children }) {
-    return (
-        <div className="col">
-            <div className="card shadow-sm p-4">
-                <div className="row">
-                    <div
-                        className={`col-2 rounded-circle bg-${color}-subtle text-${color} d-flex align-items-center justify-content-center`}
-                        style={{ width: "56px", height: "56px" }}
-                    >
-                        {children}
-                    </div>
-                    <div className="col">
-                        <div className="fw-bold" style={{ fontSize: "14px" }}>
-                            {title}
-                        </div>
-                        <div className="fw-bold">{content}</div>
-                        <div className="text-secondary" style={{ fontSize: "12px" }}>
-                            연동 API 기준
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-function OpenDataPlaceholder() {
-    return (
-        <>
-            <div className="row mb-3">
-                <div className="col">
-                    <h5 className="fw-semibold mb-0">서울 열린데이터광장 데이터</h5>
-                </div>
-            </div>
-            <div className="row">
-                <div className="col">
-                    <div className="card shadow-sm overflow-hidden">
-                        <table className="table table-hover align-middle mb-0">
-                            <thead className="table-light">
-                                <tr>
-                                    <th className="col-3 ps-3">데이터셋 명</th>
-                                    <th className="col-4">설명</th>
-                                    <th className="col-2 text-center">카테고리</th>
-                                    <th className="col-2 text-center">갱신일</th>
-                                    <th className="col-1 text-center">상태</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td colSpan={5} className="text-center text-secondary py-5">
-                                        {/* TODO: 서울 열린데이터광장 API 연동 후 목록 표시 */}
-                                        데이터를 불러오는 중입니다.
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </>
-    );
-}
-
 function DashboardPage() {
+    const [selectedArea, setSelectedArea] = useState(null);
+    const [populationData, setPopulationData] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [queryDate, setQueryDate] = useState(null);
+    const [populationNotice, setPopulationNotice] = useState(null);
+
+    const fetchSigunguPopulation = useCallback((area) => {
+        return getSeoulLivingPopulationBySigunguLatest({
+            hour: "00",
+            sigunguCode: area.sigunguCode,
+        });
+    }, []);
+
+    const handleAreaSelect = useCallback(async (area) => {
+        setSelectedArea(area);
+
+        if (!area) {
+            setPopulationData(null);
+            setError(null);
+            setQueryDate(null);
+            setPopulationNotice(null);
+            setLoading(false);
+            return;
+        }
+
+        setLoading(true);
+        setError(null);
+        setQueryDate(null);
+        setPopulationNotice(null);
+
+        try {
+            let result;
+
+            if (area.level === "SIGUNGU") {
+                result = await fetchSigunguPopulation(area);
+            } else {
+                result = await getSeoulLivingPopulationByDongLatest({
+                    hour: "00",
+                    areaCode: area.eupmyeondongCode ?? area.areaCode,
+                });
+
+                const dongEmptyMessage = getOpenDataEmptyMessage(result.data);
+                if (dongEmptyMessage) {
+                    result = await fetchSigunguPopulation(area);
+                    setPopulationNotice(
+                        "선택한 동 경계는 법정동 기준입니다. 행정동 생활인구 코드와 직접 매칭되지 않아 소속 자치구 데이터로 표시합니다."
+                    );
+                }
+            }
+
+            const { data, date } = result;
+
+            const emptyMessage = getOpenDataEmptyMessage(data);
+            if (emptyMessage) {
+                setPopulationData(null);
+                setQueryDate(date);
+                setPopulationNotice(null);
+                setError(
+                    `${emptyMessage} (최근 7일 내 데이터 없음, areaCode=${area.areaCode})`
+                );
+                return;
+            }
+
+            setQueryDate(date);
+            setPopulationData(data);
+        } catch (err) {
+            console.error(err);
+            setPopulationData(null);
+            setError("생활인구 데이터를 불러오지 못했습니다.");
+        } finally {
+            setLoading(false);
+        }
+    }, [fetchSigunguPopulation]);
+
     return (
         <>
             <div className="container-fluid px-4 py-3">
                 <TopTitle />
 
-                <div className="row mb-3">
-                    <CardForm color="primary" title="연동 데이터셋" content="-">
-                        <i className="bi bi-database-fill fs-3" />
-                    </CardForm>
-                    <CardForm color="success" title="카테고리" content="-">
-                        <i className="bi bi-tags-fill fs-3" />
-                    </CardForm>
-                    <CardForm color="warning" title="최근 갱신" content="-">
-                        <i className="bi bi-calendar-event-fill fs-3" />
-                    </CardForm>
-                    <CardForm color="info" title="API 연동 상태" content="대기">
-                        <i className="bi bi-plug-fill fs-3" />
-                    </CardForm>
-                </div>
-
-                <div className="row mb-3">
-                    <div className="col">
-                        <DashboardMap />
+                <div className="row mb-3 g-3">
+                    <div className="col-lg-8">
+                        <DashboardMap onAreaSelect={handleAreaSelect} />
+                    </div>
+                    <div className="col-lg-4">
+                        <PopulationPanel
+                            selectedArea={selectedArea}
+                            populationData={populationData}
+                            queryDate={queryDate}
+                            notice={populationNotice}
+                            loading={loading}
+                            error={error}
+                        />
                     </div>
                 </div>
-
-                <OpenDataPlaceholder />
             </div>
         </>
     );
