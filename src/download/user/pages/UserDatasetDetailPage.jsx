@@ -6,6 +6,8 @@ import { useState } from "react";
 import { datasetDetailDummy } from "../../dummy/datasetDetailDummy";
 import {MapContainer, TileLayer, GeoJSON} from "react-leaflet"
 import { dummyCctvGeoJson } from "../../geojson/dummyCctvGeoJson";
+import { downloadFileApi, uploadTempTestFileApi } from "../../api/userDownloadApi";
+
 
 function DatasetSummaryCard(){
 
@@ -513,11 +515,54 @@ function UserDatasetDetailPage(){
         subTitle: "서울시 관내에 설치된 CCTV의 위치 및 속성 정보를 제공합니다. 도시 안전, 방범, 교통 관리 등 다양한 정책 및 서비스에 활용할 수 있습니다."
     };
 
-
-
     const handleLoginClick = () =>{
         console.log("클릭")
     }
+
+
+
+
+    const uploadFile = async () => {
+        const response = await uploadTempTestFileApi();
+        console.log("업로드 응답:", response.data);
+        window.lastUpload = response.data;
+    };
+
+
+
+    const downloadFile = async () => {
+        if (!window.lastUpload) {
+            console.log("먼저 업로드를 실행하세요.");
+            alert("파일을 업로드 후 다운로드를 진행해 주세요")
+            return;
+        }
+
+        const response = await downloadFileApi({
+            filePath: window.lastUpload.filePath,
+            storedFilename: window.lastUpload.storedFilename,
+            originalFilename: window.lastUpload.originalFilename,
+        });
+
+        const text = await response.data.text();
+        console.log("다운로드 내용:", text);
+
+        const blob = response.data;
+        const url = window.URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = window.lastUpload.originalFilename;
+
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        window.URL.revokeObjectURL(url);        
+    };
+
+
+
+
 
     return(
         <>
@@ -577,7 +622,11 @@ function UserDatasetDetailPage(){
             </div>
             <Link to="simulationTest">시뮬레이션 테스트</Link><br />
             <Link to="simulationTest2">시뮬레이션 테스트2</Link><br />
-            <Link to="simulationTest3">시뮬레이션 테스트3</Link>
+            <Link to="simulationTest3">시뮬레이션 테스트3</Link><br />
+
+            <button onClick={uploadFile}>파일업로드</button>
+            <button onClick={downloadFile}>파일다운로드</button>
+
         </>
     )
 }
