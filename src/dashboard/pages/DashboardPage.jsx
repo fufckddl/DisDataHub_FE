@@ -1,11 +1,7 @@
 import { useCallback, useState } from "react";
 import DashboardMap from "../components/DashboardMap";
 import PopulationPanel from "../components/PopulationPanel";
-import {
-    getSeoulLivingPopulationByDongLatest,
-    getSeoulLivingPopulationBySigunguLatest,
-} from "../api/dashBoardApi";
-import { getOpenDataEmptyMessage } from "../utils/openDataResponse";
+import { getAreaPopulation } from "../api/dashBoardApi";
 import "./DashboardPage.css";
 
 function TopTitle() {
@@ -41,13 +37,6 @@ function DashboardPage() {
     const [queryDate, setQueryDate] = useState(null);
     const [populationNotice, setPopulationNotice] = useState(null);
 
-    const fetchSigunguPopulation = useCallback((area) => {
-        return getSeoulLivingPopulationBySigunguLatest({
-            hour: "00",
-            sigunguCode: area.sigunguCode,
-        });
-    }, []);
-
     const handleAreaSelect = useCallback(async (area) => {
         setSelectedArea(area);
 
@@ -66,48 +55,25 @@ function DashboardPage() {
         setPopulationNotice(null);
 
         try {
-            let result;
+            const data = await getAreaPopulation({
+                hour: "00",
+                areaCode: area.areaCode,
+            });
 
-            if (area.level === "SIGUNGU") {
-                result = await fetchSigunguPopulation(area);
-            } else {
-                result = await getSeoulLivingPopulationByDongLatest({
-                    hour: "00",
-                    areaCode: area.eupmyeondongCode ?? area.areaCode,
-                });
-
-                const dongEmptyMessage = getOpenDataEmptyMessage(result.data);
-                if (dongEmptyMessage) {
-                    result = await fetchSigunguPopulation(area);
-                    setPopulationNotice(
-                        "선택한 동 경계는 법정동 기준입니다. 행정동 생활인구 코드와 직접 매칭되지 않아 소속 자치구 데이터로 표시합니다."
-                    );
-                }
-            }
-
-            const { data, date } = result;
-
-            const emptyMessage = getOpenDataEmptyMessage(data);
-            if (emptyMessage) {
-                setPopulationData(null);
-                setQueryDate(date);
-                setPopulationNotice(null);
-                setError(
-                    `${emptyMessage} (최근 7일 내 데이터 없음, areaCode=${area.areaCode})`
-                );
-                return;
-            }
-
-            setQueryDate(date);
+            setQueryDate(data.baseDate);
             setPopulationData(data);
         } catch (err) {
             console.error(err);
             setPopulationData(null);
+            if (err.response?.status === 404) {
+                setError(`DB에 저장된 생활인구 데이터가 없습니다. (areaCode=${area.areaCode})`);
+                return;
+            }
             setError("생활인구 데이터를 불러오지 못했습니다.");
         } finally {
             setLoading(false);
         }
-    }, [fetchSigunguPopulation]);
+    }, []);
 
     return (
         <>
