@@ -121,29 +121,39 @@ function UploadWritePage() {
             
         } catch (error) {
             console.error("업로드 실패: ", error);
-            setIsError(true);
+            
+            // 🚨 어떤 에러든 일단 빨간 박스를 무조건 켭니다! (이전 버그 방지 핵심)
+            setIsError(true); 
 
-            // 백엔드에서 던진 커스텀 에러 메시지 동적 추출
             if (error.response && error.response.data) {
                 const responseData = error.response.data;
+                const status = error.response.status; // HTTP 상태 코드로 완벽하게 구분
 
-                // 1. 백엔드에서 준 기본 에러 메시지 세팅
-                setErrorMessage(responseData.message || "데이터 검증에 실패했습니다.");
-
-                // 2. uploadId가 있으면 에러 상세 내역을 가져오는 GET API 2차 호출
-                if (responseData.uploadId) {
+                // 🚀 [Case 1] 400 에러: 데이터 검증 실패 (오답 노트가 JSON 객체로 예쁘게 올 때)
+                if (status === 400 && responseData.uploadId) {
+                    setErrorMessage(responseData.message || "데이터 검증에 실패했습니다.");
                     try {
                         const errorRes = await axiosInstance.get(`/api/upload/errors/${responseData.uploadId}`);
                         setErrorList(errorRes.data);
                     } catch (detailError) {
                         console.error("에러 상세 내역 조회 실패:", detailError);
+                        setErrorList([]); // 실패 시 안전하게 표 비우기
                     }
-                } else {
-                    setErrorMessage("서버와 통신할 수 없습니다. 네트워크 상태나 서버 구동 여부를 확인하세요.");
+                } 
+                // 🚀 [Case 2] 500 에러: 중복 파일, WKT 파괴 등 시스템 에러 (보통 순수 문자열로 올 때)
+                else {
+                    // 백엔드가 던진 데이터가 문자열이면 그대로 꺼내 쓰고, 아니면 message를 찾습니다.
+                    const errorMsg = typeof responseData === 'string' 
+                                        ? responseData 
+                                        : (responseData.message || "서버 처리 중 오류가 발생했습니다.");
+                    
+                    setErrorMessage(`🚨 업로드 불가: ${errorMsg}`);
+                    setErrorList([]); // 오답 노트 표를 그릴 게 없으므로 완벽하게 비워줍니다! (버그 방지)
                 }
             } else {
-                // 아예 서버가 켜져있지 않거나 네트워크가 끊긴 경우의 예외 처리
-                alert("❌ 서버와 통신할 수 없습니다. 네트워크 상태나 서버 구동 여부를 확인하세요.");
+                // 아예 서버가 꺼져있을 때
+                setErrorMessage("❌ 서버와 통신할 수 없습니다. 네트워크 상태나 서버 구동 여부를 확인하세요.");
+                setErrorList([]);
             }
         } finally {
             setIsLoading(false);
@@ -547,9 +557,17 @@ function UploadWritePage() {
                         {/* 오른쪽 텍스트 및 테이블 영역 */}
                         <div className="w-100">
                             <h5 className="fw-bold mb-2" style={{ color: '#991B1B' }}>검증 실패 (승인 요청 불가)</h5>
+                            {/* 🚀 2. 내용 변경: 표가 있을 때와 없을 때(중복 에러일 때) 보여주는 문구를 다르게 처리! */}
                             <p className="text-danger mb-4" style={{ fontSize: '0.95rem' }}>
-                                업로드한 데이터 중 오류가 발견되어 승인 요청이 취소되었습니다. <br/>
-                                아래 상세 에러 내역을 확인하고 원본 파일을 수정한 뒤 다시 업로드해 주세요.
+                                {errorList.length > 0 ? (
+                                    <>
+                                        업로드한 데이터 중 오류가 발견되어 승인 요청이 취소되었습니다. <br/>
+                                        아래 상세 에러 내역을 확인하고 원본 파일을 수정한 뒤 다시 업로드해 주세요.
+                                    </>
+                                ) : (
+                                    // 표가 없을 때(중복 파일 500 에러 등)는 백엔드가 보낸 에러 메시지를 쾅 찍어줍니다!
+                                    <span className="fw-bold fs-6">{errorMessage}</span>
+                                )}
                             </p>
                             
                             {/* 🚀 스크롤 가능한 에러 리스트 테이블 영역 (에러 리스트가 있을 때만 렌더링) */}
