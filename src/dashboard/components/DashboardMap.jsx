@@ -17,7 +17,6 @@ const KOREA_BBOX = "124.50,32.80,132.20,39.60";
 const NEXT_LEVEL_BY_LEVEL = {
     SIDO: "SIGUNGU",
     SIGUNGU: "EUPMYEONDONG",
-    EUPMYEONDONG: "JIPGYEGU",
 };
 
 const geoJsonFormat = new GeoJSON({
@@ -98,8 +97,17 @@ function getViewTitle(viewState) {
     return `${viewState.parentArea.fullName ?? viewState.parentArea.name} 하위 ${getLevelLabel(viewState.level, viewState.parentArea)} 단위`;
 }
 
+function getViewDescription(viewState) {
+    if (NEXT_LEVEL_BY_LEVEL[viewState.level]) {
+        return `${getViewTitle(viewState)}를 보고 있습니다. 지역을 클릭하면 하위 단계로 이동합니다.`;
+    }
+
+    return `${getViewTitle(viewState)}를 보고 있습니다. 지역을 클릭하면 인구 데이터를 조회합니다.`;
+}
+
 function getFeatureArea(feature) {
     const level = feature.get("level");
+    const childLevel = NEXT_LEVEL_BY_LEVEL[level] ?? null;
     const area = {
         areaCode: feature.get("areaCode"),
         sidoCode: feature.get("sidoCode"),
@@ -111,8 +119,8 @@ function getFeatureArea(feature) {
         parentAreaCode: feature.get("parentAreaCode"),
         parentAreaName: feature.get("parentAreaName"),
         parentLevel: feature.get("parentLevel"),
-        childLevel: feature.get("childLevel") ?? NEXT_LEVEL_BY_LEVEL[level],
-        canDrillDown: feature.get("canDrillDown") ?? Boolean(NEXT_LEVEL_BY_LEVEL[level]),
+        childLevel,
+        canDrillDown: Boolean(childLevel),
         bbox: getFeatureBbox(feature),
     };
 
@@ -227,9 +235,9 @@ function DashboardMap({ onAreaSelect }) {
         if (!mapElementRef.current) return undefined;
 
         let isMounted = true;
-        const boundarySource = new VectorSource();
+        let activeBoundarySource = new VectorSource();
         const boundaryLayer = new VectorLayer({
-            source: boundarySource,
+            source: activeBoundarySource,
             style: (feature) => getBoundaryStyle(feature, selectedFeatureRef.current),
         });
 
@@ -299,8 +307,12 @@ function DashboardMap({ onAreaSelect }) {
                     return;
                 }
 
-                boundarySource.clear();
-                boundarySource.addFeatures(features);
+                const previousSource = activeBoundarySource;
+                const nextSource = new VectorSource({ features });
+                boundaryLayer.setSource(nextSource);
+                activeBoundarySource = nextSource;
+                boundarySourceRef.current = nextSource;
+                previousSource.clear(true);
                 selectedFeatureRef.current = null;
                 boundaryLayer.changed();
                 currentViewRef.current = normalizedView;
@@ -310,7 +322,7 @@ function DashboardMap({ onAreaSelect }) {
                 }
 
                 if (features.length > 0) {
-                    map.getView().fit(boundarySource.getExtent(), {
+                    map.getView().fit(nextSource.getExtent(), {
                         padding: [28, 28, 28, 28],
                         maxZoom: normalizedView.level === "JIPGYEGU"
                             ? 13
@@ -379,7 +391,7 @@ function DashboardMap({ onAreaSelect }) {
 
         mapRef.current = map;
         boundaryLayerRef.current = boundaryLayer;
-        boundarySourceRef.current = boundarySource;
+        boundarySourceRef.current = activeBoundarySource;
         loadBoundariesRef.current = loadBoundaries;
         void loadBoundaries(createInitialView(), { force: true });
 
@@ -407,7 +419,7 @@ function DashboardMap({ onAreaSelect }) {
                     <div>
                         <h5 className="fw-semibold mb-1">지도</h5>
                         <p className="text-secondary small mb-0">
-                            {getViewTitle(viewState)}를 보고 있습니다. 지역을 클릭하면 하위 단계로 이동합니다.
+                            {getViewDescription(viewState)}
                         </p>
                     </div>
                     <div className="dashboard-map-actions">
