@@ -1,12 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createNoticeApi } from "../../api/noticeApi";
-import useAuthStore from "../../../commons/store/useAuthStore";
 import "../css/AdminNoticeWritePage.css";
 
 function AdminNoticeWritePage() {
   const navigate = useNavigate();
-  const userInfo = useAuthStore((state) => state.userInfo);
 
   const [title, setTitle] = useState("");
   const [visibilityStatus, setVisibilityStatus] = useState("PUBLIC");
@@ -25,15 +23,8 @@ function AdminNoticeWritePage() {
       return;
     }
 
-    const userId = userInfo?.userId ?? userInfo?.id;
-
-    if (!userId) {
-      alert("로그인한 사용자 정보를 찾을 수 없습니다.");
-      return;
-    }
-
     const requestData = {
-      userId,
+      userId: 1,
       title,
       content,
       visibilityStatus,
@@ -47,7 +38,10 @@ function AdminNoticeWritePage() {
 
       if (data.result === "success") {
         alert("공지사항이 등록되었습니다.");
+
         navigate("/admin/board/notice");
+      } else {
+        alert("공지사항 등록에 실패했습니다.");
       }
     } catch (error) {
       console.error("공지사항 등록 실패:", error);

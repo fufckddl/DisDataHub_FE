@@ -15,7 +15,7 @@ export const getNoticeDetailApi = async (postId) => {
 export const createNoticeApi = async (noticeData) => {
   const token = localStorage.getItem("accessToken");
 
-  const response = await axios.post(BASE_URL, noticeData, {
+  const response = await axios.post(`${BASE_URL}/createNotice`, noticeData, {
     headers: token
       ? {
           Authorization: `Bearer ${token}`,
