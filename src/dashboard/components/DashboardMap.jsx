@@ -172,6 +172,7 @@ function DashboardMap({ onAreaSelect }) {
     const [viewState, setViewState] = useState(() => createInitialView());
     const [isLoading, setIsLoading] = useState(false);
     const [loadError, setLoadError] = useState(null);
+    const [drillDownNotice, setDrillDownNotice] = useState(null);
 
     const resetToSidoView = useCallback(() => {
         const initialView = createInitialView();
@@ -264,6 +265,7 @@ function DashboardMap({ onAreaSelect }) {
             if (isMounted) {
                 setIsLoading(true);
                 setLoadError(null);
+                setDrillDownNotice(null);
             }
 
             try {
@@ -287,6 +289,16 @@ function DashboardMap({ onAreaSelect }) {
                 if (abortController.signal.aborted) return;
 
                 const features = geoJsonFormat.readFeatures(response.data);
+
+                if (features.length === 0 && options.preserveOnEmpty) {
+                    lastRequestKeyRef.current = "";
+                    boundaryLayer.changed();
+                    if (isMounted) {
+                        setDrillDownNotice(options.emptyMessage ?? "하위 지도 경계 데이터가 없어 현재 지도를 유지합니다.");
+                    }
+                    return;
+                }
+
                 boundarySource.clear();
                 boundarySource.addFeatures(features);
                 selectedFeatureRef.current = null;
@@ -324,6 +336,7 @@ function DashboardMap({ onAreaSelect }) {
         }
 
         function handleFeatureClick(feature) {
+            setDrillDownNotice(null);
             selectedFeatureRef.current = feature;
             const area = getFeatureArea(feature);
             boundaryLayer.changed();
@@ -340,13 +353,18 @@ function DashboardMap({ onAreaSelect }) {
                 bbox: area.bbox,
                 stack: [...currentViewRef.current.stack, area],
             };
-            void loadBoundaries(nextView, { force: true });
+            void loadBoundaries(nextView, {
+                force: true,
+                preserveOnEmpty: true,
+                emptyMessage: `${area.name} 하위 ${getLevelLabel(nextLevel, area)} 경계 데이터가 없어 현재 지도를 유지합니다.`,
+            });
         }
 
         map.on("singleclick", (event) => {
             const feature = map.forEachFeatureAtPixel(event.pixel, (item) => item);
 
             if (!(feature instanceof Feature)) {
+                setDrillDownNotice(null);
                 selectedFeatureRef.current = null;
                 boundaryLayer.changed();
                 return;
@@ -440,6 +458,9 @@ function DashboardMap({ onAreaSelect }) {
 
                 {loadError && (
                     <div className="alert alert-danger py-2 small my-2">{loadError}</div>
+                )}
+                {drillDownNotice && !loadError && (
+                    <div className="alert alert-info py-2 small my-2">{drillDownNotice}</div>
                 )}
 
                 <div className="dashboard-map-wrap">
