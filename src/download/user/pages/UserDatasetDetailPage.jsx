@@ -4,6 +4,9 @@ import "../../style/download.css";
 import mapPreviewImg from "../../../assets/images/map-preview.png";
 import { useState } from "react";
 import { datasetDetailDummy } from "../../dummy/datasetDetailDummy";
+import {MapContainer, TileLayer, GeoJSON} from "react-leaflet"
+import { dummyCctvGeoJson } from "../../geojson/dummyCctvGeoJson";
+import { downloadFileApi, uploadTempTestFileApi } from "../../api/userDownloadApi";
 
 
 function DatasetSummaryCard(){
@@ -131,10 +134,23 @@ function MapVisualizationCard(){
                                 {
                                     true ?
                                     <>
-                                        <img    src={mapPreviewImg} 
+                                        {/* <img    src={mapPreviewImg} 
                                                 alt="지도 미리보기" 
                                                 className="img-fluid rounded w-100 h-100 object-fit-cover"/>
-                                        <MapControlButton />
+                                        <MapControlButton /> */}
+
+                                        <MapContainer
+                                            center={[37.5665, 126.9780]}
+                                            zoom={10}
+                                            className="w-100 h-100 rounded"
+                                            
+                                        >
+                                            <TileLayer
+                                                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                                attribution="&copy; OpenStreetMap contributors"
+                                            />                                            
+                                            <GeoJSON data={dummyCctvGeoJson} />
+                                        </MapContainer>
                                     </>
                                     :
                                     <div className="d-flex align-items-center h-100 w-100 justify-content-center">
@@ -499,11 +515,54 @@ function UserDatasetDetailPage(){
         subTitle: "서울시 관내에 설치된 CCTV의 위치 및 속성 정보를 제공합니다. 도시 안전, 방범, 교통 관리 등 다양한 정책 및 서비스에 활용할 수 있습니다."
     };
 
-
-
     const handleLoginClick = () =>{
         console.log("클릭")
     }
+
+
+
+
+    const uploadFile = async () => {
+        const response = await uploadTempTestFileApi();
+        console.log("업로드 응답:", response.data);
+        window.lastUpload = response.data;
+    };
+
+
+
+    const downloadFile = async () => {
+        if (!window.lastUpload) {
+            console.log("먼저 업로드를 실행하세요.");
+            alert("파일을 업로드 후 다운로드를 진행해 주세요")
+            return;
+        }
+
+        const response = await downloadFileApi({
+            filePath: window.lastUpload.filePath,
+            storedFilename: window.lastUpload.storedFilename,
+            originalFilename: window.lastUpload.originalFilename,
+        });
+
+        const text = await response.data.text();
+        console.log("다운로드 내용:", text);
+
+        const blob = response.data;
+        const url = window.URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = window.lastUpload.originalFilename;
+
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        window.URL.revokeObjectURL(url);        
+    };
+
+
+
+
 
     return(
         <>
@@ -516,6 +575,9 @@ function UserDatasetDetailPage(){
                         <div className="row mb-2">
                             <div className="col">
                                 <TopTitle title={datasetInfo.title} subTitle={datasetInfo.subTitle} showGuide={false}/>
+                            </div>
+                            <div className="col text-end">
+                                <Link to="../main">목록으로</Link>
                             </div>
                         </div>
 
@@ -558,7 +620,13 @@ function UserDatasetDetailPage(){
 
                 </div>
             </div>
-            <Link to="simulationTest">시뮬레이션 테스트</Link>
+            <Link to="simulationTest">시뮬레이션 테스트</Link><br />
+            <Link to="simulationTest2">시뮬레이션 테스트2</Link><br />
+            <Link to="simulationTest3">시뮬레이션 테스트3</Link><br />
+
+            <button onClick={uploadFile}>파일업로드</button>
+            <button onClick={downloadFile}>파일다운로드</button>
+
         </>
     )
 }

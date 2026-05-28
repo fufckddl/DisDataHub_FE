@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import Header from './commons/components/Header'
 import { Route, Routes } from 'react-router-dom'
 import LoginPage from './commons/pages/UserLoginPage'
+import AdminLoginPage from './commons/pages/AdminLoginPage'
 import useAuthStore from './commons/auth/useAuthStore'
 import { getUserInfoFromTokenApi } from './commons/api/userApi'
 import RegisterPage from './commons/pages/UserRegisterPage'
@@ -42,6 +43,7 @@ function App() {
       <main className="flex-grow-1">
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/admin/login" element={<AdminLoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/board/*" element={<BoardUserRoutes />} />
           <Route path="/admin/board/*" element={<BoardAdminRoutes />} />

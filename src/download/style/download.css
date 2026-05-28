@@ -1,6 +1,12 @@
 .sm-text{
     font-size: 13px;
     color: gray;
+    font-weight:  bold;
+}
+
+.sm-text-black{
+    font-size: 13px;
+    font-weight:  bold;
 }
 
 .dataset-text{
@@ -38,6 +44,8 @@
 
     
 }
+
+
 
 
 .map-control-group {

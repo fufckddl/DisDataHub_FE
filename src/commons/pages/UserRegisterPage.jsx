@@ -257,18 +257,29 @@ function UserRegisterPage() {
                         </div>
                     </div>
 
-                    <div className="col-12 col-md-6 auth-hero">
-                        <div className="auth-hero-shapes" aria-hidden>
-                            <span className="auth-hero-bar" />
-                            <span className="auth-hero-bar" />
-                            <span className="auth-hero-bar" />
-                            <span className="auth-hero-bar" />
-                            <span className="auth-hero-bar" />
+                    <div className="col-12 col-md-6 auth-hero auth-lab-hero">
+                        <div className="auth-lab-grid" aria-hidden />
+                        <div className="auth-lab-orbit" aria-hidden />
+                        <div className="auth-lab-map" aria-hidden>
+                            <span className="auth-lab-node auth-lab-node--one" />
+                            <span className="auth-lab-node auth-lab-node--two" />
+                            <span className="auth-lab-node auth-lab-node--three" />
+                            <span className="auth-lab-route" />
+                        </div>
+                        <div className="auth-lab-samples" aria-hidden>
+                            <span />
+                            <span />
+                            <span />
+                        </div>
+                        <div className="auth-lab-panel" aria-hidden>
+                            <span>JOIN-LAB</span>
+                            <strong>NEW USER</strong>
+                            <small>PROFILE READY</small>
                         </div>
                         <div className="auth-hero-copy">
-                            <p className="auth-hero-line1 mb-0">환영합니다</p>
+                            <p className="auth-hero-line1 mb-0">연구와 운영을 위한 계정 생성</p>
                             <p className="auth-hero-line2 mb-0">
-                                함께 만들어가요
+                                분석 환경을 함께 확장하세요
                             </p>
                             <p className="auth-link-muted small mt-3 mb-0">
                                 GIS 데이터 허브
