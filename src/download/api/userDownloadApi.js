@@ -24,3 +24,12 @@ export const downloadFileApi = ({ filePath, storedFilename, originalFilename }) 
     responseType: "blob",
   });
 };
+
+export const getDatasetDownloadPageApi = (datasetId) => {
+  return axiosInstance.get(`/api/download/datasets/${datasetId}`)
+}
+
+export const getApprovedDownloadDatasetListApi = () => {
+  return axiosInstance.get("/api/download/datasets");
+}
+

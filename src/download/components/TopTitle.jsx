@@ -10,7 +10,7 @@ function TopTitle({title, subTitle, showGuide}){
                         {
                             showGuide &&
                             <div className="col-auto">
-                                <button className="btn btn-light text-secondary">
+                                <button className="btn btn-light border text-secondary">
                                     <i className="bi bi-question-circle me-2"></i>
                                     이용가이드
                                 </button>

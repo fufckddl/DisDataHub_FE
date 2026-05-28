@@ -35,16 +35,18 @@ export const datasetMainDummy = {
             createAt: "2024-05-20",
             fileExtension: "CSV",
             downloadCount: "12,345",
+            viewCount: "123",
             status: "승인됨"
         },
         {
             id: "2",
-            title: "서울시 공공 와이파이 위치 데이터",
+            title: "서울시 CCTV 위치 데이터",
             description: "서울시 공공 와이파이 설치 위치 정보",
             provider: "서울시",
             createAt: "2024-05-20",
             fileExtension: "CSV",
             downloadCount: "12,345",
+            viewCount: "123",
             status: "승인됨"
         },
         {
@@ -55,6 +57,7 @@ export const datasetMainDummy = {
             createAt: "2024-05-20",
             fileExtension: "CSV",
             downloadCount: "12,345",
+            viewCount: "123",
             status: "거절"
             
         },
@@ -66,6 +69,7 @@ export const datasetMainDummy = {
             createAt: "2024-05-20",
             fileExtension: "CSV",
             downloadCount: "12,345",
+            viewCount: "123",
             status: "거절"
             
         },
@@ -77,6 +81,7 @@ export const datasetMainDummy = {
             createAt: "2024-05-20",
             fileExtension: "CSV",
             downloadCount: "12,345",
+            viewCount: "123",
             status: "거절"
             
         }        
