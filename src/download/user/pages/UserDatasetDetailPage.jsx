@@ -1,17 +1,55 @@
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import TopTitle from "../../components/TopTitle";
 import "../../style/download.css";
 import mapPreviewImg from "../../../assets/images/map-preview.png";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { datasetDetailDummy } from "../../dummy/datasetDetailDummy";
 import {MapContainer, TileLayer, GeoJSON} from "react-leaflet"
 import { dummyCctvGeoJson } from "../../geojson/dummyCctvGeoJson";
-import { downloadFileApi, uploadTempTestFileApi } from "../../api/userDownloadApi";
+import { downloadFileApi, getDatasetDownloadPageApi, uploadTempTestFileApi } from "../../api/userDownloadApi";
 
 
-function DatasetSummaryCard(){
+function DatasetSummaryCard({dataset, stats, sourceFile}){
 
-    const datasetSummaryInfo = datasetDetailDummy.datasetSummary
+    // 날짜 형식 변환
+    const formatDate = (value) => {
+    if (!value) return "-";
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+
+    return new Intl.DateTimeFormat("ko-KR", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+    }).format(date);
+    };    
+
+    const formatSrid = (value) => {
+    if (!value) return "-";
+
+    // 좌표계 형식 변환
+    const sridMap = {
+        4326: "EPSG:4326 (WGS84)",
+        5179: "EPSG:5179 (Korea 2000 / Unified CS)",
+        5181: "EPSG:5181 (Korea 2000 / Central Belt)",
+        5186: "EPSG:5186 (Korea 2000 / Central Belt 2010)",
+        5187: "EPSG:5187 (Korea 2000 / East Belt 2010)",
+        5188: "EPSG:5188 (Korea 2000 / East Sea Belt 2010)",
+    };
+
+    return sridMap[value] ?? `EPSG:${value}`;
+    };        
+
+    // const datasetSummaryInfo = datasetDetailDummy.datasetSummary
+    const datasetSummaryInfo = [
+        { title: "등록일", content: formatDate(dataset?.createdAt) ?? "-", icon: "bi-calendar-event" },
+        { title: "제공기관", content: dataset?.provider ?? "-", icon: "bi-building" },
+        { title: "좌표계", content: formatSrid(dataset?.storageSrid) ?? "-", icon: "bi-bullseye" },
+        { title: "원본 형식", content: sourceFile?.fileExtension ?? "-", icon: "bi-file-earmark" },
+        { title: "다운로드 수", content: stats?.downloadCount ?? 0, icon: "bi-download" },
+    ];
+
 
     return(
         <>
@@ -47,7 +85,7 @@ function DatasetSummaryCardCol({children, title, content, borderShow}){
                     </div>
                     <div className="col">
                         <div className="sm-text fw-bold">{title}</div>
-                        <div className="fw-bold" style={{fontSize: "13px"}}>{content}</div>
+                        <div className="fw-bold dataset-summary-value" >{content}</div>
                     </div>
                 </div>
             </div>
@@ -56,7 +94,37 @@ function DatasetSummaryCardCol({children, title, content, borderShow}){
 }
 
 // 데이터 개요
-function DatasetInfoCard(){
+function DatasetInfoCard({dataset, stats, sourceFile}){
+
+    const formatDateTime = (value) => {
+    if (!value) return "-";
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+
+    return new Intl.DateTimeFormat("ko-KR", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+    }).format(date);
+    };    
+
+    // 파일 크기 형식변환
+    const formatFileSize = (value) => {
+        if (value == null || value === "") return "-";
+
+        const bytes = Number(value);
+        if (Number.isNaN(bytes)) return value;
+
+        if (bytes < 1024) return `${bytes} B`;
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+        if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+
+        return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+    };    
+
     return(
         <>
             <div className="col-5 pe-0">
@@ -67,30 +135,41 @@ function DatasetInfoCard(){
                         </div>
                     </div>   
                     <div className="row g-0 d-flex align-items-center ">
-                        <div className="col-6">
 
-                            <DatasetInfoRow type="left" top={true} title="데이터 명" content="서울시 CCTV 위치 데이터"/>{/* [sd_gis_dataset]title */}
-                            <DatasetInfoRow type="left" title="제공기관" content="서울특별시"/>{/* [sd_gis_dataset]provider */}
-                            <DatasetInfoRow type="left" title="지역" content="서울시"/>{/*  */}
-                            <DatasetInfoRow type="left" title="등록일" content="2024-05-20"/>{/* [sd_gis_dataset]created_at */}
-                            <DatasetInfoRow type="left" title="업데이트일" content="2024-05-21"/>{/* [sd_gis_dataset]updated_at */}
+                        <div className="col">
+                            <DatasetInfoPairRow
+                                leftTitle="데이터명" leftContent={dataset?.title ?? "-"} 
+                                rightTitle="조회수" rightContent={stats?.viewCount ?? "-"} top={true}
+                            /> 
+                            <DatasetInfoPairRow
+                                leftTitle="제공기관" leftContent={dataset?.provider ?? "-"}
+                                rightTitle="데이터유형" rightContent={dataset?.category ?? "-"}
+                            />
+                            <DatasetInfoPairRow
+                                leftTitle="지역" leftContent="서울시"
+                                rightTitle="좌표계" rightContent={dataset?.storageSrid ?? "-"}
+                            />
+                            <DatasetInfoPairRow
+                                leftTitle="등록일" leftContent={formatDateTime(dataset?.createdAt)}
+                                rightTitle="파일 크기" rightContent={formatFileSize(sourceFile?.fileSize)}
+                            />
+                            <DatasetInfoPairRow
+                                leftTitle="업데이트일" leftContent={formatDateTime(dataset?.updatedAt)}
+                                rightTitle="형식" rightContent={sourceFile?.fileExtension ?? "-"}
+                            />
 
                         </div>
-                        <div className="col-6 border-start">
-                            
-                            <DatasetInfoRow type="right" top={true} title="조회수" content="123"/>{/* [sd_dataset_stat]view_count */}
-                            <DatasetInfoRow type="right" title="데이터유형" content="시설물 / 보안"/>{/* [sd_data_category]category_name */}
-                            <DatasetInfoRow type="right" title="좌표계" content="EPSG:4326 (WGS 84)"/>{/* [sd_gis_dataset]storage_srid */}
-                            <DatasetInfoRow type="right" title="파일 크기" content="12.4 MB"/>{/* [sd_gis_dataset_file]file_size */}
-                            <DatasetInfoRow type="right" title="형식" content="CSV"/>{/* [sd_gis_dataset_file]file_extension */}
+                
 
-                        </div>
+                        {/* 추가 부분 */}
+                        
+
                     </div>    
                     <div className="row mb-2">
                         <div className="col-12">
                             <div className="row border-bottom dataset-content">
                                 <div className="col-2 bg-light fw-bold p-2" style={{fontSize: "10px"}}>설명</div>
-                                <div className="col-10 dataset-text-gray p-2 fw-bold line-clamp-2">12311111111111111123123</div>{/* [sd_gis_dataset]description */}
+                                <div className="col-10 dataset-text-gray p-2 fw-bold line-clamp-2">{dataset?.description ?? "-"}</div>{/* [sd_gis_dataset]description */}
                             </div>                                            
                         </div>
                     </div>          
@@ -107,10 +186,23 @@ function DatasetInfoRow({title, content, type, top = false}){
         <>
             <div className={`row border-bottom ${type == "left" ? "me-0" : "ms-0"} ${top ? "border-top" : ""}`} >
                 <div className="col-4 bg-light dataset-text p-2" >{title}</div>
-                <div className="col-8 dataset-text-gray p-2 fw-bold">{content}</div>
+                <div className="col-8 dataset-text-gray p-2 fw-bold dataset-value-wrap">{content}</div>
             </div>       
         </>
     )
+}
+
+function DatasetInfoPairRow({ leftTitle, leftContent, rightTitle, rightContent, top = false }) {
+    return (
+        <>
+        <div className={`row  border-bottom ${top ? "border-top" : ""}`}>
+            <div className="col-2 bg-light dataset-text p-2">{leftTitle}</div>
+            <div className="col-4 dataset-text-gray p-2 fw-bold dataset-value-wrap">{leftContent}</div>
+            <div className="col-2 bg-light dataset-text p-2 border-start">{rightTitle}</div>
+            <div className="col-4 dataset-text-gray p-2 fw-bold dataset-value-wrap">{rightContent}</div>
+        </div>        
+        </>
+    );
 }
 
 // 지도 시각화
@@ -172,7 +264,11 @@ function MapVisualizationCard(){
                                     </div>
                                     <div className="col-auto text-end">
                                         {/*[sd_gis_dataset]is_spatial(공간 데이터 유무) 가 "T"인가 확인 필요*/}
-                                        <Link to="simulation" className="btn btn-primary btn-sm">
+                                        {/* <Link to="simulation" className="btn btn-primary btn-sm">
+                                            <i className="bi bi-bar-chart me-2"></i>
+                                            시뮬레이션으로 이동                                                                                       
+                                        </Link> */}
+                                        <Link to="simulationTest" className="btn btn-primary btn-sm">
                                             <i className="bi bi-bar-chart me-2"></i>
                                             시뮬레이션으로 이동                                                                                       
                                         </Link>
@@ -290,18 +386,41 @@ function AttributePreviewRow(){
 }
 
 // 파일 다운로드
-function FileDownloadCard(){
+function FileDownloadCard({ availableFormats, sourceFile }){
 
     const [selectFileFormat, setSelectFileFormat] = useState("");
 
-    const downloadFileInfo = datasetDetailDummy.files;
+  
 
+    const formatColorMap = {
+        CSV: "success",
+        GeoJSON: "warning",
+        SHP: "info",
+        GeoTIFF: "primary",
+        KML: "danger",
+    };
 
-
-    // 다운로드 버튼 클릭했을 때 기능 넣기
     const downloadButtonClick = () => {
-        console.log(selectFileFormat, "다운로드버튼 클릭"); 
-    }
+        console.log("선택한 형식:", selectFileFormat);
+        console.log("원본 파일:", sourceFile);
+    };
+
+    // 파일 크기 형식변환
+    const formatFileSize = (value) => {
+        if (value == null || value === "") return "-";
+
+        const bytes = Number(value);
+        if (Number.isNaN(bytes)) return value;
+
+        if (bytes < 1024) return `${bytes} B`;
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+        if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+
+        return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+    };    
+
+
+
     return(
         <>
             <div className="row mb-2">
@@ -326,16 +445,16 @@ function FileDownloadCard(){
                         <div className="row">
                             <div className="col">
                                 <div className="row g-2 mb-2">
-                                    {downloadFileInfo.map((item, index) => (
-                                        <FileSelectButton 
-                                            key={index}
-                                            type={item.type}
-                                            color={item.color}
-                                            size={item.size}
-                                            selectFileFormat={selectFileFormat}
-                                            setSelectFileFormat={setSelectFileFormat}     
+                                    {availableFormats.map((format) => (
+                                        <FileSelectButton
+                                        key={format}
+                                        type={format}
+                                        color={formatColorMap[format] ?? "secondary"}
+                                        size={formatFileSize(sourceFile?.fileSize) ?? "-"}
+                                        selectFileFormat={selectFileFormat}
+                                        setSelectFileFormat={setSelectFileFormat}
                                         />
-                                    ))}
+                                    ))}                                    
                                 </div>
                             </div>       
                         </div>
@@ -416,8 +535,7 @@ function DownloadNoticeCard(){
 
 
 // 관련데이터
-function RelatedDatasetCard(){
-    const relatedDatasetInfo = datasetDetailDummy.relatedDatasets
+function RelatedDatasetCard({ relatedDatasets }){
 
     return(
         <>
@@ -430,12 +548,12 @@ function RelatedDatasetCard(){
                             </div>
                         </div>
                         <div className="row">                            
-                            {relatedDatasetInfo.map((item, index) => (
+                            {relatedDatasets.map((item, index) => (
                                 <RelatedDatasetCardRow 
                                     key={index}
                                     id={item.id}
                                     title={item.title}
-                                    borderShow={index !== relatedDatasetInfo.length - 1}
+                                    borderShow={index !== relatedDatasets.length - 1}
                                 />
                             ))}
                         </div>
@@ -510,7 +628,7 @@ function QuickActionButton({children, content, onClick}){
 function UserDatasetDetailPage(){
     
 
-    const datasetInfo = {
+    const datasetTitleInfo = {
         title: "서울시 CCTV 위치 데이터",
         subTitle: "서울시 관내에 설치된 CCTV의 위치 및 속성 정보를 제공합니다. 도시 안전, 방범, 교통 관리 등 다양한 정책 및 서비스에 활용할 수 있습니다."
     };
@@ -560,8 +678,59 @@ function UserDatasetDetailPage(){
         window.URL.revokeObjectURL(url);        
     };
 
+    const { datasetId } = useParams();
+    const [pageData, setPageData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [errorMessage, setErrorMessage] = useState("");
+
+    
+    const fallbaclPageData = {
+        dataset: {
+            title : datasetDetailDummy.dataset.title,
+            subTitle : datasetDetailDummy.dataset.subTitle,
+            description : datasetDetailDummy.dataset.description,
+            provider : datasetDetailDummy.dataset.provider,
+            createdAt : datasetDetailDummy.dataset.createdAt,
+            updatedAt : datasetDetailDummy.dataset.updatedAt,
+            storageSrid : datasetDetailDummy.dataset.storageSrid,
+            spatial : datasetDetailDummy.dataset.isSpatial,
+            category : datasetDetailDummy.dataset.category,
+            region : datasetDetailDummy.dataset.region,
+        },
+        stats: {
+            viewCount: datasetDetailDummy.stats.viewCount,
+            downloadCount: datasetDetailDummy.stats.downloadCount,
+        },
+        sourceFile: {
+            originalFilename: datasetDetailDummy.dataset.title,
+            fileExtension: datasetDetailDummy.files[0]?.type ?? "-",
+            fileSize: datasetDetailDummy.files[0]?.size ?? "-",
+        },
+        availableFormats: datasetDetailDummy.files.map((item) => item.type),
+    };
 
 
+    const viewData = pageData ?? fallbaclPageData;
+
+    
+    
+    useEffect(() => {
+    const fetchPageData = async () => {
+        try {
+        setLoading(true);
+        setErrorMessage("");
+        const response = await getDatasetDownloadPageApi(datasetId);
+        setPageData(response.data);
+        } catch (e) {
+        setErrorMessage("상세 데이터를 불러오지 못했습니다.");
+        } finally {
+        setLoading(false);
+        }
+    };
+
+    fetchPageData();
+    }, [datasetId]);
+    
 
 
     return(
@@ -574,7 +743,8 @@ function UserDatasetDetailPage(){
                         {/* 상단 제목 */}
                         <div className="row mb-2">
                             <div className="col">
-                                <TopTitle title={datasetInfo.title} subTitle={datasetInfo.subTitle} showGuide={false}/>
+                                {/* <TopTitle title={datasetTitleInfo.title} subTitle={datasetTitleInfo.subTitle} showGuide={false}/> */}
+                                <TopTitle title={viewData.dataset.title} subTitle={viewData.dataset.description} showGuide={false}/>
                             </div>
                             <div className="col text-end">
                                 <Link to="../main">목록으로</Link>
@@ -583,12 +753,20 @@ function UserDatasetDetailPage(){
 
                         {/* 데이터셋 요약 정보 */}
                         <div className="row mb-2">
-                            <DatasetSummaryCard />
+                            <DatasetSummaryCard 
+                                dataset={viewData.dataset}
+                                stats={viewData.stats}
+                                sourceFile={viewData.sourceFile}                            
+                            />
                         </div>
                         
                         <div className="row mb-3">
                             {/* 데이터 개요 */}
-                            <DatasetInfoCard />
+                            <DatasetInfoCard 
+                                dataset={viewData.dataset}
+                                stats={viewData.stats}
+                                sourceFile={viewData.sourceFile}                             
+                            />
                             {/* 지도 시각화 */}
                             <MapVisualizationCard />
                         </div>
@@ -603,13 +781,16 @@ function UserDatasetDetailPage(){
                     {/* 우측 다운로드 기능 */}
                     <div className="col-3">
                         {/* 파일 형식, 다운로드 */}
-                        <FileDownloadCard />
+                        <FileDownloadCard 
+                            availableFormats={viewData.availableFormats}
+                            sourceFile={viewData.sourceFile}                        
+                        />
 
                         {/* 다운로드 안내 */}
                         <DownloadNoticeCard />
 
                         {/* 관련 데이터 */}
-                        <RelatedDatasetCard />
+                        <RelatedDatasetCard relatedDatasets={datasetDetailDummy.relatedDatasets} />
                         
                         {/* 빠른 기능 버튼 */}
                         <QuickActionCard />
@@ -620,9 +801,11 @@ function UserDatasetDetailPage(){
 
                 </div>
             </div>
+            <Link to="simulation">초기 시물레이션</Link><br />
             <Link to="simulationTest">시뮬레이션 테스트</Link><br />
             <Link to="simulationTest2">시뮬레이션 테스트2</Link><br />
             <Link to="simulationTest3">시뮬레이션 테스트3</Link><br />
+            
 
             <button onClick={uploadFile}>파일업로드</button>
             <button onClick={downloadFile}>파일다운로드</button>
