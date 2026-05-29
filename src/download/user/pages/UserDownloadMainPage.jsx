@@ -2,6 +2,8 @@ import { useNavigate } from "react-router-dom";
 import "../../style/download.css";
 import TopTitle from "../../components/TopTitle";
 import { datasetMainDummy } from "../../dummy/datasetMainDummy";
+import { useEffect, useState } from "react";
+import { getApprovedDownloadDatasetListApi } from "../../api/userDownloadApi";
 
 
 
@@ -54,7 +56,7 @@ function Search(){
 
                         <div className="row">
                             <div className="col">
-                                <button className="me-3 btn btn-light" style={{width: "150px"}}>
+                                <button className="me-3 border btn btn-light" style={{width: "150px"}}>
                                     <i className="bi bi-arrow-repeat me-2"></i>
                                     초기화
                                 </button>
@@ -73,9 +75,9 @@ function Search(){
         </>
     )
 }
-function DatasetList(){
+function DatasetList({datasetList}){
 
-    const datasetList = datasetMainDummy.datasetList;
+    // const datasetList = datasetMainDummy.datasetList;
  
     return(
         <>
@@ -92,17 +94,11 @@ function DatasetList(){
                                     <th className="col-1 text-center">등록일</th>
                                     <th className="col-1 text-center">파일 형식</th>
                                     <th className="col-1 text-center">다운로드 수</th>
-                                    <th className="col-1 text-center">상태</th>
+                                    <th className="col-1 text-center">조회 수 </th>
                                     <th className="col-2 text-center">액션</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {/* <DatasetForm id="1"></DatasetForm>
-                                <DatasetForm id="2"></DatasetForm>
-                                <DatasetForm id="3"></DatasetForm>
-                                <DatasetForm id="4"></DatasetForm>
-                                <DatasetForm id="5"></DatasetForm>
-                                <DatasetForm id="6"></DatasetForm> */}
                                 {datasetList.map((dataset) => (
                                     <DatasetForm
                                         key={dataset.id}
@@ -140,21 +136,22 @@ function DatasetForm({dataset}){
     return(
         <>
             <tr>
-                <td className="col-2 text-primary fw-bold ps-3">{dataset.title}</td>
-                <td className="col-3 sm-text">{dataset.description}</td>
-                <td className="col-1 sm-text text-center">{dataset.provider}</td>
-                <td className="col-1 sm-text text-center">{dataset.createAt}</td>
+                <td className="col-2 text-primary fw-bold ps-3" style={{fontSize : "15px"}}>{dataset.title}</td>
+                <td className="col-3 sm-text text-secondary">{dataset.description}</td>
+                <td className="col-1 sm-text text-secondary text-center">{dataset.provider}</td>
+                <td className="col-1 sm-text text-secondary text-center">{dataset.createAt}</td>
                 <td className="col-1 text-center">
                     <span className="badge bg-success-subtle text-success border border-success-subtle me-1">{dataset.fileExtension}</span>
                 </td>
-                <td className="col-1 sm-text text-center">{dataset.downloadCount}</td>
-                <td className="col-1 text-center">
+                <td className="col-1 sm-text text-secondary text-center">{dataset.downloadCount}</td>
+                {/* <td className="col-1 text-center">
                     <span className="badge bg-success-subtle text-success border border-success-subtle me-1">{dataset.status}</span>
-                </td>
+                </td> */}
+                <td className="col-1 sm-text text-secondary text-center">{dataset.viewCount}</td>
                 <td className="col-2 sm-text text-center">
                     {/* 상세보기 할 때 데이터 조회 권환 확인 필요 */}
-                    <button className="btn btn-light btn-sm me-4" onClick={handleDetailPageClick}>상세보기</button>
-                    <button className="btn btn-primary btn-sm" >다운로드</button>
+                    <button className="btn btn-light btn-sm sm-text border text-secondary me-4" onClick={handleDetailPageClick}>상세보기</button>
+                    <button className="btn btn-primary btn-sm" style={{fontSize: "13px"}} >다운로드</button>
                 </td>
             </tr> 
         </>
@@ -184,24 +181,95 @@ function CardForm({children, color, title, content}){
 }
 
 function Paging(){
+    const pageNumbers = [1, 2, 3, 4, 5];
+
     return(
         <>
-            <nav aria-label="Page navigation example">
-                <ul className="pagination justify-content-center">
-                    <li className="page-item"><a className="page-link" href="#">Previous</a></li>
-                    <li className="page-item"><a className="page-link" href="#">1</a></li>
-                    <li className="page-item"><a className="page-link" href="#">2</a></li>
-                    <li className="page-item"><a className="page-link" href="#">3</a></li>
-                    <li className="page-item"><a className="page-link" href="#">Next</a></li>
-                </ul>
-            </nav>        
+            {/* 페이징 하단 바 UI */}
+            <div className="download-pagination-bar">
+                <div className="download-pagination-total">전체 1,248건</div>
+
+                <div className="download-pagination-center">
+                    <button type="button" className="download-pagination-arrow disabled" aria-label="첫 페이지">
+                        <i className="bi bi-chevron-double-left"></i>
+                    </button>
+                    <button type="button" className="download-pagination-arrow disabled" aria-label="이전 페이지">
+                        <i className="bi bi-chevron-left"></i>
+                    </button>
+
+                    {pageNumbers.map((pageNumber) => (
+                        <button
+                            key={pageNumber}
+                            type="button"
+                            className={`download-pagination-number ${pageNumber === 1 ? "active" : ""}`}
+                        >
+                            {pageNumber}
+                        </button>
+                    ))}
+
+                    <span className="download-pagination-ellipsis">...</span>
+                    <button type="button" className="download-pagination-number">125</button>
+
+                    <button type="button" className="download-pagination-arrow" aria-label="다음 페이지">
+                        <i className="bi bi-chevron-right"></i>
+                    </button>
+                    <button type="button" className="download-pagination-arrow" aria-label="마지막 페이지">
+                        <i className="bi bi-chevron-double-right"></i>
+                    </button>
+                </div>
+
+                <div className="download-pagination-size">
+                    <select className="form-select form-select-sm">
+                        <option>10개씩 보기</option>
+                        <option>20개씩 보기</option>
+                        <option>50개씩 보기</option>
+                    </select>
+                </div>
+            </div>
         </>
     )
 }
 
 function UserDownloadMainPage(){
 
+    const [apiDatasetList, setApiDatasetList] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [errorMessage, setErrorMessage] = useState("");
+
     const summaryCards = datasetMainDummy.summary
+
+    
+    const datasetList = apiDatasetList ?? datasetMainDummy.datasetList;
+
+    useEffect(() => {
+        const fetchDatasetList = async () => {
+            try{
+                setLoading(true);
+                setErrorMessage("");
+                const response = await getApprovedDownloadDatasetListApi();
+
+                const mappedList = response.data.map((item) => ({
+                    id: String(item.datasetId),
+                    title: item.title,
+                    description: item.description,
+                    provider: item.provider,
+                    createAt: item.createdAt ? item.createdAt.slice(0, 10) : "-",
+                    fileExtension: item.fileExtension ?? "-",
+                    downloadCount: item.downloadCount ?? 0,
+                    viewCount: item.viewCount ?? 0,
+                }))
+
+                setApiDatasetList(mappedList);
+            }catch(e){
+                setErrorMessage("데이터셋 목록을 불러오지 못했습니다.");
+            }finally{
+                setLoading(false);
+            }
+        };
+
+        fetchDatasetList();
+    }, [])
+
     return(
         <>
 
@@ -242,7 +310,7 @@ function UserDownloadMainPage(){
 
 
                 {/* 승인 데이터셋 목록 */}
-                <DatasetList />
+                <DatasetList  datasetList={datasetList}/>
 
 
               

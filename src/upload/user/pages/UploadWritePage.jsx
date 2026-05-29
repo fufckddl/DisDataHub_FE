@@ -19,6 +19,7 @@ function UploadWritePage() {
             lonColumnName: '',
             latColumnName: '',
             wktColumnName: '',
+            sheetName: '',
             provider: '',
             sourceType: 'FILE_UPLOAD',
             isPublic: 'false',
@@ -39,6 +40,7 @@ function UploadWritePage() {
     });
 
     const watchSpatialType = watch("spatialType");
+    const watchFileFormat = watch("fileFormat")
 
     const [file, setFile] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -59,36 +61,53 @@ function UploadWritePage() {
         }
 
         // =====================================================================
-        // 🚀 [추가할 부분] Phase 1: 프론트엔드 파일 확장자 및 용량 1차 방어막
+        // 🚀 Phase 1: 프론트엔드 파일 확장자 및 용량 1차 방어막 (강화 버전)
         // =====================================================================
-        const fileSize = file.size; // 바이트 단위 용량
-        const fileName = file.name.toLowerCase(); // 소문자로 변환한 파일명
-        const selectedFormat = data.fileFormat; // 사용자가 선택한 포맷 ('CSV', 'GEOJSON', 'SHP')
+        const fileSize = file.size; 
+        
+        // 🛡️ 안전망 1: 파일 이름 양쪽 공백 제거 후 소문자 변환
+        const fileName = file.name.trim().toLowerCase(); 
+        
+        // 🛡️ 안전망 2: 포맷 값 양쪽 공백 제거 및 대문자 강제 변환
+        const selectedFormat = (data.fileFormat || "").trim().toUpperCase(); 
 
         let isAllowedExtension = false;
         let maxSizeBytes = 0;
         let maxSizeString = "";
 
         // 1. 포맷별 용량 및 확장자 기준 세팅
-        if (selectedFormat === 'CSV' || selectedFormat === 'GEOJSON') {
-            // 경량 포맷: 30MB 제한
-            isAllowedExtension = (selectedFormat === 'CSV' && fileName.endsWith('.csv')) || 
-                                 (selectedFormat === 'GEOJSON' && fileName.endsWith('.geojson'));
+        if (selectedFormat === 'CSV' || selectedFormat === 'GEOJSON' || selectedFormat === 'EXCEL') {
+            
+            // 🛡️ 안전망 3: 조건문 분리 및 디버깅 로그 추가 (어디서 틀렸는지 확인용)
+            if (selectedFormat === 'CSV') {
+                isAllowedExtension = fileName.endsWith('.csv');
+            } else if (selectedFormat === 'GEOJSON') {
+                isAllowedExtension = fileName.endsWith('.geojson') || fileName.endsWith('.json'); // .json도 허용
+            } else if (selectedFormat === 'EXCEL') {
+                isAllowedExtension = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
+            }
+            
             maxSizeBytes = 30 * 1024 * 1024; // 30MB
             maxSizeString = "30MB";
         } else if (selectedFormat === 'SHP') {
-            // 대용량 포맷: 2GB 제한 (보통 SHP는 .zip으로 묶어서 올리거나 .shp 파일 자체를 올림)
             isAllowedExtension = fileName.endsWith('.zip') || fileName.endsWith('.shp');
             maxSizeBytes = 2 * 1024 * 1024 * 1024; // 2GB
             maxSizeString = "2GB";
         }
 
-        // 2. 확장자 검사 (시나리오: 미지원 확장자 Alert 표출 후 즉시 종료)
+        // 🚨 디버깅 요원 투입! 콘솔창(F12)을 켜서 이 로그를 확인해 보세요!
+        console.log("====================================");
+        console.log("선택한 포맷 (강제 대문자): [" + selectedFormat + "]");
+        console.log("업로드한 파일명 (강제 소문자): [" + fileName + "]");
+        console.log("확장자 검사 통과 여부: " + isAllowedExtension);
+        console.log("====================================");
+
+        // 2. 확장자 검사
         if (!isAllowedExtension) {
-            return alert(`❌ 선택하신 데이터 포맷(${selectedFormat})과 파일의 확장자가 일치하지 않습니다.`);
+            return alert(`❌ 선택하신 데이터 포맷(${data.fileFormat})과 파일의 확장자가 일치하지 않습니다.\n(파일명: ${file.name})`);
         }
 
-        // 3. 용량 검사 (시나리오: 30MB 또는 2GB 초과 시 Alert 표출 후 즉시 종료)
+        // 3. 용량 검사
         if (fileSize > maxSizeBytes) {
             return alert(`❌ 파일 용량이 초과되었습니다! (최대 허용치: ${maxSizeString})`);
         }
@@ -247,6 +266,7 @@ function UploadWritePage() {
                             >
                                 <option value="">선택해 주세요</option>
                                 <option value="CSV">CSV (좌표 포함 텍스트)</option>
+                                <option value="EXCEL">Excel (엑셀 파일 .xlsx)</option>
                                 <option value="SHP">Shapefile (SHP ZIP 압축)</option>
                                 <option value="GEOJSON">GeoJSON</option>
                             </select>
@@ -270,6 +290,34 @@ function UploadWritePage() {
                         </div>
 
                         {/* ===================================================================== */}
+                        {/* 🚀 [신규 추가] 엑셀 포맷 선택 시 노출되는 시트 이름 설정 박스 */}
+                        {/* ===================================================================== */}
+                        {watchFileFormat === 'EXCEL' && (
+                            <div className="col-12 mt-2">
+                                <div className="p-3 bg-light rounded border border-success border-opacity-25">
+                                    <h6 className="fw-bold text-success mb-3">
+                                        <i className="bi bi-file-earmark-spreadsheet-fill me-2"></i>엑셀 시트 설정
+                                    </h6>
+                                    <div className="row g-3">
+                                        <div className="col-12">
+                                            <label className="form-label small fw-bold">데이터가 있는 시트 이름 <span className="text-danger">*</span></label>
+                                            <input 
+                                                type="text" 
+                                                className={`form-control form-control-sm ${errors.sheetName ? 'is-invalid' : ''}`}
+                                                {...register("sheetName", { required: watchFileFormat === 'EXCEL' ? "엑셀 시트 이름을 입력해주세요." : false })} 
+                                                placeholder="예: 유적지 정보, Sheet1"
+                                            />
+                                            {errors.sheetName && <div className="invalid-feedback">{errors.sheetName.message}</div>}
+                                            <div className="form-text text-muted" style={{ fontSize: '0.8rem' }}>
+                                                ※ 대소문자와 띄어쓰기를 정확히 입력해 주세요. (1행은 반드시 컬럼명이어야 합니다)
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ===================================================================== */}
                         {/* 🚀 [신규] 공간 데이터 타입에 따른 동적 컬럼 매핑 필드 */}
                         {/* ===================================================================== */}
 
@@ -278,7 +326,7 @@ function UploadWritePage() {
                             <div className="col-12 mt-2">
                                 <div className="p-3 bg-light rounded border border-primary border-opacity-25">
                                     <h6 className="fw-bold text-primary mb-3">
-                                        <i className="bi bi-geo-alt-fill me-2"></i>포인트 좌표 컬럼 설정 (CSV 기준)
+                                        <i className="bi bi-geo-alt-fill me-2"></i>포인트 좌표 컬럼 설정 (CSV / Excel 기준)
                                     </h6>
                                     <div className="row g-3">
                                         <div className="col-md-6">
@@ -311,7 +359,7 @@ function UploadWritePage() {
                             <div className="col-12 mt-2">
                                 <div className="p-3 bg-light rounded border border-primary border-opacity-25">
                                     <h6 className="fw-bold text-primary mb-3">
-                                        <i className="bi bi-bounding-box me-2"></i>공간 텍스트(WKT) 컬럼 설정 (CSV 기준)
+                                        <i className="bi bi-bounding-box me-2"></i>공간 텍스트(WKT) 컬럼 설정 (CSV / Excel 기준)
                                     </h6>
                                     <div className="col-12">
                                         <label className="form-label small fw-bold">WKT 컬럼명 <span className="text-danger">*</span></label>
@@ -484,7 +532,7 @@ function UploadWritePage() {
                     <div className="p-5 text-center bg-light border rounded-3 border-secondary border-opacity-25" style={{ borderStyle: 'dashed !important' }}>
                         <i className="bi bi-cloud-arrow-up text-secondary mb-3" style={{ fontSize: '3rem' }}></i>
                         <h6 className="fw-bold text-dark">데이터 파일을 선택해 주세요</h6>
-                        <p className="text-muted small mb-4">지원 포맷: CSV, SHP(ZIP 압축), GeoJSON</p>
+                        <p className="text-muted small mb-4">지원 포맷: CSV, SHP(ZIP 압축), GeoJSON, Excel</p>
                         <div className="w-50 mx-auto">
                             <input className="form-control" type="file" onChange={(e) => setFile(e.target.files[0])} />
                         </div>
