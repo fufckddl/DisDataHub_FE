@@ -457,6 +457,13 @@
     flex: 0 0 auto;
 }
 
+.simulation-test2-legend-row .route,
+.simulation-test2-legend-row .node,
+.simulation-test2-legend-row .fill {
+    display: inline-block;
+    flex: 0 0 auto;
+}
+
 .simulation-test2-legend-row .dot {
     width: 14px;
     height: 14px;
@@ -476,6 +483,145 @@
     height: 18px;
     border-radius: 50%;
     background: rgba(87, 114, 224, 0.28);
+}
+
+.simulation-test2-legend-row .route {
+    width: 18px;
+    height: 6px;
+    border-radius: 999px;
+}
+
+.simulation-test2-legend-row .route.normal {
+    background: #4254c7;
+}
+
+.simulation-test2-legend-row .route.high {
+    background: #d4443a;
+}
+
+.simulation-test2-legend-row .node {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #111827;
+}
+
+.simulation-test2-legend-row .fill {
+    width: 18px;
+    height: 18px;
+    border-radius: 6px;
+}
+
+.simulation-test2-legend-row .fill.normal {
+    background: rgba(79, 70, 229, 0.22);
+}
+
+.simulation-test2-legend-row .fill.mid {
+    background: rgba(249, 115, 22, 0.26);
+}
+
+.simulation-test2-legend-row .fill.high {
+    background: rgba(212, 68, 58, 0.28);
+}
+
+.simulation-test2-route,
+.simulation-test2-node,
+.simulation-test2-polygon {
+    position: absolute;
+    z-index: 2;
+}
+
+.simulation-test2-route {
+    height: 10px;
+    border-radius: 999px;
+    transform-origin: left center;
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.12);
+}
+
+.simulation-test2-route.normal {
+    background: linear-gradient(90deg, #4254c7 0%, #60a5fa 100%);
+}
+
+.simulation-test2-route.mid {
+    background: linear-gradient(90deg, #f97316 0%, #fbbf24 100%);
+}
+
+.simulation-test2-route.high {
+    background: linear-gradient(90deg, #d4443a 0%, #fb7185 100%);
+}
+
+.simulation-test2-route.emphasis {
+    box-shadow: 0 0 0 8px rgba(96, 165, 250, 0.1), 0 10px 22px rgba(15, 23, 42, 0.14);
+}
+
+.simulation-test2-node {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 34px;
+    height: 34px;
+    padding: 0 10px;
+    border-radius: 999px;
+    transform: translate(-50%, -50%);
+    color: #ffffff;
+    font-size: 0.72rem;
+    font-weight: 800;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.18);
+}
+
+.simulation-test2-node.normal {
+    background: #4254c7;
+}
+
+.simulation-test2-node.mid {
+    background: #f97316;
+}
+
+.simulation-test2-node.high {
+    background: #d4443a;
+}
+
+.simulation-test2-polygon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: translate(-50%, -50%);
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.simulation-test2-polygon.normal {
+    background: rgba(79, 70, 229, 0.16);
+}
+
+.simulation-test2-polygon.mid {
+    background: rgba(249, 115, 22, 0.2);
+}
+
+.simulation-test2-polygon.high {
+    background: rgba(212, 68, 58, 0.26);
+}
+
+.simulation-test2-polygon.filled {
+    opacity: 1;
+}
+
+.simulation-test2-polygon:not(.filled) {
+    opacity: 0.72;
+}
+
+.simulation-test2-polygon-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 42px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(17, 24, 39, 0.78);
+    color: #ffffff;
+    font-size: 0.72rem;
+    font-weight: 800;
 }
 
 .simulation-test2-bottom-grid {
@@ -574,6 +720,39 @@
 
 .simulation-test2-table-card {
     padding: 18px;
+}
+
+.simulation-test2-geometry-switch-card {
+    display: grid;
+    gap: 16px;
+    padding: 18px;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.07);
+}
+
+.simulation-test2-geometry-switch-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.simulation-test2-geometry-switch-button {
+    height: 46px;
+    border: 1px solid #d7deea;
+    border-radius: 14px;
+    background: #ffffff;
+    color: #475569;
+    font-size: 0.92rem;
+    font-weight: 800;
+    transition: all 0.2s ease;
+}
+
+.simulation-test2-geometry-switch-button.active {
+    border-color: #111827;
+    background: #111827;
+    color: #ffffff;
 }
 
 .simulation-test2-table-header {
@@ -676,6 +855,10 @@
     .simulation-test2-table-header {
         flex-direction: column;
         align-items: stretch;
+    }
+
+    .simulation-test2-geometry-switch-grid {
+        grid-template-columns: 1fr;
     }
 
     .simulation-test2-map-chips {

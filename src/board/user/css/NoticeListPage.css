@@ -314,4 +314,20 @@
   .notice-list-section table {
     min-width: 700px;
   }
+
+  .notice-row {
+  cursor: pointer;
+  }
+
+  .notice-row:hover {
+    background: #f8fbff;
+  }
+
+  .recent-item {
+    cursor: pointer;
+  }
+
+  .recent-item:hover p {
+    color: #1f6feb;
+  }
 }
