@@ -301,3 +301,397 @@
         min-height: 300px;
     }
 }
+
+.dashboard-gis-catalog-card {
+    border: 1px solid #dde2ea;
+}
+
+.dashboard-gis-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.dashboard-gis-summary-card {
+    padding: 12px 14px;
+    border: 1px solid #dbe3ef;
+    border-radius: 14px;
+    background: #f8fafc;
+}
+
+.dashboard-gis-summary-card.primary {
+    border-color: rgba(37, 99, 235, 0.28);
+    background: rgba(37, 99, 235, 0.08);
+}
+
+.dashboard-gis-summary-card span {
+    display: block;
+    margin-bottom: 4px;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.dashboard-gis-summary-card strong {
+    color: #0f172a;
+    font-size: 18px;
+    font-weight: 800;
+}
+
+.dashboard-gis-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.dashboard-gis-priority-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.dashboard-gis-tab {
+    padding: 6px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 999px;
+    background: #ffffff;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.dashboard-gis-tab:hover,
+.dashboard-gis-tab:focus,
+.dashboard-gis-tab.active {
+    border-color: rgba(37, 99, 235, 0.42);
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
+.dashboard-gis-category-select {
+    width: min(220px, 100%);
+}
+
+.dashboard-gis-catalog-grid {
+    display: grid;
+    grid-template-columns: minmax(300px, 420px) minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+}
+
+.dashboard-gis-source-panel,
+.dashboard-gis-detail-panel {
+    min-width: 0;
+    padding: 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    background: #ffffff;
+}
+
+.dashboard-gis-panel-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+    color: #0f172a;
+    font-size: 14px;
+}
+
+.dashboard-gis-panel-title span {
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.dashboard-gis-source-list {
+    display: grid;
+    gap: 8px;
+    max-height: 520px;
+    overflow: auto;
+    padding-right: 4px;
+}
+
+.dashboard-gis-source-item {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 13px;
+    background: #ffffff;
+    text-align: left;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.dashboard-gis-source-item:hover,
+.dashboard-gis-source-item:focus {
+    transform: translateY(-1px);
+    border-color: #bfdbfe;
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+}
+
+.dashboard-gis-source-item.active {
+    border-color: rgba(37, 99, 235, 0.55);
+    background: linear-gradient(180deg, #f8fbff 0%, #eef6ff 100%);
+    box-shadow: 0 10px 26px rgba(37, 99, 235, 0.12);
+}
+
+.dashboard-gis-source-head,
+.dashboard-gis-source-footer,
+.dashboard-gis-detail-head,
+.dashboard-gis-dataset-item,
+.dashboard-gis-dataset-badges {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.dashboard-gis-source-head {
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.dashboard-gis-source-head strong {
+    color: #0f172a;
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.dashboard-gis-source-head span,
+.dashboard-gis-status-badge {
+    flex: 0 0 auto;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: #eaf1ff;
+    color: #2563eb;
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.dashboard-gis-source-meta,
+.dashboard-gis-source-footer {
+    color: #64748b;
+    font-size: 12px;
+}
+
+.dashboard-gis-source-footer {
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+.dashboard-gis-source-footer span,
+.dashboard-gis-detail-tags span,
+.dashboard-gis-dataset-badges span,
+.dashboard-gis-metric-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.dashboard-gis-detail-head {
+    justify-content: space-between;
+}
+
+.dashboard-gis-detail-tags,
+.dashboard-gis-metric-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.dashboard-gis-official-link {
+    display: inline-flex;
+    align-items: center;
+    color: #2563eb;
+    font-size: 12px;
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.dashboard-gis-official-link:hover,
+.dashboard-gis-official-link:focus {
+    text-decoration: underline;
+}
+
+.dashboard-gis-dataset-list {
+    display: grid;
+    gap: 8px;
+}
+
+.dashboard-gis-dataset-item {
+    width: 100%;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 13px;
+    background: #f8fafc;
+    text-align: left;
+}
+
+.dashboard-gis-dataset-item:hover,
+.dashboard-gis-dataset-item:focus,
+.dashboard-gis-dataset-item.active {
+    border-color: rgba(37, 99, 235, 0.45);
+    background: #eff6ff;
+}
+
+.dashboard-gis-dataset-item strong {
+    color: #0f172a;
+    font-size: 14px;
+}
+
+.dashboard-gis-dataset-badges {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.dashboard-gis-metric-chip {
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+}
+
+.dashboard-gis-visual-panel {
+    padding: 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.dashboard-gis-visual-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.dashboard-gis-visual-head strong {
+    color: #0f172a;
+    font-size: 14px;
+}
+
+.dashboard-gis-visual-head span {
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: #eaf1ff;
+    color: #2563eb;
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.dashboard-gis-population-preview {
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    gap: 14px;
+    align-items: stretch;
+}
+
+.dashboard-gis-population-summary {
+    display: grid;
+    gap: 8px;
+}
+
+.dashboard-gis-population-summary > div {
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 12px;
+    background: #ffffff;
+}
+
+.dashboard-gis-population-summary span {
+    display: block;
+    margin-bottom: 4px;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.dashboard-gis-population-summary strong {
+    color: #0f172a;
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.dashboard-gis-population-chart {
+    position: relative;
+    min-height: 260px;
+    padding: 12px 8px 4px;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    background: #ffffff;
+}
+
+.dashboard-gis-empty-visual {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 12px;
+    border: 1px dashed #cbd5e1;
+    border-radius: 12px;
+    background: #f8fafc;
+    color: #64748b;
+    font-size: 12px;
+}
+
+.dashboard-gis-empty-visual strong {
+    display: block;
+    margin-bottom: 4px;
+    color: #334155;
+    font-size: 13px;
+}
+
+.dashboard-gis-empty-icon {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    color: #475569;
+}
+
+@media (max-width: 992px) {
+    .dashboard-gis-catalog-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-gis-source-list {
+        max-height: 420px;
+    }
+
+    .dashboard-gis-population-preview {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-gis-summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .dashboard-gis-filter-bar {
+        align-items: stretch;
+    }
+
+    .dashboard-gis-category-select {
+        width: 100%;
+    }
+
+    .dashboard-gis-dataset-item {
+        flex-direction: column;
+    }
+
+    .dashboard-gis-dataset-badges {
+        justify-content: flex-start;
+    }
+}

@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import DashboardMap from "../components/DashboardMap";
+import DashboardGisCatalogPanel from "../components/DashboardGisCatalogPanel";
 import FloatingPopulationPanel from "../components/FloatingPopulationPanel";
 import PopulationPanel from "../components/PopulationPanel";
 import { getAreaPopulation } from "../api/dashBoardApi";
@@ -98,9 +99,20 @@ function DashboardPage() {
                     </div>
                 </div>
 
-                <div className="row g-3">
+                <div className="row g-3 mb-3">
                     <div className="col-12">
                         <FloatingPopulationPanel selectedArea={selectedArea} />
+                    </div>
+                </div>
+
+                <div className="row g-3">
+                    <div className="col-12">
+                        <DashboardGisCatalogPanel
+                            selectedArea={selectedArea}
+                            populationData={populationData}
+                            populationLoading={loading}
+                            populationError={error}
+                        />
                     </div>
                 </div>
             </div>

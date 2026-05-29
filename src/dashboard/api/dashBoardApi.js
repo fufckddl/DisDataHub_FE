@@ -45,3 +45,54 @@ export const getSdotVisitorCount = async ({ start = 1, end = 200 } = {}) => {
 
     return response.data;
 };
+
+// 대시보드에 표시할 GIS/통계 데이터 원천 카탈로그를 조회합니다.
+export const getDashboardGisDataSources = async ({ sourceCategory, priority, activeOnly = true } = {}) => {
+    const params = { activeOnly };
+    if (sourceCategory) {
+        params.sourceCategory = sourceCategory;
+    }
+    if (priority) {
+        params.priority = priority;
+    }
+
+    const response = await axiosInstance.get("/api/dashboard/gis-data-sources", {
+        params,
+    });
+
+    return response.data;
+};
+
+// 특정 GIS/통계 원천에서 대시보드에 노출할 데이터셋을 조회합니다.
+export const getDashboardGisDatasets = async ({ sourceCode, layerType, activeOnly = true } = {}) => {
+    const params = { activeOnly };
+    if (sourceCode) {
+        params.sourceCode = sourceCode;
+    }
+    if (layerType) {
+        params.layerType = layerType;
+    }
+
+    const response = await axiosInstance.get("/api/dashboard/gis-datasets", {
+        params,
+    });
+
+    return response.data;
+};
+
+// 특정 GIS/통계 데이터셋의 지표 사전을 조회합니다.
+export const getDashboardGisMetrics = async ({ sourceCode, datasetCode } = {}) => {
+    const params = {};
+    if (sourceCode) {
+        params.sourceCode = sourceCode;
+    }
+    if (datasetCode) {
+        params.datasetCode = datasetCode;
+    }
+
+    const response = await axiosInstance.get("/api/dashboard/gis-metrics", {
+        params,
+    });
+
+    return response.data;
+};
