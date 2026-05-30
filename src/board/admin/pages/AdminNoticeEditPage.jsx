@@ -1,16 +1,44 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { createNoticeApi } from "../../api/noticeApi";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { getAdminNoticeDetailApi, updateNoticeApi } from "../../api/noticeApi";
 import "../css/AdminNoticeWritePage.css";
 
-function AdminNoticeWritePage() {
+function AdminNoticeEditPage() {
+  const { postId } = useParams();
   const navigate = useNavigate();
 
   const [title, setTitle] = useState("");
   const [visibilityStatus, setVisibilityStatus] = useState("PUBLIC");
   const [pinnedYn, setPinnedYn] = useState("N");
   const [content, setContent] = useState("");
+  const [isLoading, setLoading] = useState(false);
   const [isSubmitting, setSubmitting] = useState(false);
+
+  const getNoticeDetail = async () => {
+    try {
+      setLoading(true);
+
+      const data = await getAdminNoticeDetailApi(postId);
+
+      if (data.result === "success") {
+        const notice = data.adminNoticeDetail;
+
+        setTitle(notice.title ?? "");
+        setContent(notice.content ?? "");
+        setVisibilityStatus(notice.visibilityStatus ?? "PUBLIC");
+        setPinnedYn(notice.pinnedYn ?? "N");
+      }
+    } catch (error) {
+      console.error("공지사항 수정 데이터 조회 실패:", error);
+      alert("공지사항 정보를 불러오는 중 오류가 발생했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    getNoticeDetail();
+  }, [postId]);
 
   const handleSubmit = async () => {
     if (!title.trim()) {
@@ -24,7 +52,6 @@ function AdminNoticeWritePage() {
     }
 
     const requestData = {
-      userId: 1,
       title,
       content,
       visibilityStatus,
@@ -34,29 +61,38 @@ function AdminNoticeWritePage() {
     try {
       setSubmitting(true);
 
-      const data = await createNoticeApi(requestData);
+      const data = await updateNoticeApi(postId, requestData);
 
       if (data.result === "success") {
-        alert("공지사항이 등록되었습니다.");
-
-        navigate("/admin/board/notice");
+        alert("공지사항이 수정되었습니다.");
+        navigate(`/admin/board/notice/${postId}`);
       } else {
-        alert("공지사항 등록에 실패했습니다.");
+        alert("공지사항 수정에 실패했습니다.");
       }
     } catch (error) {
-      console.error("공지사항 등록 실패:", error);
-      alert("공지사항 등록 중 오류가 발생했습니다.");
+      console.error("공지사항 수정 실패:", error);
+      alert("공지사항 수정 중 오류가 발생했습니다.");
     } finally {
       setSubmitting(false);
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="admin-notice-write-page">
+        <section className="admin-notice-write-form-card">
+          공지사항 정보를 불러오는 중입니다.
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div className="admin-notice-write-page">
       <section className="admin-notice-write-header">
         <div>
-          <h1>공지사항 작성</h1>
-          <p>새 공지사항을 등록할 수 있습니다.</p>
+          <h1>공지사항 수정</h1>
+          <p>등록된 공지사항 내용을 수정할 수 있습니다.</p>
         </div>
       </section>
 
@@ -89,7 +125,6 @@ function AdminNoticeWritePage() {
                 checked={visibilityStatus === "PUBLIC"}
                 onChange={(e) => setVisibilityStatus(e.target.value)}
               />
-
               <span>공개</span>
             </label>
 
@@ -101,7 +136,6 @@ function AdminNoticeWritePage() {
                 checked={visibilityStatus === "PRIVATE"}
                 onChange={(e) => setVisibilityStatus(e.target.value)}
               />
-
               <span>비공개</span>
             </label>
           </div>
@@ -119,7 +153,6 @@ function AdminNoticeWritePage() {
                 checked={pinnedYn === "Y"}
                 onChange={(e) => setPinnedYn(e.target.value)}
               />
-
               <span>고정</span>
             </label>
 
@@ -131,7 +164,6 @@ function AdminNoticeWritePage() {
                 checked={pinnedYn === "N"}
                 onChange={(e) => setPinnedYn(e.target.value)}
               />
-
               <span>고정하지 않음</span>
             </label>
           </div>
@@ -171,7 +203,7 @@ function AdminNoticeWritePage() {
           <button
             type="button"
             className="cancel-button"
-            onClick={() => navigate("/admin/board/notice")}
+            onClick={() => navigate(`/admin/board/notice/${postId}`)}
           >
             취소
           </button>
@@ -182,7 +214,7 @@ function AdminNoticeWritePage() {
             onClick={handleSubmit}
             disabled={isSubmitting}
           >
-            {isSubmitting ? "등록 중..." : "등록"}
+            {isSubmitting ? "수정 중..." : "수정"}
           </button>
         </div>
       </section>
@@ -190,4 +222,4 @@ function AdminNoticeWritePage() {
   );
 }
 
-export default AdminNoticeWritePage;
+export default AdminNoticeEditPage;

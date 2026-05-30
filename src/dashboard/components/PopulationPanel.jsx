@@ -145,13 +145,21 @@ function PopulationPanel({ selectedArea, populationData, queryDate, notice, load
         : 0);
     const baseDate = chartResponse?.baseDate ?? populationRow?.STDR_DE_ID ?? queryDate;
     const hour = chartResponse?.hour ?? populationRow?.TMZON_PD_SE;
+    const selectedLevelLabel = selectedArea?.levelLabel
+        ?? (selectedArea?.level === "SIDO"
+            ? "시도"
+            : selectedArea?.level === "SIGUNGU"
+              ? "자치구"
+              : selectedArea?.level === "JIPGYEGU"
+                ? "집계구"
+                : "행정동");
 
     return (
         <div className="card shadow-sm h-100 dashboard-population-card">
             <div className="card-body d-flex flex-column">
                 <h5 className="fw-semibold mb-1">생활인구</h5>
                 <p className="text-secondary small mb-3">
-                    지도에서 구 또는 동을 클릭하면 서울 생활인구 데이터를 Chart.js로 표시합니다.
+                    지도에서 시도, 시군구, 행정동, 집계구를 클릭하면 DB에 저장된 생활인구 데이터를 Chart.js로 표시합니다.
                 </p>
 
                 {selectedArea ? (
@@ -163,7 +171,7 @@ function PopulationPanel({ selectedArea, populationData, queryDate, notice, load
                         </div>
                         {selectedArea.level && (
                             <div className="small text-secondary">
-                                경계 단계 {selectedArea.level === "SIGUNGU" ? "구" : "동"}
+                                경계 단계 {selectedLevelLabel}
                             </div>
                         )}
                         {queryDate && (
