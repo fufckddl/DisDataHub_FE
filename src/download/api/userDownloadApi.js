@@ -4,7 +4,7 @@ export const uploadTempTestFileApi = () => {
   const formData = new FormData();
   formData.append(
     "file",
-    new File(["hello s3ㅁㅁㅁㅁㅁㅁㅁㅁㅁㅁㅁ"], "sample.txt", { type: "text/plain" })
+    new File(["hello s3"], "sample.txt", { type: "text/plain" })
   );
 
   return axiosInstance.post("/api/s3/temp-files", formData, {
@@ -33,3 +33,6 @@ export const getApprovedDownloadDatasetListApi = () => {
   return axiosInstance.get("/api/download/datasets");
 }
 
+export const getDatasetPreviewGeoJsonApi = (datasetId) => {
+  return axiosInstance.get(`/api/download/datasets/${datasetId}/preview-geojson`)
+}

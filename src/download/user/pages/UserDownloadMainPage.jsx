@@ -1,9 +1,10 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "../../style/download.css";
 import TopTitle from "../../components/TopTitle";
 import { datasetMainDummy } from "../../dummy/datasetMainDummy";
 import { useEffect, useState } from "react";
-import { getApprovedDownloadDatasetListApi } from "../../api/userDownloadApi";
+import { getApprovedDownloadDatasetListApi, getDatasetDownloadPageApi } from "../../api/userDownloadApi";
+import useAuthStore from "../../../commons/auth/useAuthStore";
 
 
 
@@ -90,7 +91,7 @@ function DatasetList({datasetList}){
                                 <tr>
                                     <th className="col-2 ps-3">데이터셋 명</th>
                                     <th className="col-3">설명</th>
-                                    <th className="col-1 text-center">지역 정보</th>
+                                    <th className="col-1 text-center">제공기관</th>
                                     <th className="col-1 text-center">등록일</th>
                                     <th className="col-1 text-center">파일 형식</th>
                                     <th className="col-1 text-center">다운로드 수</th>
@@ -127,16 +128,44 @@ function DatasetList({datasetList}){
 function DatasetForm({dataset}){
 
     const navigate = useNavigate();
+    const userInfo = useAuthStore((state) => state.userInfo);
 
-    const handleDetailPageClick = () => {
+    const handleDetailPageClick = async (isPublic) => {
+        if(!isPublic){
+            if(userInfo == null){
+                if(confirm("비공개 데이터셋입니다. 로그인 페이지로 이동하시겠습니까?")){
+                    navigate("/login")
+                }
+                return;                
+            }
+            // alert("같은 소속기관 사용자만 접근할 수 있습니다.");
+            // return;
+
+            try {
+                await getDatasetDownloadPageApi(dataset.id);
+            } catch (error) {
+                if (error?.response?.status === 403) {
+                    alert("같은 소속기관 사용자만 접근할 수 있습니다.");
+                    return;
+                }
+
+                alert("데이터셋 정보를 불러오지 못했습니다.");
+                return;
+            }
+
+        }
+        
         // navigate("/download/user/detail")
         navigate(`/download/user/${dataset.id}`)
     }
 
     return(
         <>
-            <tr>
-                <td className="col-2 text-primary fw-bold ps-3" style={{fontSize : "15px"}}>{dataset.title}</td>
+            <tr >
+                <td className="col-2 text-primary fw-bold ps-3" style={{fontSize : "15px"}}>
+                    <Link to={`/download/user/${dataset.id}`} className="text-decoration-none">{dataset.title}</Link>    
+                </td>  
+                
                 <td className="col-3 sm-text text-secondary">{dataset.description}</td>
                 <td className="col-1 sm-text text-secondary text-center">{dataset.provider}</td>
                 <td className="col-1 sm-text text-secondary text-center">{dataset.createAt}</td>
@@ -150,7 +179,7 @@ function DatasetForm({dataset}){
                 <td className="col-1 sm-text text-secondary text-center">{dataset.viewCount}</td>
                 <td className="col-2 sm-text text-center">
                     {/* 상세보기 할 때 데이터 조회 권환 확인 필요 */}
-                    <button className="btn btn-light btn-sm sm-text border text-secondary me-4" onClick={handleDetailPageClick}>상세보기</button>
+                    <button className="btn btn-light btn-sm sm-text border text-secondary me-4" onClick={() => handleDetailPageClick(dataset.isPublic)}>상세보기</button>
                     <button className="btn btn-primary btn-sm" style={{fontSize: "13px"}} >다운로드</button>
                 </td>
             </tr> 
@@ -241,22 +270,26 @@ function UserDownloadMainPage(){
     
     const datasetList = apiDatasetList ?? datasetMainDummy.datasetList;
 
+    console.log("datasetList : ",datasetList);
+
     useEffect(() => {
         const fetchDatasetList = async () => {
             try{
                 setLoading(true);
                 setErrorMessage("");
                 const response = await getApprovedDownloadDatasetListApi();
-
+                console.log("response.data :" , response.data)
                 const mappedList = response.data.map((item) => ({
                     id: String(item.datasetId),
                     title: item.title,
                     description: item.description,
                     provider: item.provider,
                     createAt: item.createdAt ? item.createdAt.slice(0, 10) : "-",
+                    isPublic: item.isPublic,
                     fileExtension: item.fileExtension ?? "-",
                     downloadCount: item.downloadCount ?? 0,
                     viewCount: item.viewCount ?? 0,
+                    
                 }))
 
                 setApiDatasetList(mappedList);
