@@ -1,5 +1,7 @@
 import { useCallback, useState } from "react";
 import DashboardMap from "../components/DashboardMap";
+import DashboardGisCatalogPanel from "../components/DashboardGisCatalogPanel";
+import FloatingPopulationPanel from "../components/FloatingPopulationPanel";
 import PopulationPanel from "../components/PopulationPanel";
 import { getAreaPopulation } from "../api/dashBoardApi";
 import "./DashboardPage.css";
@@ -21,7 +23,7 @@ function TopTitle() {
                         </div>
                     </div>
                     <div className="text-secondary" style={{ fontSize: "12px" }}>
-                        서울 열린데이터광장 연동 현황과 주요 GIS 데이터 지표를 한눈에 확인할 수 있습니다.
+                        공공데이터 기반 GIS 경계와 주요 지표를 한눈에 확인할 수 있습니다.
                     </div>
                 </div>
             </div>
@@ -58,6 +60,7 @@ function DashboardPage() {
             const data = await getAreaPopulation({
                 hour: "00",
                 areaCode: area.areaCode,
+                areaLevel: area.level,
             });
 
             setQueryDate(data.baseDate);
@@ -66,7 +69,7 @@ function DashboardPage() {
             console.error(err);
             setPopulationData(null);
             if (err.response?.status === 404) {
-                setError(`DB에 저장된 생활인구 데이터가 없습니다. (areaCode=${area.areaCode})`);
+                setError(`DB에 저장된 생활인구 데이터가 없습니다. (${area.levelLabel ?? area.level}, areaCode=${area.areaCode})`);
                 return;
             }
             setError("생활인구 데이터를 불러오지 못했습니다.");
@@ -92,6 +95,23 @@ function DashboardPage() {
                             notice={populationNotice}
                             loading={loading}
                             error={error}
+                        />
+                    </div>
+                </div>
+
+                <div className="row g-3 mb-3">
+                    <div className="col-12">
+                        <FloatingPopulationPanel selectedArea={selectedArea} />
+                    </div>
+                </div>
+
+                <div className="row g-3">
+                    <div className="col-12">
+                        <DashboardGisCatalogPanel
+                            selectedArea={selectedArea}
+                            populationData={populationData}
+                            populationLoading={loading}
+                            populationError={error}
                         />
                     </div>
                 </div>
