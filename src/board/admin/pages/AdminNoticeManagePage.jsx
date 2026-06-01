@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getAdminNoticeListApi } from "../../api/noticeApi";
+import { getAdminNoticeListApi, deleteNoticeApi } from "../../api/noticeApi";
 import "../css/AdminNoticeManagePage.css";
 
 function AdminNoticeManagePage() {
@@ -44,11 +44,16 @@ function AdminNoticeManagePage() {
   const totalCount = noticeList.length;
 
   const pinnedCount = noticeList.filter(
-    (notice) => notice.pinnedYn === "Y"
+    (notice) => notice.pinnedYn === "Y" && notice.deletedYn === "N"
   ).length;
 
   const publicCount = noticeList.filter(
-    (notice) => notice.visibilityStatus === "PUBLIC"
+    (notice) =>
+      notice.visibilityStatus === "PUBLIC" && notice.deletedYn === "N"
+  ).length;
+
+  const deletedCount = noticeList.filter(
+    (notice) => notice.deletedYn === "Y"
   ).length;
 
   const getVisibilityClassName = (visibilityStatus) => {
@@ -69,8 +74,28 @@ function AdminNoticeManagePage() {
     return createdAt.substring(0, 10);
   };
 
-  const handleDelete = (postId) => {
-    alert(`${postId}번 공지사항 삭제 기능은 나중에 연결합니다.`);
+  const handleDelete = async (postId) => {
+    const isConfirm = window.confirm(
+      `${postId}번 공지사항을 삭제하시겠습니까?`
+    );
+
+    if (!isConfirm) {
+      return;
+    }
+
+    try {
+      const data = await deleteNoticeApi(postId);
+
+      if (data.result === "success") {
+        alert("공지사항이 삭제되었습니다.");
+        getAdminNoticeList();
+      } else {
+        alert("공지사항 삭제에 실패했습니다.");
+      }
+    } catch (error) {
+      console.error("공지사항 삭제 실패:", error);
+      alert("공지사항 삭제 중 오류가 발생했습니다.");
+    }
   };
 
   return (
@@ -89,7 +114,7 @@ function AdminNoticeManagePage() {
           <div>
             <p>전체 공지</p>
             <strong>{totalCount}건</strong>
-            <span>전체 등록된 공지사항</span>
+            <span>삭제 포함 전체 공지사항</span>
           </div>
         </div>
 
@@ -110,6 +135,16 @@ function AdminNoticeManagePage() {
             <p>공개 공지</p>
             <strong>{publicCount}건</strong>
             <span>현재 공개 중인 공지</span>
+          </div>
+        </div>
+
+        <div className="admin-notice-summary-card">
+          <div className="summary-icon">🗑️</div>
+
+          <div>
+            <p>삭제 공지</p>
+            <strong>{deletedCount}건</strong>
+            <span>삭제 처리된 공지사항</span>
           </div>
         </div>
       </section>
@@ -161,6 +196,7 @@ function AdminNoticeManagePage() {
               <th>분류</th>
               <th>상단고정</th>
               <th>공개여부</th>
+              <th>삭제여부</th>
               <th>작성일</th>
               <th>관리</th>
             </tr>
@@ -168,13 +204,20 @@ function AdminNoticeManagePage() {
 
           <tbody>
             {filteredNoticeList.map((notice) => (
-              <tr key={notice.postId}>
+              <tr
+                key={notice.postId}
+                className={notice.deletedYn === "Y" ? "deleted-notice-row" : ""}
+              >
                 <td>{notice.postId}</td>
 
                 <td className="notice-title-cell">
                   <Link to={`/admin/board/notice/${notice.postId}`}>
                     {notice.title}
                   </Link>
+
+                  {notice.deletedYn === "Y" && (
+                    <span className="notice-deleted-text">삭제됨</span>
+                  )}
                 </td>
 
                 <td>
@@ -205,22 +248,43 @@ function AdminNoticeManagePage() {
                   </span>
                 </td>
 
+                <td>
+                  {notice.deletedYn === "Y" ? (
+                    <span className="notice-delete-status deleted">
+                      삭제됨
+                    </span>
+                  ) : (
+                    <span className="notice-delete-status active">
+                      정상
+                    </span>
+                  )}
+                </td>
+
                 <td>{formatDate(notice.createdAt)}</td>
 
                 <td>
-                  <div className="notice-action-buttons">
-                    <button type="button" className="notice-edit-button">
-                      수정
-                    </button>
+                  {notice.deletedYn === "N" ? (
+                    <div className="notice-action-buttons">
+                      <Link
+                        to={`/admin/board/notice/edit/${notice.postId}`}
+                        className="notice-edit-button"
+                      >
+                        수정
+                      </Link>
 
-                    <button
-                      type="button"
-                      className="notice-delete-button"
-                      onClick={() => handleDelete(notice.postId)}
-                    >
-                      삭제
-                    </button>
-                  </div>
+                      <button
+                        type="button"
+                        className="notice-delete-button"
+                        onClick={() => handleDelete(notice.postId)}
+                      >
+                        삭제
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="notice-disabled-action">
+                      삭제 처리됨
+                    </span>
+                  )}
                 </td>
               </tr>
             ))}

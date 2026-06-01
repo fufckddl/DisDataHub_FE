@@ -435,4 +435,52 @@
     position: static;
     margin-left: 10px;
   }
+
+    .deleted-notice-row {
+    background: #f8fafc;
+    color: #94a3b8;
+  }
+
+  .deleted-notice-row .notice-title-cell a {
+    color: #94a3b8;
+    text-decoration: line-through;
+  }
+
+  .notice-deleted-text {
+    display: inline-flex;
+    margin-left: 8px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: #fee2e2;
+    color: #b91c1c;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .notice-delete-status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 28px;
+    padding: 0 10px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .notice-delete-status.active {
+    background: #dcfce7;
+    color: #15803d;
+  }
+
+  .notice-delete-status.deleted {
+    background: #fee2e2;
+    color: #b91c1c;
+  }
+
+  .notice-disabled-action {
+    color: #94a3b8;
+    font-size: 14px;
+    font-weight: 800;
+  }
 }
