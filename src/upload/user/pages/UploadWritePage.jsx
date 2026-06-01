@@ -159,7 +159,7 @@ function UploadWritePage() {
                         setErrorList([]); // 실패 시 안전하게 표 비우기
                     }
                 } 
-                // 🚀 [Case 2] 500 에러: 중복 파일, WKT 파괴 등 시스템 에러 (보통 순수 문자열로 올 때)
+                // 🚀 [Case 2] 500 에러: 중복 파일, WKT 파괴 등 시스템 에러, 중복 파일, SHP 누락 등 시스템 에러! (보통 순수 문자열로 올 때)
                 else {
                     // 백엔드가 던진 데이터가 문자열이면 그대로 꺼내 쓰고, 아니면 message를 찾습니다.
                     const errorMsg = typeof responseData === 'string' 
