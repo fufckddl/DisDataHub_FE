@@ -36,6 +36,11 @@ function NoticeListPage() {
     navigate(`/board/notice/${postId}`);
   };
 
+  const formatDate = (dateValue) => {
+    if (!dateValue) return "-";
+    return dateValue.substring(0, 10);
+  };
+
   return (
     <div className="notice-page">
       <div className="notice-header">
@@ -63,7 +68,6 @@ function NoticeListPage() {
             <button type="button">검색</button>
           </section>
 
-          {/* 중요 공지 카드 */}
           <section className="notice-important-section">
             <div className="important-label">중요 공지</div>
 
@@ -76,7 +80,8 @@ function NoticeListPage() {
 
                 <div className="important-meta">
                   <span>
-                    📅 {importantNoticeMock.startAt} ~ {importantNoticeMock.endAt}
+                    📅 {importantNoticeMock.startAt} ~{" "}
+                    {importantNoticeMock.endAt}
                   </span>
                   <span>{importantNoticeMock.categoryName}</span>
                 </div>
@@ -84,7 +89,6 @@ function NoticeListPage() {
             </div>
           </section>
 
-          {/* 공지사항 목록 */}
           <section className="notice-list-section">
             <table>
               <thead>
@@ -104,10 +108,10 @@ function NoticeListPage() {
                     className="notice-row"
                     onClick={() => handleNoticeRowClick(notice.postId)}
                   >
-                    <td>{notice.isPinned ? "📌" : notice.postId}</td>
+                    <td>{notice.pinnedYn === "Y" ? "📌" : notice.postId}</td>
                     <td>{notice.title}</td>
-                    <td>{notice.categoryName}</td>
-                    <td>{notice.createdAt}</td>
+                    <td>공지사항</td>
+                    <td>{formatDate(notice.createdAt)}</td>
                     <td>{notice.viewCount}</td>
                   </tr>
                 ))}

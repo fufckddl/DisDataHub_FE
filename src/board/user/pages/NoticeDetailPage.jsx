@@ -1,28 +1,100 @@
-// src/board/user/pages/NoticeDetailPage.jsx
-
-import { useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { getNoticeDetailApi } from "../../api/noticeApi";
 import "../css/NoticeDetailPage.css";
 
 function NoticeDetailPage() {
+  const { postId } = useParams();
   const navigate = useNavigate();
+
+  const hasFetchedRef = useRef(false);
+
+  const [noticeDetail, setNoticeDetail] = useState(null);
+  const [isLoading, setLoading] = useState(false);
+
+  const getNoticeDetail = async () => {
+    try {
+      setLoading(true);
+
+      const data = await getNoticeDetailApi(postId);
+
+      if (data.result === "success") {
+        setNoticeDetail(data.noticeDetail);
+      }
+    } catch (error) {
+      console.error("공지사항 상세 조회 실패:", error);
+      alert("공지사항 상세 정보를 불러오는 중 오류가 발생했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!postId) {
+      return;
+    }
+
+    if (hasFetchedRef.current) {
+      return;
+    }
+
+    hasFetchedRef.current = true;
+    getNoticeDetail();
+  }, [postId]);
+
+  const formatDate = (dateValue) => {
+    if (!dateValue) return "-";
+    return dateValue.substring(0, 10);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="notice-detail-page">
+        <div className="notice-detail-container">
+          <div className="notice-detail-content">
+            공지사항을 불러오는 중입니다.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!noticeDetail) {
+    return (
+      <div className="notice-detail-page">
+        <div className="notice-detail-container">
+          <div className="notice-detail-content">
+            공지사항 정보를 찾을 수 없습니다.
+          </div>
+
+          <section className="notice-detail-button-area">
+            <button type="button" onClick={() => navigate("/board/notice")}>
+              목록으로
+            </button>
+          </section>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="notice-detail-page">
       <div className="notice-detail-container">
-        {/* 공지사항 제목, 분류, 중요 공지 뱃지 */}
         <section className="notice-detail-header">
           <div>
             <div className="notice-detail-badge-area">
-              <span className="notice-detail-category">운영공지</span>
-              <span className="notice-detail-pin">중요 공지</span>
+              <span className="notice-detail-category">공지사항</span>
+
+              {noticeDetail.pinnedYn === "Y" && (
+                <span className="notice-detail-pin">중요 공지</span>
+              )}
             </div>
 
-            <h1>시스템 점검 안내</h1>
+            <h1>{noticeDetail.title}</h1>
             <p>서비스 운영 및 데이터 관련 주요 공지사항입니다.</p>
           </div>
         </section>
 
-        {/* 작성자, 작성일, 조회수 */}
         <section className="notice-detail-meta">
           <div>
             <span>작성자</span>
@@ -31,32 +103,26 @@ function NoticeDetailPage() {
 
           <div>
             <span>작성일</span>
-            <strong>2026-05-12</strong>
+            <strong>{formatDate(noticeDetail.createdAt)}</strong>
           </div>
 
           <div>
             <span>조회수</span>
-            <strong>245</strong>
+            <strong>{noticeDetail.viewCount}</strong>
           </div>
         </section>
 
-        {/* 실제 공지 본문 내용 */}
         <section className="notice-detail-content">
           <h2>공지 내용</h2>
-          <p>
-            보다 안정적인 서비스 제공을 위해 시스템 점검을 진행할 예정입니다.
-            점검 시간 동안 일부 서비스 이용이 제한될 수 있습니다.
-          </p>
+          <p>{noticeDetail.content}</p>
         </section>
 
-        {/* 첨부파일 목록, 이미지/파일 다운로드 영역 */}
         <section className="notice-detail-file-section">
           <h2>첨부파일</h2>
 
-          <div className="notice-file-item">📎 시스템_점검_안내.pdf</div>
+          <div className="notice-file-item">첨부파일이 없습니다.</div>
         </section>
 
-        {/* 목록으로, 이전글, 다음글, 수정/삭제 버튼 자리 */}
         <section className="notice-detail-button-area">
           <button type="button">이전글</button>
 
