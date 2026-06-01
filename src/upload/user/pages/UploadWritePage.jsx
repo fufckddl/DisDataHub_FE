@@ -159,7 +159,7 @@ function UploadWritePage() {
                         setErrorList([]); // 실패 시 안전하게 표 비우기
                     }
                 } 
-                // 🚀 [Case 2] 500 에러: 중복 파일, WKT 파괴 등 시스템 에러 (보통 순수 문자열로 올 때)
+                // 🚀 [Case 2] 500 에러: 중복 파일, WKT 파괴 등 시스템 에러, 중복 파일, SHP 누락 등 시스템 에러! (보통 순수 문자열로 올 때)
                 else {
                     // 백엔드가 던진 데이터가 문자열이면 그대로 꺼내 쓰고, 아니면 message를 찾습니다.
                     const errorMsg = typeof responseData === 'string' 
@@ -290,7 +290,7 @@ function UploadWritePage() {
                         </div>
 
                         {/* ===================================================================== */}
-                        {/* 🚀 [신규 추가] 엑셀 포맷 선택 시 노출되는 시트 이름 설정 박스 */}
+                        {/* 🚀 [수정] 엑셀 포맷 선택 시 노출되는 시트 이름 설정 박스 */}
                         {/* ===================================================================== */}
                         {watchFileFormat === 'EXCEL' && (
                             <div className="col-12 mt-2">
@@ -318,11 +318,12 @@ function UploadWritePage() {
                         )}
 
                         {/* ===================================================================== */}
-                        {/* 🚀 [신규] 공간 데이터 타입에 따른 동적 컬럼 매핑 필드 */}
+                        {/* 🚀 [수정] 공간 데이터 타입에 따른 동적 컬럼 매핑 필드 (GEOJSON 제외) */}
                         {/* ===================================================================== */}
 
-                        {/* 1. POINT(점) 또는 MIXED(혼합) 선택 시: 위도/경도 컬럼명 입력 */}
-                        {(watchSpatialType === 'POINT' || watchSpatialType === 'MIXED') && (
+                        {/* 1. POINT(점) 또는 MIXED(혼합) 선택 시: 위도/경도 컬럼명 입력 (단, CSV나 EXCEL일 때만 노출) */}
+                        {(watchFileFormat === 'CSV' || watchFileFormat === 'EXCEL') && 
+                         (watchSpatialType === 'POINT' || watchSpatialType === 'MIXED') && (
                             <div className="col-12 mt-2">
                                 <div className="p-3 bg-light rounded border border-primary border-opacity-25">
                                     <h6 className="fw-bold text-primary mb-3">
@@ -334,7 +335,7 @@ function UploadWritePage() {
                                             <input 
                                                 type="text" 
                                                 className={`form-control form-control-sm ${errors.lonColumnName ? 'is-invalid' : ''}`}
-                                                {...register("lonColumnName", { required: (watchSpatialType === 'POINT' || watchSpatialType === 'MIXED') ? "경도 컬럼명을 입력해주세요." : false })} 
+                                                {...register("lonColumnName", { required: (watchFileFormat === 'CSV' || watchFileFormat === 'EXCEL') && (watchSpatialType === 'POINT' || watchSpatialType === 'MIXED') ? "경도 컬럼명을 입력해주세요." : false })} 
                                                 placeholder="예: longitude, 경도, x"
                                             />
                                             {errors.lonColumnName && <div className="invalid-feedback">{errors.lonColumnName.message}</div>}
@@ -344,7 +345,7 @@ function UploadWritePage() {
                                             <input 
                                                 type="text" 
                                                 className={`form-control form-control-sm ${errors.latColumnName ? 'is-invalid' : ''}`}
-                                                {...register("latColumnName", { required: (watchSpatialType === 'POINT' || watchSpatialType === 'MIXED') ? "위도 컬럼명을 입력해주세요." : false })} 
+                                                {...register("latColumnName", { required: (watchFileFormat === 'CSV' || watchFileFormat === 'EXCEL') && (watchSpatialType === 'POINT' || watchSpatialType === 'MIXED') ? "위도 컬럼명을 입력해주세요." : false })} 
                                                 placeholder="예: latitude, 위도, y"
                                             />
                                             {errors.latColumnName && <div className="invalid-feedback">{errors.latColumnName.message}</div>}
@@ -354,8 +355,9 @@ function UploadWritePage() {
                             </div>
                         )}
 
-                        {/* 2. LINESTRING/POLYGON 또는 MIXED(혼합) 선택 시: WKT 컬럼명 입력 */}
-                        {(watchSpatialType === 'LINESTRING' || watchSpatialType === 'POLYGON' || watchSpatialType === 'MIXED') && (
+                        {/* 2. LINESTRING/POLYGON 또는 MIXED(혼합) 선택 시: WKT 컬럼명 입력 (단, CSV나 EXCEL일 때만 노출) */}
+                        {(watchFileFormat === 'CSV' || watchFileFormat === 'EXCEL') && 
+                         (watchSpatialType === 'LINESTRING' || watchSpatialType === 'POLYGON' || watchSpatialType === 'MIXED') && (
                             <div className="col-12 mt-2">
                                 <div className="p-3 bg-light rounded border border-primary border-opacity-25">
                                     <h6 className="fw-bold text-primary mb-3">
@@ -366,7 +368,7 @@ function UploadWritePage() {
                                         <input 
                                             type="text" 
                                             className={`form-control form-control-sm ${errors.wktColumnName ? 'is-invalid' : ''}`}
-                                            {...register("wktColumnName", { required: (watchSpatialType === 'LINESTRING' || watchSpatialType === 'POLYGON' || watchSpatialType === 'MIXED') ? "WKT 컬럼명을 입력해주세요." : false })} 
+                                            {...register("wktColumnName", { required: (watchFileFormat === 'CSV' || watchFileFormat === 'EXCEL') && (watchSpatialType === 'LINESTRING' || watchSpatialType === 'POLYGON' || watchSpatialType === 'MIXED') ? "WKT 컬럼명을 입력해주세요." : false })} 
                                             placeholder="예: wkt, geom_wkt"
                                         />
                                         {errors.wktColumnName && <div className="invalid-feedback">{errors.wktColumnName.message}</div>}
