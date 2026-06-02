@@ -1,5 +1,26 @@
 import axiosInstance from "../../commons/api/axiosinstance";
 
+
+
+export const getDatasetDownloadPageApi = (datasetId) => {
+  return axiosInstance.get(`/api/download/datasets/${datasetId}`)
+}
+
+export const getApprovedDownloadDatasetListApi = () => {
+  return axiosInstance.get("/api/download/datasets");
+}
+
+export const getDatasetPreviewGeoJsonApi = (datasetId) => {
+  return axiosInstance.get(`/api/download/datasets/${datasetId}/preview-geojson`)
+}
+
+export const getDownloadDatasetFilApi = () => {
+  
+}
+
+
+
+
 export const uploadTempTestFileApi = () => {
   const formData = new FormData();
   formData.append(
@@ -14,6 +35,7 @@ export const uploadTempTestFileApi = () => {
   });
 };
 
+//  파일 다운로드
 export const downloadFileApi = ({ filePath, storedFilename, originalFilename }) => {
   return axiosInstance.get("/api/s3/files/download", {
     params: {
@@ -25,14 +47,9 @@ export const downloadFileApi = ({ filePath, storedFilename, originalFilename }) 
   });
 };
 
-export const getDatasetDownloadPageApi = (datasetId) => {
-  return axiosInstance.get(`/api/download/datasets/${datasetId}`)
-}
-
-export const getApprovedDownloadDatasetListApi = () => {
-  return axiosInstance.get("/api/download/datasets");
-}
-
-export const getDatasetPreviewGeoJsonApi = (datasetId) => {
-  return axiosInstance.get(`/api/download/datasets/${datasetId}/preview-geojson`)
-}
+export const downloadDatasetByFormatApi = (datasetId, format) => {
+  return axiosInstance.get(`/api/download/datasets/${datasetId}/download`, {
+    params: { format },
+    responseType: "blob",
+  });
+};

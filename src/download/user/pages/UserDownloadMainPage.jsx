@@ -76,9 +76,8 @@ function Search(){
         </>
     )
 }
-function DatasetList({datasetList}){
+function DatasetList({datasetList, loading}){
 
-    // const datasetList = datasetMainDummy.datasetList;
  
     return(
         <>
@@ -100,12 +99,20 @@ function DatasetList({datasetList}){
                                 </tr>
                             </thead>
                             <tbody>
-                                {datasetList.map((dataset) => (
-                                    <DatasetForm
-                                        key={dataset.id}
-                                        dataset={dataset}
-                                    />
-                                ))}
+                                {datasetList.length > 0 ? (
+                                    datasetList.map((dataset) => (
+                                        <DatasetForm
+                                            key={dataset.id}
+                                            dataset={dataset}
+                                        />
+                                    ))
+                                ): (
+                                    <tr>
+                                        <td colSpan="8" className="text-center py-4 text-secondary">
+                                            {loading ? "목록을 불러오는 중입니다." : "표시할 데이터셋이 없습니다."}
+                                        </td>
+                                    </tr>
+                                )}
                             </tbody>
                             
 
@@ -187,7 +194,7 @@ function DatasetForm({dataset}){
     )
 }
 
-function CardForm({children, color, title, content}){
+function CardForm({children, color, title, content, caption}){
     return(
         <>
             <div className="col">
@@ -200,7 +207,10 @@ function CardForm({children, color, title, content}){
                         <div className="col">
                             <div className="fw-bold" style={{fontSize: "14px"}}>{title}</div>
                             <div className="fw-bold">{content}</div>
-                            <div className="text-secondary" style={{fontSize: "12px"}}>승인된 데이터 기준</div>
+                            {/* <div className="text-secondary" style={{fontSize: "12px"}}>승인된 데이터 기준</div> */}
+                            <div className="text-secondary" style={{ fontSize: "12px" }}>
+                                {caption}
+                            </div>                            
                         </div>
                     </div>
                 </div>
@@ -265,12 +275,66 @@ function UserDownloadMainPage(){
     const [loading, setLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
 
-    const summaryCards = datasetMainDummy.summary
+    const datasetList = apiDatasetList ?? [];
 
-    
-    const datasetList = apiDatasetList ?? datasetMainDummy.datasetList;
+    const formatNumber = (value) => {
+        return new Intl.NumberFormat("ko-KR").format(value ?? 0);
+    };
 
-    console.log("datasetList : ",datasetList);
+    const totalDownloadCount = datasetList.reduce(
+        (sum, item) => sum + Number(item.downloadCount ?? 0),
+        0
+    );
+
+    const supportedFormatCount = new Set(
+        datasetList
+            .map((item) => item.fileExtension)
+            .filter((item) => item && item !== "-")
+    ).size;
+
+    const popularDataset = datasetList.reduce((best, current) => {
+        if (!best) return current;
+
+        return Number(current.downloadCount ?? 0) > Number(best.downloadCount ?? 0)
+            ? current
+            : best;
+    }, null);
+
+    console.log("popularDataset : ", popularDataset)
+    const summaryCards = [
+        {
+            color: "primary",
+            title: "전체 데이터 수",
+            content: `${formatNumber(datasetList.length)}건`,
+            caption: "승인 데이터 기준",
+            icon: "bi-layers-fill",
+        },
+        {
+            color: "success",
+            title: "오늘 다운로드 수 ",
+            content: `${formatNumber(totalDownloadCount)}건`,
+            caption: "전일 대비, (전날 비교)",
+            icon: "bi-download",
+        },
+        {
+            color: "warning",
+            title: "지원 파일 형식",
+            content: `${formatNumber(supportedFormatCount)}종`,
+            caption: "목록에서 확인된 형식",
+            icon: "bi-file-earmark-text-fill",
+        },
+        {
+            color: "danger",
+            title: "인기 데이터",
+            content: popularDataset?.title ?? "-",
+            caption: popularDataset
+                ? `누적 다운로드 ${formatNumber(Number(popularDataset.downloadCount ?? 0))}건`
+                : "다운로드 데이터 없음",
+            icon: "bi-fire",
+        },
+    ];    
+
+    // console.log("datasetList : ",datasetList);
 
     useEffect(() => {
         const fetchDatasetList = async () => {
@@ -323,6 +387,7 @@ function UserDownloadMainPage(){
                             color={card.color}
                             title={card.title}
                             content={card.content}
+                            caption={card.caption}
                         >
                             <i className={` bi ${card.icon} fs-3`}></i>    
                         </CardForm>
@@ -343,7 +408,8 @@ function UserDownloadMainPage(){
 
 
                 {/* 승인 데이터셋 목록 */}
-                <DatasetList  datasetList={datasetList}/>
+
+                <DatasetList  datasetList={datasetList} loading={loading}/>
 
 
               
