@@ -89,8 +89,14 @@ function UploadWritePage() {
             
             maxSizeBytes = 30 * 1024 * 1024; // 30MB
             maxSizeString = "30MB";
-        } else if (selectedFormat === 'SHP') {
-            isAllowedExtension = fileName.endsWith('.zip') || fileName.endsWith('.shp');
+        } else if (selectedFormat === 'SHP' || selectedFormat === 'TIFF') {
+            
+            if (selectedFormat === 'SHP') {
+                isAllowedExtension = fileName.endsWith('.zip') || fileName.endsWith('.shp');
+            } else if (selectedFormat === 'TIFF') {
+                isAllowedExtension = fileName.endsWith('.tif') || fileName.endsWith('.tiff');
+            }
+
             maxSizeBytes = 2 * 1024 * 1024 * 1024; // 2GB
             maxSizeString = "2GB";
         }
@@ -254,6 +260,7 @@ function UploadWritePage() {
                                 <option value="4326">4326 (WGS84 - GPS 위경도)</option>
                                 <option value="5179">5179 (UTM-K - 네이버/카카오)</option>
                                 <option value="5181">5181 (중부원점 - 다음지도)</option>
+                                <option value="0">원본 좌표계 없음 (파일 내장/해당 없음)</option>
                             </select>
                             {errors.originalSrid && <div className="invalid-feedback">{errors.originalSrid.message}</div>}
                         </div>
@@ -269,6 +276,7 @@ function UploadWritePage() {
                                 <option value="EXCEL">Excel (엑셀 파일 .xlsx)</option>
                                 <option value="SHP">Shapefile (SHP ZIP 압축)</option>
                                 <option value="GEOJSON">GeoJSON</option>
+                                <option value="TIFF">GeoTIFF (TIFF 이미지)</option>
                             </select>
                             {errors.fileFormat && <div className="invalid-feedback">{errors.fileFormat.message}</div>}
                         </div>
