@@ -9,7 +9,7 @@ import Point from "ol/geom/Point.js";
 import VectorLayer from "ol/layer/Vector.js";
 import { fromLonLat, transformExtent } from "ol/proj.js";
 import VectorSource from "ol/source/Vector.js";
-import { Fill, Stroke, Style, Text } from "ol/style.js";
+import { Circle as CircleStyle, Fill, Stroke, Style, Text } from "ol/style.js";
 import axiosInstance from "../../commons/api/axiosinstance.js";
 
 const KOREA_CENTER = fromLonLat([127.8, 36.2]);
@@ -166,21 +166,62 @@ function getBoundaryStyle(feature, selectedFeature) {
     ];
 }
 
-function DashboardMap({ onAreaSelect }) {
+function getGisFeatureStyle(feature) {
+    const output = Number(feature.get("output") ?? 0);
+    const radius = output >= 100 ? 8 : output >= 50 ? 7 : 6;
+
+    return new Style({
+        image: new CircleStyle({
+            radius,
+            fill: new Fill({
+                color: "rgba(249, 115, 22, 0.88)",
+            }),
+            stroke: new Stroke({
+                color: "#ffffff",
+                width: 2,
+            }),
+        }),
+    });
+}
+
+function formatGisFeatureNotice(feature) {
+    const name = feature.get("featureName") ?? "GIS 피처";
+    const address = feature.get("address") ?? feature.get("roadAddress") ?? "";
+    const output = feature.get("output");
+    const useTime = feature.get("useTime");
+    const businessCall = feature.get("businessCall");
+    const details = [
+        output ? `${output}kW` : null,
+        useTime,
+        businessCall,
+    ].filter(Boolean).join(" · ");
+
+    return [name, address, details].filter(Boolean).join(" / ");
+}
+
+function DashboardMap({ onAreaSelect, gisLayer }) {
     const onAreaSelectRef = useRef(onAreaSelect);
     const mapElementRef = useRef(null);
     const mapRef = useRef(null);
     const boundaryLayerRef = useRef(null);
     const boundarySourceRef = useRef(null);
+    const gisLayerRef = useRef(null);
+    const gisSourceRef = useRef(null);
     const selectedFeatureRef = useRef(null);
     const abortControllerRef = useRef(null);
+    const gisAbortControllerRef = useRef(null);
     const lastRequestKeyRef = useRef("");
+    const lastGisRequestKeyRef = useRef("");
     const currentViewRef = useRef(createInitialView());
     const loadBoundariesRef = useRef(null);
     const [viewState, setViewState] = useState(() => createInitialView());
     const [isLoading, setIsLoading] = useState(false);
     const [loadError, setLoadError] = useState(null);
     const [drillDownNotice, setDrillDownNotice] = useState(null);
+    const [gisFeatureNotice, setGisFeatureNotice] = useState(null);
+    const [gisLoadError, setGisLoadError] = useState(null);
+    const [isGisLoading, setIsGisLoading] = useState(false);
+    const [visibleGisFeatureCount, setVisibleGisFeatureCount] = useState(0);
 
     const resetToSidoView = useCallback(() => {
         const initialView = createInitialView();
@@ -240,10 +281,16 @@ function DashboardMap({ onAreaSelect }) {
             source: activeBoundarySource,
             style: (feature) => getBoundaryStyle(feature, selectedFeatureRef.current),
         });
+        const gisFeatureSource = new VectorSource();
+        const gisFeatureLayer = new VectorLayer({
+            source: gisFeatureSource,
+            style: getGisFeatureStyle,
+        });
+        gisFeatureLayer.setZIndex(10);
 
         const map = new Map({
             target: mapElementRef.current,
-            layers: [boundaryLayer],
+            layers: [boundaryLayer, gisFeatureLayer],
             view: new View({
                 center: KOREA_CENTER,
                 zoom: 6.25,
@@ -348,7 +395,13 @@ function DashboardMap({ onAreaSelect }) {
         }
 
         function handleFeatureClick(feature) {
+            if (feature.get("datasetCode")) {
+                setGisFeatureNotice(formatGisFeatureNotice(feature));
+                return;
+            }
+
             setDrillDownNotice(null);
+            setGisFeatureNotice(null);
             selectedFeatureRef.current = feature;
             const area = getFeatureArea(feature);
             boundaryLayer.changed();
@@ -377,6 +430,7 @@ function DashboardMap({ onAreaSelect }) {
 
             if (!(feature instanceof Feature)) {
                 setDrillDownNotice(null);
+                setGisFeatureNotice(null);
                 selectedFeatureRef.current = null;
                 boundaryLayer.changed();
                 return;
@@ -392,25 +446,110 @@ function DashboardMap({ onAreaSelect }) {
         mapRef.current = map;
         boundaryLayerRef.current = boundaryLayer;
         boundarySourceRef.current = activeBoundarySource;
+        gisLayerRef.current = gisFeatureLayer;
+        gisSourceRef.current = gisFeatureSource;
         loadBoundariesRef.current = loadBoundaries;
         void loadBoundaries(createInitialView(), { force: true });
 
         return () => {
             isMounted = false;
             abortControllerRef.current?.abort();
+            gisAbortControllerRef.current?.abort();
             map.setTarget(undefined);
             mapRef.current = null;
             boundaryLayerRef.current = null;
             boundarySourceRef.current = null;
+            gisLayerRef.current = null;
+            gisSourceRef.current = null;
             selectedFeatureRef.current = null;
             abortControllerRef.current = null;
+            gisAbortControllerRef.current = null;
             loadBoundariesRef.current = null;
             lastRequestKeyRef.current = "";
+            lastGisRequestKeyRef.current = "";
         };
     }, []);
 
+    useEffect(() => {
+        const source = gisSourceRef.current;
+        if (!source) {
+            return undefined;
+        }
+
+        let cancelled = false;
+        const timerId = window.setTimeout(() => {
+            gisAbortControllerRef.current?.abort();
+            source.clear(true);
+            setGisFeatureNotice(null);
+            setGisLoadError(null);
+            setVisibleGisFeatureCount(0);
+
+            if (!gisLayer?.datasetCode) {
+                setIsGisLoading(false);
+                lastGisRequestKeyRef.current = "";
+                return;
+            }
+
+            const filterAreaCode = viewState.parentArea?.areaCode ?? null;
+            const requestKey = [gisLayer.datasetCode, viewState.bbox, filterAreaCode ?? "ROOT"].join(":");
+            if (requestKey === lastGisRequestKeyRef.current) {
+                return;
+            }
+            lastGisRequestKeyRef.current = requestKey;
+
+            const abortController = new AbortController();
+            gisAbortControllerRef.current = abortController;
+            setIsGisLoading(true);
+
+            axiosInstance.get("/api/dashboard/gis-features", {
+                params: {
+                    datasetCode: gisLayer.datasetCode,
+                    bbox: viewState.bbox,
+                    areaCode: filterAreaCode,
+                    limit: 500,
+                },
+                signal: abortController.signal,
+            }).then((response) => {
+                if (cancelled || abortController.signal.aborted) {
+                    return;
+                }
+
+                const features = geoJsonFormat.readFeatures(response.data);
+                source.clear(true);
+                source.addFeatures(features);
+                setVisibleGisFeatureCount(features.length);
+            }).catch((error) => {
+                if (cancelled || abortController.signal.aborted || error.name === "CanceledError") {
+                    return;
+                }
+                console.error(error);
+                lastGisRequestKeyRef.current = "";
+                source.clear(true);
+                setVisibleGisFeatureCount(0);
+                setGisLoadError("선택한 지도 레이어 데이터를 불러오지 못했습니다.");
+            }).finally(() => {
+                if (!cancelled && gisAbortControllerRef.current === abortController) {
+                    setIsGisLoading(false);
+                }
+            });
+        }, 0);
+
+        return () => {
+            cancelled = true;
+            window.clearTimeout(timerId);
+            gisAbortControllerRef.current?.abort();
+        };
+    }, [gisLayer?.datasetCode, viewState.bbox, viewState.parentArea?.areaCode]);
+
     const canGoParent = viewState.stack.length > 0;
     const isSidoView = viewState.level === "SIDO" && viewState.stack.length === 0;
+    const storedGisFeatureCount = Number(gisLayer?.featureCount ?? 0);
+    const gisLayerCountLabel = isGisLoading
+        ? "현재 지도 범위 조회 중"
+        : `현재 범위 ${visibleGisFeatureCount.toLocaleString()}건 표시`
+            + (storedGisFeatureCount > visibleGisFeatureCount
+                ? ` · 저장 ${storedGisFeatureCount.toLocaleString()}건`
+                : "");
 
     return (
         <div className="card shadow-sm dashboard-map-card">
@@ -474,9 +613,27 @@ function DashboardMap({ onAreaSelect }) {
                 {drillDownNotice && !loadError && (
                     <div className="alert alert-info py-2 small my-2">{drillDownNotice}</div>
                 )}
+                {gisFeatureNotice && !loadError && (
+                    <div className="alert alert-warning py-2 small my-2">
+                        <i className="bi bi-ev-station me-1" />
+                        {gisFeatureNotice}
+                    </div>
+                )}
+                {gisLoadError && !loadError && (
+                    <div className="alert alert-warning py-2 small my-2">{gisLoadError}</div>
+                )}
 
                 <div className="dashboard-map-wrap">
                     <div ref={mapElementRef} className="dashboard-map" />
+                    {gisLayer?.datasetName && (
+                        <div className="dashboard-map-layer-badge">
+                            <span className="dashboard-map-layer-dot" />
+                            <div>
+                                <strong>{gisLayer.datasetName}</strong>
+                                <span>{gisLayerCountLabel}</span>
+                            </div>
+                        </div>
+                    )}
                     {isLoading && (
                         <div className="dashboard-map-loading">
                             <span className="spinner-border spinner-border-sm" aria-hidden="true" />

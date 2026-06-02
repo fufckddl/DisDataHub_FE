@@ -38,6 +38,7 @@ function DashboardPage() {
     const [error, setError] = useState(null);
     const [queryDate, setQueryDate] = useState(null);
     const [populationNotice, setPopulationNotice] = useState(null);
+    const [gisLayer, setGisLayer] = useState(null);
 
     const handleAreaSelect = useCallback(async (area) => {
         setSelectedArea(area);
@@ -85,7 +86,7 @@ function DashboardPage() {
 
                 <div className="row mb-3 g-3">
                     <div className="col-lg-8">
-                        <DashboardMap onAreaSelect={handleAreaSelect} />
+                        <DashboardMap onAreaSelect={handleAreaSelect} gisLayer={gisLayer} />
                     </div>
                     <div className="col-lg-4">
                         <PopulationPanel
@@ -112,6 +113,7 @@ function DashboardPage() {
                             populationData={populationData}
                             populationLoading={loading}
                             populationError={error}
+                            onGisLayerChange={setGisLayer}
                         />
                     </div>
                 </div>
