@@ -1,13 +1,13 @@
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import TopTitle from "../../components/TopTitle";
 import "../../style/download.css";
 import mapPreviewImg from "../../../assets/images/map-preview.png";
 import { useEffect, useState } from "react";
 import { datasetDetailDummy } from "../../dummy/datasetDetailDummy";
-import {MapContainer, TileLayer, GeoJSON} from "react-leaflet"
+import {MapContainer, TileLayer, GeoJSON, useMap} from "react-leaflet"
+import L from "leaflet"
 import { dummyCctvGeoJson } from "../../geojson/dummyCctvGeoJson";
-import { downloadFileApi, getDatasetDownloadPageApi, uploadTempTestFileApi } from "../../api/userDownloadApi";
-
+import { downloadFileApi, getDatasetDownloadPageApi, uploadTempTestFileApi, getDatasetPreviewGeoJsonApi } from "../../api/userDownloadApi";
 
 function DatasetSummaryCard({dataset, stats, sourceFile}){
 
@@ -26,19 +26,19 @@ function DatasetSummaryCard({dataset, stats, sourceFile}){
     };    
 
     const formatSrid = (value) => {
-    if (!value) return "-";
+        if (!value) return "-";
 
-    // 좌표계 형식 변환
-    const sridMap = {
-        4326: "EPSG:4326 (WGS84)",
-        5179: "EPSG:5179 (Korea 2000 / Unified CS)",
-        5181: "EPSG:5181 (Korea 2000 / Central Belt)",
-        5186: "EPSG:5186 (Korea 2000 / Central Belt 2010)",
-        5187: "EPSG:5187 (Korea 2000 / East Belt 2010)",
-        5188: "EPSG:5188 (Korea 2000 / East Sea Belt 2010)",
-    };
+        // 좌표계 형식 변환
+        const sridMap = {
+            4326: "EPSG:4326 (WGS84)",
+            5179: "EPSG:5179 (Korea 2000 / Unified CS)",
+            5181: "EPSG:5181 (Korea 2000 / Central Belt)",
+            5186: "EPSG:5186 (Korea 2000 / Central Belt 2010)",
+            5187: "EPSG:5187 (Korea 2000 / East Belt 2010)",
+            5188: "EPSG:5188 (Korea 2000 / East Sea Belt 2010)",
+        };
 
-    return sridMap[value] ?? `EPSG:${value}`;
+        return sridMap[value] ?? `EPSG:${value}`;
     };        
 
     // const datasetSummaryInfo = datasetDetailDummy.datasetSummary
@@ -123,8 +123,11 @@ function DatasetInfoCard({dataset, stats, sourceFile}){
         if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 
         return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
-    };    
-
+    };
+    
+    const formatSrid = (value) => {
+        return `EPSG:${value}`;
+    }
     return(
         <>
             <div className="col-5 pe-0">
@@ -147,7 +150,7 @@ function DatasetInfoCard({dataset, stats, sourceFile}){
                             />
                             <DatasetInfoPairRow
                                 leftTitle="지역" leftContent="서울시"
-                                rightTitle="좌표계" rightContent={dataset?.storageSrid ?? "-"}
+                                rightTitle="좌표계" rightContent={formatSrid(dataset?.storageSrid) ?? "-"}
                             />
                             <DatasetInfoPairRow
                                 leftTitle="등록일" leftContent={formatDateTime(dataset?.createdAt)}
@@ -206,7 +209,14 @@ function DatasetInfoPairRow({ leftTitle, leftContent, rightTitle, rightContent, 
 }
 
 // 지도 시각화
-function MapVisualizationCard(){
+function MapVisualizationCard({previewGeoJson, dataset}){
+    
+    const isSpatialDataset = Boolean(dataset.isSpatial);
+
+    const hasPreviewFeatures =
+        Array.isArray(previewGeoJson?.features) &&
+        previewGeoJson.features.some((feature) => feature?.geometry);
+
     return(
         <>
             <div className="col-7">
@@ -223,33 +233,29 @@ function MapVisualizationCard(){
                     <div className="row mb-2">
                         <div className="col">
                             <div className="map-preview-box">
-                                {
-                                    true ?
-                                    <>
-                                        {/* <img    src={mapPreviewImg} 
-                                                alt="지도 미리보기" 
-                                                className="img-fluid rounded w-100 h-100 object-fit-cover"/>
-                                        <MapControlButton /> */}
-
-                                        <MapContainer
-                                            center={[37.5665, 126.9780]}
-                                            zoom={10}
-                                            className="w-100 h-100 rounded"
-                                            
-                                        >
-                                            <TileLayer
-                                                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                                attribution="&copy; OpenStreetMap contributors"
-                                            />                                            
-                                            <GeoJSON data={dummyCctvGeoJson} />
-                                        </MapContainer>
-                                    </>
-                                    :
+                                {!isSpatialDataset?(
                                     <div className="d-flex align-items-center h-100 w-100 justify-content-center">
-                                        지도 정보가 없습니다.
-                                        <i className="bi bi-map fs-1 text-secondary mb-2"></i>
-                                    </div>                                                    
-                                }                                                
+                                        공간 데이터가 아니므로 지도 시각화를 제공할 수 없습니다
+                                    </div>
+                                ):!hasPreviewFeatures ?(
+                                    <div className="d-flex align-items-center h-100 w-100 justify-content-center">
+                                        표시할 수 있는 공간 좌표 데이터가 없습니다.
+                                    </div>
+                                ):(
+                                    <MapContainer
+                                        center={[36.5, 127.8]}
+                                        zoom={7}
+                                        className="w-100 h-100 rounded"
+                                    >
+                                        <TileLayer
+                                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                            attribution="&copy; OpenStreetMap contributors"
+                                        />
+                                        {previewGeoJson && <MapBoundsUpdater geoJsonData={previewGeoJson} />} {/* 코드 안에서 계산/조작 하기 위한 용도 */}
+                                        {previewGeoJson && <GeoJSON data={previewGeoJson} />}  {/* 지도를 실제로 그리는 기술 */}
+                                        
+                                    </MapContainer>
+                                )}           
                             </div>
                         </div>
                     </div>
@@ -260,18 +266,32 @@ function MapVisualizationCard(){
                                 <div className="row">
                                     <div className="col d-flex align-items-center">
                                         <span><i className="bi bi-info-circle text-primary mx-1" style={{fontSize: "15px"}}></i></span>
-                                        <span className="dataset-text-gray">이 데이터를 시뮬레이션 페이지에서 분석을 진행할 수 있습니다.</span>
+                                        <span className="dataset-text-gray">
+                                            {dataset.isSpatial ?
+                                                "이 데이터를 시뮬레이션 페이지에서 분석을 진행할 수 있습니다."
+                                                :
+                                                "공간 데이터가 아니므로 시뮬레이션을 사용할 수 없습니다."
+                                            }
+                                        </span>
+
+                                        
                                     </div>
                                     <div className="col-auto text-end">
-                                        {/*[sd_gis_dataset]is_spatial(공간 데이터 유무) 가 "T"인가 확인 필요*/}
-                                        {/* <Link to="simulation" className="btn btn-primary btn-sm">
-                                            <i className="bi bi-bar-chart me-2"></i>
-                                            시뮬레이션으로 이동                                                                                       
-                                        </Link> */}
-                                        <Link to="simulationTest" className="btn btn-primary btn-sm">
-                                            <i className="bi bi-bar-chart me-2"></i>
-                                            시뮬레이션으로 이동                                                                                       
-                                        </Link>
+                                        {
+                                            isSpatialDataset ? (
+                                                <Link to="simulationTest" className="btn btn-primary btn-sm">
+                                                    <i className="bi bi-bar-chart me-2"></i>
+                                                    시뮬레이션으로 이동                                                                                       
+                                                </Link>
+                                            ):(
+                                                <span title="공간 데이터가 아닌 경우 시뮬레이션을 사용할 수 없습니다.">
+                                                    <button className="btn btn-secondary btn-sm" disabled>
+                                                        <i className="bi bi-bar-chart me-2"></i>
+                                                        시뮬레이션으로 이동
+                                                    </button>
+                                                </span>
+                                            )
+                                        }
                                     </div>
                                 </div>
                             </div>
@@ -281,6 +301,27 @@ function MapVisualizationCard(){
             </div>        
         </>
     )
+}
+
+// 지도 중심 잡기위한 컴포넌트
+function MapBoundsUpdater({ geoJsonData }) {
+    const map = useMap();
+
+    useEffect(() => {
+        if (!geoJsonData) return;
+
+        const layer = L.geoJSON(geoJsonData);
+        const bounds = layer.getBounds();  
+        // -> 레이어가 차지하는 최대/최소 좌표 범위 측정 
+        // -> 동서남북 가장 끝 값
+
+        if (bounds.isValid()) {
+            map.fitBounds(bounds, { padding: [20, 20] }); 
+            // -> bounds를 기준으로 화면에 다 보이도록 자동 조정
+        }
+    }, [geoJsonData, map]);
+
+    return null;
 }
 
 function MapOptionButton(){
@@ -680,57 +721,92 @@ function UserDatasetDetailPage(){
 
     const { datasetId } = useParams();
     const [pageData, setPageData] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(true);  //로딩중일때를 확인하기 위한 상태
     const [errorMessage, setErrorMessage] = useState("");
-
+    const [accessDenied, setAccessDenied] = useState(false);
+    const [notFound, setNotFound] = useState(false);
+    const [previewGeoJson, setPreviewGeoJson] = useState(null);
     
-    const fallbaclPageData = {
-        dataset: {
-            title : datasetDetailDummy.dataset.title,
-            subTitle : datasetDetailDummy.dataset.subTitle,
-            description : datasetDetailDummy.dataset.description,
-            provider : datasetDetailDummy.dataset.provider,
-            createdAt : datasetDetailDummy.dataset.createdAt,
-            updatedAt : datasetDetailDummy.dataset.updatedAt,
-            storageSrid : datasetDetailDummy.dataset.storageSrid,
-            spatial : datasetDetailDummy.dataset.isSpatial,
-            category : datasetDetailDummy.dataset.category,
-            region : datasetDetailDummy.dataset.region,
-        },
-        stats: {
-            viewCount: datasetDetailDummy.stats.viewCount,
-            downloadCount: datasetDetailDummy.stats.downloadCount,
-        },
-        sourceFile: {
-            originalFilename: datasetDetailDummy.dataset.title,
-            fileExtension: datasetDetailDummy.files[0]?.type ?? "-",
-            fileSize: datasetDetailDummy.files[0]?.size ?? "-",
-        },
-        availableFormats: datasetDetailDummy.files.map((item) => item.type),
-    };
 
-
-    const viewData = pageData ?? fallbaclPageData;
-
+    const navigate = useNavigate();
     
-    
+    // console.log("previewGeoJson : ", previewGeoJson);
+    // console.log("pageData : ",pageData);
     useEffect(() => {
     const fetchPageData = async () => {
         try {
-        setLoading(true);
-        setErrorMessage("");
-        const response = await getDatasetDownloadPageApi(datasetId);
-        setPageData(response.data);
+            setLoading(true);
+            setErrorMessage("");
+            // 상세정보 API
+            const response = await getDatasetDownloadPageApi(datasetId);
+            setPageData(response.data);
+
+            try{
+                // GeoJson 지도 정보 API
+                const previewResponse = await getDatasetPreviewGeoJsonApi(datasetId);
+
+                const previewData =
+                    typeof previewResponse.data === "string"
+                        ? JSON.parse(previewResponse.data)
+                        : previewResponse.data;
+
+                setPreviewGeoJson(previewData);
+            }catch(previewError){
+                console.error("지도 미리보기 로드 실패:", previewError);
+                setPreviewGeoJson(null);
+            }
         } catch (e) {
-        setErrorMessage("상세 데이터를 불러오지 못했습니다.");
+            // 권한 오류
+            if(e?.response?.status === 403){
+                setAccessDenied(true);
+                setErrorMessage("페이지를 확인할 수 있는 권한이 존재하지 않습니다.");
+                return;
+            }
+            // 페이지 부제 오류
+            if(e?.response?.status === 404){
+                setNotFound(true);
+                console.log("404 오류 발생")
+                setErrorMessage("존재하지 않는 데이터셋입니다.");
+                navigate("/download/user/main")
+                return;
+            }            
+            // 위의 에러가 아닐 경우 에러
+            setErrorMessage("상세 데이터를 불러오지 못했습니다.");
         } finally {
-        setLoading(false);
+            setLoading(false);
         }
     };
 
     fetchPageData();
-    }, [datasetId]);
-    
+    }, [datasetId, navigate]);
+
+
+    // console.log(loading)
+    const viewData = pageData;
+
+    //  초반 로딩중일 때
+    if(loading){
+        return(
+            <div className="container-fluid px-4 py-3">
+                <div>
+                    상세 데이터를 불러오는 중입니다...
+                </div>                
+            </div>
+        )
+    }
+
+
+    if (!viewData) {
+        return (
+            <div className="container-fluid px-4 py-3">
+                <div className="alert alert-warning">
+                    {errorMessage || "상세 데이터를 불러오지 못했습니다."}
+                </div>
+                <Link to="/download/user/main">목록으로 돌아가기</Link>
+            </div>
+        );
+    }
+
 
 
     return(
@@ -768,7 +844,10 @@ function UserDatasetDetailPage(){
                                 sourceFile={viewData.sourceFile}                             
                             />
                             {/* 지도 시각화 */}
-                            <MapVisualizationCard />
+                            <MapVisualizationCard 
+                                previewGeoJson={previewGeoJson}
+                                dataset={viewData.dataset}
+                            />
                         </div>
 
                         <div className="row">

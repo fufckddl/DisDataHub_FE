@@ -1,6 +1,29 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axiosInstance from "../../../commons/api/axiosinstance";
+import 'leaflet/dist/leaflet.css';
+import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
+import L from 'leaflet';
+
+// 지도 카메라를 데이ㅓ 바운더리에 딱 맞게 줌인/이동시켜주는 전담 카메라맨
+function FitBoundsToData({ data }) {
+    const map = useMap();   // 현재 지도의 조종간을 가져옴
+
+    useEffect(() => {
+        if (data && data.features.length > 0) {
+            // GeoJSON 데이터를 바탕으로 동서남북 끄트머리 (Bounds)를 계산함
+            const geoJsonLayer = L.geoJSON(data);
+            const bounds = geoJsonLayer.getBounds();
+
+            // 계산된 바운더리가 유효하다면 카메라 이동
+            if (bounds.isValid()) {
+                map.fitBounds(bounds, { padding: [30, 30] });
+            }
+        }
+    }, [data, map]);
+
+    return null;
+}
 
 function AdminApprovalDetailPage() {
     const navigate = useNavigate();
@@ -11,7 +34,11 @@ function AdminApprovalDetailPage() {
     // =====================================================================
     const [datasetInfo, setDatasetInfo] = useState(null);
     const [isLoading, setIsLoading] = useState(true); 
-    const [error, setError] = useState(null);         
+    const [error, setError] = useState(null);    
+    
+    // 지도 데이터를 담을 State
+    const [mapData, setMapData] = useState(null);   // 가공된 GeoJSON 데이터
+    const [isMapLoading, setIsMapLoading] = useState(true); // 지도 전용 로딩
     
     // 승인 처리 중 버튼 비활성화를 위한 상태
     const [isApproving, setIsApproving] = useState(false); 
@@ -27,14 +54,42 @@ function AdminApprovalDetailPage() {
     // 2. 백엔드 API에서 데이터 가져오기 (useEffect)
     // =====================================================================
     useEffect(() => {
-        const fetchDatasetDetail = async () => {
+        const fetchData = async () => {
             setIsLoading(true);
+            setIsMapLoading(true);
+            
             try {
-                const response = await axiosInstance.get(`/api/admin/approvals/${datasetId}`);
-                setDatasetInfo(response.data);
+                // 1. 기존 데이터셋 상세 정보 가져오기
+                const detailResponse = await axiosInstance.get(`/api/admin/approvals/${datasetId}`);
+                setDatasetInfo(detailResponse.data);
+
+                // 2. 지도 시각화 데이터 가져오기
+                const mapResponse = await axiosInstance.get(`/api/admin/approvals/${datasetId}/map-data`);
+                const rawFeatures = mapResponse.data;
+
+                // 3. SHP, TIFF처럼 데이터가 0개면 null로 처리 (미리보기 미지원)
+                if (rawFeatures.length === 0) {
+                    setMapData(null);
+                } else {
+                    // 백엔드에서 온 500개의 문자열 데이터를 Leaflet 표준 규격(FeatureCollection)으로 강제 조립
+                    const geoJsonCollection = {
+                        type: "FeatureCollection",
+                        features: rawFeatures.map(item => ({
+                            type: "Feature",
+                            properties: {
+                                featureName: item.featureName,
+                                spatialType: item.spatialType
+                            },
+                            // 문자열을 찐 JSON 객체로 변환!
+                            geometry: JSON.parse(item.geoJson) 
+                        }))
+                    };
+                    setMapData(geoJsonCollection);
+                }
+                
                 setError(null);
             } catch (err) {
-                console.error("데이터셋 상세 정보 조회 실패:", err);
+                console.error("데이터 조회 실패:", err);
                 if (err.response && err.response.status === 403) {
                     alert(err.response.data || "로그인이 필요합니다."); 
                     navigate("/login"); 
@@ -46,10 +101,11 @@ function AdminApprovalDetailPage() {
                 }
             } finally {
                 setIsLoading(false);
+                setIsMapLoading(false);
             }
         };
 
-        fetchDatasetDetail();
+        fetchData();
     }, [datasetId, navigate]);
 
     // =====================================================================
@@ -210,10 +266,82 @@ function AdminApprovalDetailPage() {
                         <h5 className="fw-bold mb-0" style={{ fontSize: '1.25rem' }}>공간 데이터 시각화 검증</h5>
                         <span className="badge bg-secondary" style={{ fontSize: '0.875rem' }}>EPSG:4326</span>
                     </div>
-                    <div className="bg-light rounded-3 border d-flex flex-column align-items-center justify-content-center" style={{ height: '25rem' }}>
-                        <i className="bi bi-map text-secondary opacity-50 mb-3" style={{ fontSize: '4rem' }}></i>
-                        <p className="text-muted fw-bold mb-0" style={{ fontSize: '1.125rem' }}>지도 시각화 영역 (추후 구현)</p>
-                        <span className="text-muted small" style={{ fontSize: '0.9rem' }}>좌표 데이터를 기반으로 폴리곤 및 마커가 렌더링될 위치입니다.</span>
+
+                    {/* 🚀 지도가 들어갈 25rem짜리 컨테이너 (여백 밖으로 안 삐져나가게 overflow-hidden) */}
+                    <div className="bg-light rounded-3 border overflow-hidden position-relative" style={{ height: '25rem', zIndex: 0 }}>
+                        
+                        {/* Case 1: 로딩 중일 때 */}
+                        {isMapLoading ? (
+                            <div className="d-flex flex-column align-items-center justify-content-center h-100">
+                                <div className="spinner-border text-primary mb-3" role="status"></div>
+                                <span className="text-muted fw-bold">지도 데이터를 불러오는 중입니다...</span>
+                            </div>
+                        ) : 
+                        
+                        /* Case 2: SHP, TIFF처럼 프리패스되어 그릴 데이터가 아예 없을 때 */
+                        !mapData ? (
+                            <div className="d-flex flex-column align-items-center justify-content-center h-100">
+                                <i className="bi bi-map-fill text-secondary opacity-25 mb-3" style={{ fontSize: '4rem' }}></i>
+                                <h6 className="fw-bold text-secondary mb-1">지도 미리보기를 지원하지 않는 포맷입니다.</h6>
+                                <span className="text-muted small">SHP(ZIP) 또는 GeoTIFF 파일은 별도의 데스크톱 GIS 소프트웨어를 통해 확인해 주세요.</span>
+                            </div>
+                        ) : 
+                        
+                        /* Case 3: 정상적인 GeoJSON 데이터가 있을 때 (대망의 렌더링!) */
+                        (
+                            <MapContainer 
+                                center={[37.5665, 126.9780]} // 기본 중앙값 (서울 시청) -> 어차피 FitBounds가 덮어씌움
+                                zoom={8} 
+                                style={{ height: '100%', width: '100%' }}
+                            >
+                                {/* 1. 배경 지도 (오픈스트리트맵 타일) */}
+                                <TileLayer
+                                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                                />
+                                
+                                {/* 2. 아까 만든 카메라맨 (자동 줌인) */}
+                                <FitBoundsToData data={mapData} />
+
+                                {/* 3. 500개의 데이터를 그려주는 핵심 컴포넌트 */}
+                                <GeoJSON 
+                                    data={mapData}
+                                    
+                                    // [디테일 1] 점(POINT) 데이터를 예쁜 파란색 동그라미(Circle)로 그려주는 옵션 (성능 최적화)
+                                    pointToLayer={(feature, latlng) => {
+                                        return L.circleMarker(latlng, {
+                                            radius: 6,
+                                            fillColor: "#0d6efd", // 부트스트랩 프라이머리 블루
+                                            color: "#ffffff",
+                                            weight: 2,
+                                            opacity: 1,
+                                            fillOpacity: 0.8
+                                        });
+                                    }}
+                                    
+                                    // [디테일 2] 선이나 면을 예쁜 파란색으로 그려주는 스타일
+                                    style={{
+                                        color: "#0d6efd",
+                                        weight: 3,
+                                        opacity: 0.7,
+                                        fillColor: "#0d6efd",
+                                        fillOpacity: 0.2
+                                    }}
+
+                                    // [디테일 3] 각각의 객체를 클릭했을 때 이름이 말풍선(Popup)으로 뜨게 하는 설정
+                                    onEachFeature={(feature, layer) => {
+                                        if (feature.properties && feature.properties.featureName) {
+                                            layer.bindPopup(
+                                                `<div class="text-center">
+                                                    <span class="badge bg-primary mb-1">${feature.properties.spatialType}</span><br/>
+                                                    <strong style="font-size: 1.1rem;">${feature.properties.featureName}</strong>
+                                                </div>`
+                                            );
+                                        }
+                                    }}
+                                />
+                            </MapContainer>
+                        )}
                     </div>
                 </div>
             </div>

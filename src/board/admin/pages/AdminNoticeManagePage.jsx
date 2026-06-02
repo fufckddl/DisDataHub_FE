@@ -1,49 +1,60 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-
-import {
-  adminNoticeMockList,
-  adminNoticeCategoryMockList,
-  adminNoticeVisibilityMockList,
-  adminNoticePaginationMock,
-} from "../../mock/adminNoticeMockData";
-
+import { getAdminNoticeListApi, deleteNoticeApi } from "../../api/noticeApi";
 import "../css/AdminNoticeManagePage.css";
 
 function AdminNoticeManagePage() {
+  const [noticeList, setNoticeList] = useState([]);
   const [searchWord, setSearchWord] = useState("");
-  const [categoryCode, setCategoryCode] = useState("");
   const [visibilityStatus, setVisibilityStatus] = useState("");
+  const [isLoading, setLoading] = useState(false);
 
-  const filteredNoticeList = adminNoticeMockList.filter((notice) => {
-    const matchSearch = notice.title.includes(searchWord);
+  const getAdminNoticeList = async () => {
+    try {
+      setLoading(true);
 
-    const matchCategory =
-      categoryCode === "" || notice.categoryCode === categoryCode;
+      const data = await getAdminNoticeListApi();
+
+      if (data.result === "success") {
+        setNoticeList(data.adminNoticeList ?? data.adminNotice ?? []);
+      }
+    } catch (error) {
+      console.error("관리자 공지사항 목록 조회 실패:", error);
+      alert("공지사항 목록을 불러오는 중 오류가 발생했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    getAdminNoticeList();
+  }, []);
+
+  const filteredNoticeList = noticeList.filter((notice) => {
+    const matchSearch = notice.title
+      ?.toLowerCase()
+      .includes(searchWord.toLowerCase());
 
     const matchVisibility =
       visibilityStatus === "" || notice.visibilityStatus === visibilityStatus;
 
-    return matchSearch && matchCategory && matchVisibility;
+    return matchSearch && matchVisibility;
   });
 
-  const totalCount = adminNoticeMockList.length;
+  const totalCount = noticeList.length;
 
-  const pinnedCount = adminNoticeMockList.filter(
-    (notice) => notice.pinnedYn === "Y"
+  const pinnedCount = noticeList.filter(
+    (notice) => notice.pinnedYn === "Y" && notice.deletedYn === "N"
   ).length;
 
-  const publicCount = adminNoticeMockList.filter(
-    (notice) => notice.visibilityStatus === "PUBLIC"
+  const publicCount = noticeList.filter(
+    (notice) =>
+      notice.visibilityStatus === "PUBLIC" && notice.deletedYn === "N"
   ).length;
 
-  const getCategoryClassName = (categoryCode) => {
-    if (categoryCode === "SYSTEM") return "category-system";
-    if (categoryCode === "DATA") return "category-data";
-    if (categoryCode === "SERVICE") return "category-service";
-    if (categoryCode === "POLICY") return "category-policy";
-    return "category-etc";
-  };
+  const deletedCount = noticeList.filter(
+    (notice) => notice.deletedYn === "Y"
+  ).length;
 
   const getVisibilityClassName = (visibilityStatus) => {
     if (visibilityStatus === "PUBLIC") return "visibility-public";
@@ -51,8 +62,40 @@ function AdminNoticeManagePage() {
     return "";
   };
 
-  const handleDelete = (postId) => {
-    alert(`${postId}번 공지사항 삭제 기능은 나중에 연결합니다.`);
+  const getVisibilityName = (visibilityStatus) => {
+    if (visibilityStatus === "PUBLIC") return "공개";
+    if (visibilityStatus === "PRIVATE") return "비공개";
+    return "-";
+  };
+
+  const formatDate = (createdAt) => {
+    if (!createdAt) return "-";
+
+    return createdAt.substring(0, 10);
+  };
+
+  const handleDelete = async (postId) => {
+    const isConfirm = window.confirm(
+      `${postId}번 공지사항을 삭제하시겠습니까?`
+    );
+
+    if (!isConfirm) {
+      return;
+    }
+
+    try {
+      const data = await deleteNoticeApi(postId);
+
+      if (data.result === "success") {
+        alert("공지사항이 삭제되었습니다.");
+        getAdminNoticeList();
+      } else {
+        alert("공지사항 삭제에 실패했습니다.");
+      }
+    } catch (error) {
+      console.error("공지사항 삭제 실패:", error);
+      alert("공지사항 삭제 중 오류가 발생했습니다.");
+    }
   };
 
   return (
@@ -71,7 +114,7 @@ function AdminNoticeManagePage() {
           <div>
             <p>전체 공지</p>
             <strong>{totalCount}건</strong>
-            <span>전체 등록된 공지사항</span>
+            <span>삭제 포함 전체 공지사항</span>
           </div>
         </div>
 
@@ -94,6 +137,16 @@ function AdminNoticeManagePage() {
             <span>현재 공개 중인 공지</span>
           </div>
         </div>
+
+        <div className="admin-notice-summary-card">
+          <div className="summary-icon">🗑️</div>
+
+          <div>
+            <p>삭제 공지</p>
+            <strong>{deletedCount}건</strong>
+            <span>삭제 처리된 공지사항</span>
+          </div>
+        </div>
       </section>
 
       <section className="admin-notice-filter-section">
@@ -109,37 +162,24 @@ function AdminNoticeManagePage() {
         </div>
 
         <div className="filter-item">
-          <label>분류</label>
-
-          <select
-            value={categoryCode}
-            onChange={(e) => setCategoryCode(e.target.value)}
-          >
-            {adminNoticeCategoryMockList.map((category) => (
-              <option key={category.code} value={category.code}>
-                {category.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="filter-item">
           <label>공개 여부</label>
 
           <select
             value={visibilityStatus}
             onChange={(e) => setVisibilityStatus(e.target.value)}
           >
-            {adminNoticeVisibilityMockList.map((status) => (
-              <option key={status.code} value={status.code}>
-                {status.name}
-              </option>
-            ))}
+            <option value="">전체</option>
+            <option value="PUBLIC">공개</option>
+            <option value="PRIVATE">비공개</option>
           </select>
         </div>
 
-        <button type="button" className="notice-search-button">
-          🔍 검색
+        <button
+          type="button"
+          className="notice-search-button"
+          onClick={getAdminNoticeList}
+        >
+          🔍 새로고침
         </button>
 
         <Link to="/admin/board/notice/write" className="notice-write-button">
@@ -156,6 +196,7 @@ function AdminNoticeManagePage() {
               <th>분류</th>
               <th>상단고정</th>
               <th>공개여부</th>
+              <th>삭제여부</th>
               <th>작성일</th>
               <th>관리</th>
             </tr>
@@ -163,18 +204,25 @@ function AdminNoticeManagePage() {
 
           <tbody>
             {filteredNoticeList.map((notice) => (
-              <tr key={notice.postId}>
+              <tr
+                key={notice.postId}
+                className={notice.deletedYn === "Y" ? "deleted-notice-row" : ""}
+              >
                 <td>{notice.postId}</td>
 
-                <td className="notice-title-cell">{notice.title}</td>
+                <td className="notice-title-cell">
+                  <Link to={`/admin/board/notice/${notice.postId}`}>
+                    {notice.title}
+                  </Link>
+
+                  {notice.deletedYn === "Y" && (
+                    <span className="notice-deleted-text">삭제됨</span>
+                  )}
+                </td>
 
                 <td>
-                  <span
-                    className={`notice-category-badge ${getCategoryClassName(
-                      notice.categoryCode
-                    )}`}
-                  >
-                    {notice.categoryName}
+                  <span className="notice-category-badge category-system">
+                    공지사항
                   </span>
                 </td>
 
@@ -196,65 +244,64 @@ function AdminNoticeManagePage() {
                       notice.visibilityStatus
                     )}`}
                   >
-                    {notice.visibilityName}
+                    {getVisibilityName(notice.visibilityStatus)}
                   </span>
                 </td>
 
-                <td>{notice.createdAt}</td>
+                <td>
+                  {notice.deletedYn === "Y" ? (
+                    <span className="notice-delete-status deleted">
+                      삭제됨
+                    </span>
+                  ) : (
+                    <span className="notice-delete-status active">
+                      정상
+                    </span>
+                  )}
+                </td>
+
+                <td>{formatDate(notice.createdAt)}</td>
 
                 <td>
-                  <div className="notice-action-buttons">
-                    <button type="button" className="notice-edit-button">
-                      수정
-                    </button>
+                  {notice.deletedYn === "N" ? (
+                    <div className="notice-action-buttons">
+                      <Link
+                        to={`/admin/board/notice/edit/${notice.postId}`}
+                        className="notice-edit-button"
+                      >
+                        수정
+                      </Link>
 
-                    <button
-                      type="button"
-                      className="notice-delete-button"
-                      onClick={() => handleDelete(notice.postId)}
-                    >
-                      삭제
-                    </button>
-                  </div>
+                      <button
+                        type="button"
+                        className="notice-delete-button"
+                        onClick={() => handleDelete(notice.postId)}
+                      >
+                        삭제
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="notice-disabled-action">
+                      삭제 처리됨
+                    </span>
+                  )}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
 
-        {filteredNoticeList.length === 0 && (
+        {isLoading && (
+          <div className="admin-notice-empty-message">
+            공지사항 목록을 불러오는 중입니다.
+          </div>
+        )}
+
+        {!isLoading && filteredNoticeList.length === 0 && (
           <div className="admin-notice-empty-message">
             검색 결과가 없습니다.
           </div>
         )}
-
-        <div className="admin-notice-pagination">
-          <button type="button">«</button>
-          <button type="button">‹</button>
-
-          {adminNoticePaginationMock.pageList.map((page) => (
-            <button
-              type="button"
-              key={page}
-              className={
-                page === adminNoticePaginationMock.currentPage ? "active" : ""
-              }
-            >
-              {page}
-            </button>
-          ))}
-
-          <span>...</span>
-          <button type="button">{adminNoticePaginationMock.totalPage}</button>
-          <button type="button">›</button>
-          <button type="button">»</button>
-
-          <select className="notice-page-size-select">
-            <option>10개씩 보기</option>
-            <option>20개씩 보기</option>
-            <option>50개씩 보기</option>
-          </select>
-        </div>
       </section>
     </div>
   );
