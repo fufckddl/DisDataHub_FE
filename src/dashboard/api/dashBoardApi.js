@@ -96,3 +96,29 @@ export const getDashboardGisMetrics = async ({ sourceCode, datasetCode } = {}) =
 
     return response.data;
 };
+
+// 특정 GIS 데이터셋의 지도 표시용 point/polygon 피처를 GeoJSON으로 조회합니다.
+export const getDashboardGisFeatures = async ({ datasetCode, bbox, areaCode, limit = 500 } = {}) => {
+    const params = { datasetCode, limit };
+    if (bbox) {
+        params.bbox = bbox;
+    }
+    if (areaCode) {
+        params.areaCode = areaCode;
+    }
+
+    const response = await axiosInstance.get("/api/dashboard/gis-features", {
+        params,
+    });
+
+    return response.data;
+};
+
+// GIS 피처성 데이터의 원천 전체 건수 기준 시도별 통계를 조회합니다.
+export const getDashboardGisRegionStats = async ({ datasetCode } = {}) => {
+    const response = await axiosInstance.get("/api/dashboard/gis-region-stats", {
+        params: { datasetCode },
+    });
+
+    return response.data;
+};

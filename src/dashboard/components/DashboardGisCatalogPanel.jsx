@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+    ArcElement,
     BarElement,
     CategoryScale,
     Chart as ChartJS,
@@ -7,16 +8,26 @@ import {
     LinearScale,
     Tooltip,
 } from "chart.js";
-import { Bar } from "react-chartjs-2";
+import { Bar, Doughnut } from "react-chartjs-2";
 import {
     getDashboardGisDataSources,
     getDashboardGisDatasets,
+    getDashboardGisFeatures,
     getDashboardGisMetrics,
+    getDashboardGisRegionStats,
 } from "../api/dashBoardApi";
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
 
+const RESIDENT_POPULATION_SOURCE_CODE = "MOIS_ADMM_SEXD_AGE_PPLTN";
 const RESIDENT_POPULATION_DATASET_CODE = "MOIS_ADMM_SEXD_AGE_PPLTN_MAIN";
+const EV_CHARGER_DATASET_CODE = "KECO_EV_CHARGER_MAIN";
+const MAP_FEATURE_LAYER_TYPES = new Set(["POINT", "HEATMAP"]);
+const REGION_CHART_COLORS = [
+    "#2563eb", "#f97316", "#10b981", "#8b5cf6", "#ec4899", "#06b6d4",
+    "#f59e0b", "#84cc16", "#ef4444", "#14b8a6", "#6366f1", "#a855f7",
+    "#22c55e", "#eab308", "#0ea5e9", "#fb7185", "#64748b",
+];
 
 const PRIORITY_OPTIONS = [
     { label: "전체", value: null },
@@ -42,6 +53,13 @@ const LAYER_TYPE_LABELS = {
     RANKING: "랭킹",
     TIME_SERIES: "시계열",
     TABLE: "테이블",
+};
+
+const AREA_LEVEL_LABELS = {
+    SIDO: "시·도",
+    SIGUNGU: "시·군·구",
+    EUPMYEONDONG: "읍·면·동",
+    TONG_BAN: "통·반",
 };
 
 const populationChartOptions = {
@@ -80,6 +98,35 @@ const populationChartOptions = {
     },
 };
 
+const evChargerRegionChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: "58%",
+    plugins: {
+        legend: {
+            position: "right",
+            labels: {
+                boxWidth: 10,
+                boxHeight: 10,
+                font: {
+                    size: 11,
+                },
+            },
+        },
+        tooltip: {
+            callbacks: {
+                label: (context) => {
+                    const item = context.dataset.regionItems?.[context.dataIndex];
+                    const label = context.label ?? "";
+                    const count = formatNumber(context.raw);
+                    const percent = item?.percent ?? 0;
+                    return `${label}: ${count}기 (${Number(percent).toFixed(2)}%)`;
+                },
+            },
+        },
+    },
+};
+
 function formatNumber(value) {
     const numberValue = Number(value);
     return Number.isFinite(numberValue) ? numberValue.toLocaleString() : "0";
@@ -112,11 +159,80 @@ function createPopulationChartData(populationData) {
     };
 }
 
+function createEvChargerRegionChartData(regionStats) {
+    const items = regionStats?.items ?? [];
+
+    return {
+        labels: items.map((item) => item.areaName ?? item.fullName ?? item.areaCode),
+        datasets: [
+            {
+                label: "충전기 수",
+                data: items.map((item) => Number(item.count ?? 0)),
+                regionItems: items,
+                backgroundColor: items.map((_, index) => REGION_CHART_COLORS[index % REGION_CHART_COLORS.length]),
+                borderColor: "#ffffff",
+                borderWidth: 2,
+                hoverOffset: 8,
+            },
+        ],
+    };
+}
+
+function getFeatureRows(geoJson) {
+    return (geoJson?.features ?? [])
+        .map((feature) => feature.properties ?? {})
+        .filter((properties) => properties.featureName || properties.address || properties.externalId);
+}
+
+function DashboardGisCollectionSummary({ dataset }) {
+    const observationCount = Number(dataset?.observationCount ?? 0);
+    const metricCount = Number(dataset?.metricCount ?? 0);
+    const hasObservations = observationCount > 0;
+    const areaLevelLabel = AREA_LEVEL_LABELS[dataset?.defaultAreaLevel] ?? dataset?.defaultAreaLevel ?? "-";
+
+    return (
+        <div className={`dashboard-gis-collection-summary ${hasObservations ? "has-data" : ""}`}>
+            <div className="dashboard-gis-collection-message">
+                <i className={`bi ${hasObservations ? "bi-check-circle-fill" : "bi-exclamation-circle"} me-2`} />
+                <div>
+                    <strong>
+                        {hasObservations
+                            ? "수집 데이터가 저장되어 있습니다."
+                            : "아직 수집된 관측값이 없습니다."}
+                    </strong>
+                    <p className="mb-0">
+                        지도 polygon을 클릭하면 선택 지역 기준 차트로 바로 확인할 수 있습니다.
+                    </p>
+                </div>
+            </div>
+            <div className="dashboard-gis-collection-stats">
+                <div>
+                    <span>저장 관측값</span>
+                    <strong>{formatNumber(observationCount)}건</strong>
+                </div>
+                <div>
+                    <span>지표</span>
+                    <strong>{formatNumber(metricCount)}개</strong>
+                </div>
+                <div>
+                    <span>기본 단위</span>
+                    <strong>{areaLevelLabel}</strong>
+                </div>
+                <div>
+                    <span>표시 방식</span>
+                    <strong>{LAYER_TYPE_LABELS[dataset?.dashboardLayerType] ?? dataset?.dashboardLayerType ?? "-"}</strong>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 function DashboardGisCatalogPanel({
     selectedArea,
     populationData,
     populationLoading,
     populationError,
+    onGisLayerChange,
 }) {
     const [sources, setSources] = useState([]);
     const [datasets, setDatasets] = useState([]);
@@ -127,8 +243,14 @@ function DashboardGisCatalogPanel({
     const [selectedPriority, setSelectedPriority] = useState(null);
     const [loading, setLoading] = useState(false);
     const [detailLoading, setDetailLoading] = useState(false);
+    const [featureLoading, setFeatureLoading] = useState(false);
+    const [featureGeoJson, setFeatureGeoJson] = useState(null);
+    const [regionStatsLoading, setRegionStatsLoading] = useState(false);
+    const [regionStats, setRegionStats] = useState(null);
     const [error, setError] = useState(null);
     const [detailError, setDetailError] = useState(null);
+    const [featureError, setFeatureError] = useState(null);
+    const [regionStatsError, setRegionStatsError] = useState(null);
 
     const loadSources = useCallback(async () => {
         setLoading(true);
@@ -136,7 +258,17 @@ function DashboardGisCatalogPanel({
 
         try {
             const data = await getDashboardGisDataSources({ activeOnly: true });
-            setSources(data ?? []);
+            const loadedSources = data ?? [];
+            setSources(loadedSources);
+            setPreferredSourceCode((currentSourceCode) => {
+                if (currentSourceCode && loadedSources.some((source) => source.sourceCode === currentSourceCode)) {
+                    return currentSourceCode;
+                }
+                if (loadedSources.some((source) => source.sourceCode === RESIDENT_POPULATION_SOURCE_CODE)) {
+                    return RESIDENT_POPULATION_SOURCE_CODE;
+                }
+                return loadedSources[0]?.sourceCode ?? null;
+            });
         } catch (err) {
             console.error(err);
             setSources([]);
@@ -256,6 +388,117 @@ function DashboardGisCatalogPanel({
     const hasPopulationChartData = Boolean(
         populationChartData?.labels?.length && populationChartData?.datasets?.length
     );
+
+    const canRenderFeatureLayer = Boolean(
+        selectedDataset
+        && MAP_FEATURE_LAYER_TYPES.has(selectedDataset.dashboardLayerType)
+        && Number(selectedDataset.featureCount ?? 0) > 0
+    );
+
+    useEffect(() => {
+        let cancelled = false;
+        const timerId = window.setTimeout(() => {
+            setFeatureGeoJson(null);
+            setFeatureError(null);
+
+            if (!canRenderFeatureLayer) {
+                setFeatureLoading(false);
+                onGisLayerChange?.(null);
+                return;
+            }
+
+            setFeatureLoading(true);
+            onGisLayerChange?.({
+                datasetCode: selectedDataset.datasetCode,
+                datasetName: selectedDataset.datasetName,
+                layerType: selectedDataset.dashboardLayerType,
+                featureCount: selectedDataset.featureCount,
+            });
+
+            async function loadFeatures() {
+                try {
+                    const geoJson = await getDashboardGisFeatures({
+                        datasetCode: selectedDataset.datasetCode,
+                        limit: 500,
+                    });
+
+                    if (cancelled) {
+                        return;
+                    }
+
+                    setFeatureGeoJson(geoJson);
+                } catch (err) {
+                    console.error(err);
+                    if (!cancelled) {
+                        setFeatureGeoJson(null);
+                        setFeatureError("지도에 표시할 피처 데이터를 불러오지 못했습니다.");
+                    }
+                } finally {
+                    if (!cancelled) {
+                        setFeatureLoading(false);
+                    }
+                }
+            }
+
+            loadFeatures();
+        }, 0);
+
+        return () => {
+            cancelled = true;
+            window.clearTimeout(timerId);
+        };
+    }, [canRenderFeatureLayer, onGisLayerChange, selectedDataset]);
+
+    useEffect(() => {
+        let cancelled = false;
+        const timerId = window.setTimeout(() => {
+            setRegionStats(null);
+            setRegionStatsError(null);
+
+            if (selectedDataset?.datasetCode !== EV_CHARGER_DATASET_CODE) {
+                setRegionStatsLoading(false);
+                return;
+            }
+
+            setRegionStatsLoading(true);
+
+            async function loadRegionStats() {
+                try {
+                    const data = await getDashboardGisRegionStats({
+                        datasetCode: selectedDataset.datasetCode,
+                    });
+
+                    if (!cancelled) {
+                        setRegionStats(data);
+                    }
+                } catch (err) {
+                    console.error(err);
+                    if (!cancelled) {
+                        setRegionStats(null);
+                        setRegionStatsError("시도별 전체 충전소 통계를 불러오지 못했습니다.");
+                    }
+                } finally {
+                    if (!cancelled) {
+                        setRegionStatsLoading(false);
+                    }
+                }
+            }
+
+            loadRegionStats();
+        }, 0);
+
+        return () => {
+            cancelled = true;
+            window.clearTimeout(timerId);
+        };
+    }, [selectedDataset?.datasetCode]);
+
+    const featureRows = useMemo(() => getFeatureRows(featureGeoJson), [featureGeoJson]);
+    const evChargerRegionChartData = useMemo(
+        () => createEvChargerRegionChartData(regionStats),
+        [regionStats]
+    );
+    const hasEvChargerRegionStats = Boolean(regionStats?.items?.length);
 
     const summary = useMemo(() => {
         return {
@@ -465,9 +708,11 @@ function DashboardGisCatalogPanel({
 
                                         {selectedDataset?.datasetCode === RESIDENT_POPULATION_DATASET_CODE && (
                                             <>
+                                                <DashboardGisCollectionSummary dataset={selectedDataset} />
+
                                                 {!selectedArea && (
-                                                    <div className="alert alert-info py-2 small mb-0">
-                                                        지도 polygon을 클릭하면 선택 지역 기준 주민등록 인구 그래프가 이 영역에 표시됩니다.
+                                                    <div className="alert alert-info py-2 small mb-0 mt-3">
+                                                        현재는 데이터 저장 현황만 표시 중입니다. 지도 polygon을 클릭하면 선택 지역 기준 주민등록 인구 그래프가 이 영역에 표시됩니다.
                                                     </div>
                                                 )}
 
@@ -516,19 +761,119 @@ function DashboardGisCatalogPanel({
                                         )}
 
                                         {selectedDataset && selectedDataset.datasetCode !== RESIDENT_POPULATION_DATASET_CODE && (
-                                            <div className="dashboard-gis-empty-visual">
-                                                <div className="dashboard-gis-empty-icon">
-                                                    <i className="bi bi-database-dash" />
-                                                </div>
-                                                <div>
-                                                    <strong>아직 지도/그래프에 표시할 수집 데이터가 없습니다.</strong>
-                                                    <p className="mb-0">
-                                                        현재 이 데이터셋의 관측값은 {formatNumber(selectedDataset.observationCount)}건,
-                                                        공간 피처는 {formatNumber(selectedDataset.featureCount)}건입니다.
-                                                        수집기가 연결되어 값이 저장되면 지도 레이어 또는 차트로 표시할 수 있습니다.
-                                                    </p>
-                                                </div>
-                                            </div>
+                                            <>
+                                                {canRenderFeatureLayer ? (
+                                                    <div className="dashboard-gis-feature-preview">
+                                                        <DashboardGisCollectionSummary dataset={selectedDataset} />
+
+                                                        {featureLoading && (
+                                                            <div className="text-secondary small mt-3">
+                                                                지도 레이어 피처를 불러오는 중...
+                                                            </div>
+                                                        )}
+
+                                                        {featureError && (
+                                                            <div className="alert alert-warning py-2 small mb-0 mt-3">
+                                                                {featureError}
+                                                            </div>
+                                                        )}
+
+                                                        {!featureLoading && !featureError && (
+                                                            <div className="dashboard-gis-feature-box mt-3">
+                                                                <div className="dashboard-gis-feature-head">
+                                                                    <div>
+                                                                        <strong>지도에 표시 중</strong>
+                                                                        <p className="mb-0">
+                                                                            저장된 충전소 중 현재 지도 범위에 포함되는 좌표만 주황색 점으로 표시합니다.
+                                                                        </p>
+                                                                    </div>
+                                                                    <span>{formatNumber(featureRows.length)}건</span>
+                                                                </div>
+
+                                                                {featureRows.length > 0 && (
+                                                                    <div className="dashboard-gis-feature-list">
+                                                                        {featureRows.slice(0, 5).map((feature) => (
+                                                                            <div className="dashboard-gis-feature-item" key={feature.externalId}>
+                                                                                <strong>{feature.featureName ?? feature.externalId}</strong>
+                                                                                <span>{feature.address ?? feature.roadAddress ?? "주소 없음"}</span>
+                                                                                <em>
+                                                                                    {[feature.output ? `${feature.output}kW` : null, feature.useTime, feature.businessCall]
+                                                                                        .filter(Boolean)
+                                                                                        .join(" · ")}
+                                                                                </em>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+
+                                                        {selectedDataset.datasetCode === EV_CHARGER_DATASET_CODE && (
+                                                            <div className="dashboard-gis-region-stats mt-3">
+                                                                <div className="dashboard-gis-region-stats-head">
+                                                                    <div>
+                                                                        <strong>시도별 충전기 비율</strong>
+                                                                        <p className="mb-0">
+                                                                            지도는 최대 500건만 표시하고, 통계는 원천 API 전체 건수 기준으로 계산합니다.
+                                                                        </p>
+                                                                    </div>
+                                                                    {regionStats?.totalCount && (
+                                                                        <span>전체 {formatNumber(regionStats.totalCount)}기</span>
+                                                                    )}
+                                                                </div>
+
+                                                                {regionStatsLoading && (
+                                                                    <div className="text-secondary small">전체 기준 시도별 통계를 불러오는 중...</div>
+                                                                )}
+
+                                                                {regionStatsError && (
+                                                                    <div className="alert alert-warning py-2 small mb-0">
+                                                                        {regionStatsError}
+                                                                    </div>
+                                                                )}
+
+                                                                {!regionStatsLoading && !regionStatsError && hasEvChargerRegionStats && (
+                                                                    <div className="dashboard-gis-region-stats-body">
+                                                                        <div className="dashboard-gis-region-chart">
+                                                                            <Doughnut data={evChargerRegionChartData} options={evChargerRegionChartOptions} />
+                                                                        </div>
+                                                                        <div className="dashboard-gis-region-rank">
+                                                                            {(regionStats.items ?? []).slice(0, 6).map((item) => (
+                                                                                <div className="dashboard-gis-region-rank-item" key={item.areaCode}>
+                                                                                    <span>{item.areaName}</span>
+                                                                                    <strong>
+                                                                                        {formatNumber(item.count)}기 · {Number(item.percent ?? 0).toFixed(2)}%
+                                                                                    </strong>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+
+                                                                {!regionStatsLoading && !regionStatsError && !hasEvChargerRegionStats && (
+                                                                    <div className="text-secondary small">
+                                                                        아직 전체 기준 시도별 통계가 수집되지 않았습니다. 수집 후 원형 그래프가 표시됩니다.
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <div className="dashboard-gis-empty-visual">
+                                                        <div className="dashboard-gis-empty-icon">
+                                                            <i className="bi bi-database-dash" />
+                                                        </div>
+                                                        <div>
+                                                            <strong>아직 지도/그래프에 표시할 수집 데이터가 없습니다.</strong>
+                                                            <p className="mb-0">
+                                                                현재 이 데이터셋의 관측값은 {formatNumber(selectedDataset.observationCount)}건,
+                                                                공간 피처는 {formatNumber(selectedDataset.featureCount)}건입니다.
+                                                                수집기가 연결되어 값이 저장되면 지도 레이어 또는 차트로 표시할 수 있습니다.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </>
                                         )}
                                     </div>
 
