@@ -24,3 +24,8 @@ export const createInquiryApi = async (inquiryData) => {
 
     return response.data;
 }
+
+export const getInquiryDetailApi = async (postId) => {
+  const response = await axios.get(`${BASE_URL}/${postId}`);
+  return response.data;
+};
