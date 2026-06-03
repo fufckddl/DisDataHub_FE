@@ -170,7 +170,7 @@ function DatasetForm({dataset}){
         <>
             <tr >
                 <td className="col-2 text-primary fw-bold ps-3" style={{fontSize : "15px"}}>
-                    <Link to={`/download/user/${dataset.id}`} className="text-decoration-none">{dataset.title}</Link>    
+                    <Link onClick={() => handleDetailPageClick(dataset.isPublic)} className="text-decoration-none">{dataset.title}</Link>
                 </td>  
                 
                 <td className="col-3 sm-text text-secondary">{dataset.description}</td>

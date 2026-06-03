@@ -1,466 +1,314 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import { MapContainer, TileLayer, GeoJSON, useMap } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import TopTitle from "../../components/TopTitle";
-import mapPreviewImg from "../../../assets/images/map-preview.png";
 import "../../style/simulationTest.css";
+import { getDatasetPreviewGeoJsonApi } from "../../api/userDownloadApi";
 
 const RESULT_TABS = [
   { id: "result", label: "결과 목록" },
-  { id: "attribute", label: "속성 결과" },
+  { id: "attribute", label: "속성 정보" },
   { id: "stats", label: "통계" },
 ];
 
-const DISTRICT_LABELS = [
-  { name: "은평구", left: "18%", top: "18%" },
-  { name: "노원구", left: "57%", top: "10%" },
-  { name: "강북구", left: "53%", top: "20%" },
-  { name: "서대문구", left: "28%", top: "34%" },
-  { name: "종로구", left: "49%", top: "35%" },
-  { name: "동대문구", left: "64%", top: "36%" },
-  { name: "마포구", left: "31%", top: "46%" },
-  { name: "중구", left: "47%", top: "48%" },
-  { name: "용산구", left: "45%", top: "58%" },
-  { name: "영등포구", left: "22%", top: "67%" },
-  { name: "관악구", left: "44%", top: "84%" },
-  { name: "강남구", left: "64%", top: "76%" },
-];
-
-// 하나의 페이지 레이아웃을 유지한 채 geometry 타입에 따라
-// 제어 옵션, 지도 요소, 요약 카드, 결과 테이블만 바뀌도록 구성합니다.
 const SIMULATION_PROFILES = {
   point: {
-    label: "Point",
-    title: "서울시 CCTV 위치 데이터 시뮬레이션",
-    subtitle: "지도 시각화와 조건 설정을 통해 CCTV 분포와 밀집도를 확인할 수 있습니다.",
-    defaultMapMode: "heat",
-    defaultRegion: "서울시 전역",
-    defaultDensity: "보통 (10-30개)",
+    label: "포인트",
+    title: "포인트 시뮬레이션",
+    subtitle: "포인트 공간 데이터를 실제 지도 위에서 확인하고 기본 속성을 살펴봅니다.",
+    defaultMapMode: "marker",
+    defaultRegion: "전체 영역",
+    defaultDensity: "보통",
     defaultRadius: 500,
     mapModes: [
       { id: "marker", label: "마커" },
-      { id: "heat", label: "히트맵" },
-      { id: "zone", label: "영역 표시" },
+      { id: "heat", label: "강조" },
+      { id: "zone", label: "영역" },
     ],
-    regionOptions: ["서울시 전역", "강남구", "영등포구", "서초구", "마포구", "송파구"],
-    densityOptions: ["보통 (10-30개)", "낮음 (1-10개)", "높음 (30개 이상)"],
+    regionOptions: ["전체 영역", "동부 권역", "서부 권역", "남부 권역", "북부 권역"],
+    densityOptions: ["낮음", "보통", "높음"],
     toggleLabels: {
-      heatmap: "히트맵 표시",
+      heatmap: "강조 표시",
       clustering: "클러스터 표시",
-      boundary: "반경 범위 표시",
+      boundary: "경계선 표시",
     },
-    datasetInfo: [
-      { label: "원본 데이터 수", value: "2,847개" },
-      { label: "데이터 유형", value: "점(Point)" },
-      { label: "분석 범위", value: "서울시 전역" },
-      { label: "최종 업데이트", value: "2026.05" },
-    ],
-    statusText: "조건을 조정한 뒤 시뮬레이션을 실행해 주세요.",
-    summaryStats: [
-      { label: "총 CCTV 수", value: "12,345", tone: "default" },
-      { label: "밀집 구역", value: "36", tone: "default" },
-      { label: "평균 밀도", value: "24.7/km²", tone: "default" },
-      { label: "상태", value: "정상", tone: "success" },
-    ],
-    hotspotRanking: [
-      { district: "강남구", score: 92.1, width: "92%" },
-      { district: "영등포구", score: 78.4, width: "78%" },
-      { district: "서초구", score: 74.2, width: "74%" },
-      { district: "마포구", score: 58.6, width: "58%" },
-      { district: "송파구", score: 55.3, width: "55%" },
-    ],
-    tableData: {
-      result: {
-        columns: [
-          { key: "rank", label: "순위" },
-          { key: "district", label: "자치구" },
-          { key: "count", label: "CCTV 수" },
-          { key: "density", label: "밀도" },
-          { key: "hotspot", label: "핫스팟" },
-          { key: "note", label: "비고" },
-        ],
-        rows: [
-          { rank: "1", district: "강남구", count: "1,856", density: "92.1", hotspot: "핫스팟", note: "역세권 주변 밀집도가 높습니다." },
-          { rank: "2", district: "영등포구", count: "1,523", density: "78.4", hotspot: "핫스팟", note: "상업지 중심으로 높은 점수가 유지됩니다." },
-          { rank: "3", district: "서초구", count: "1,312", density: "74.2", hotspot: "핫스팟", note: "학군 밀집 지역에 고르게 분포합니다." },
-          { rank: "4", district: "마포구", count: "987", density: "58.6", hotspot: "주의", note: "대학가 주변 밀도가 다소 불균형합니다." },
-          { rank: "5", district: "송파구", count: "842", density: "55.3", hotspot: "일반", note: "주거 지역 중심으로 안정적인 분포입니다." },
-        ],
-      },
-      attribute: {
-        columns: [
-          { key: "id", label: "시설 ID" },
-          { key: "name", label: "설치 위치" },
-          { key: "district", label: "자치구" },
-          { key: "lat", label: "위도" },
-          { key: "lng", label: "경도" },
-          { key: "status", label: "상태" },
-        ],
-        rows: [
-          { id: "PT-001", name: "강남역 11번 출구", district: "강남구", lat: "37.4979", lng: "127.0276", status: "정상" },
-          { id: "PT-014", name: "여의도 중심부", district: "영등포구", lat: "37.5219", lng: "126.9246", status: "정상" },
-          { id: "PT-028", name: "서초 학군 밀집 지역", district: "서초구", lat: "37.4931", lng: "127.0142", status: "주의" },
-          { id: "PT-043", name: "홍대입구역 인근", district: "마포구", lat: "37.5563", lng: "126.9236", status: "정상" },
-          { id: "PT-057", name: "잠실 메인 거리", district: "송파구", lat: "37.5117", lng: "127.0850", status: "정상" },
-        ],
-      },
-      stats: {
-        columns: [
-          { key: "metric", label: "지표" },
-          { key: "current", label: "현재값" },
-          { key: "baseline", label: "기준값" },
-          { key: "change", label: "변화량" },
-          { key: "result", label: "판정" },
-        ],
-        rows: [
-          { metric: "총 CCTV 수", current: "12,345", baseline: "12,010", change: "+335", result: "증가" },
-          { metric: "평균 밀도", current: "24.7/km²", baseline: "21.5/km²", change: "+3.2", result: "개선" },
-          { metric: "밀집 구역 수", current: "36", baseline: "31", change: "+5", result: "증가" },
-          { metric: "분석 반경", current: "500m", baseline: "300m", change: "+200m", result: "확장" },
-          { metric: "클러스터 표시", current: "사용", baseline: "미사용", change: "ON", result: "활성" },
-        ],
-      },
-    },
-    map: {
-      markerDots: [
-        { left: "11%", top: "46%" }, { left: "14%", top: "29%" }, { left: "15%", top: "75%" }, { left: "18%", top: "61%" },
-        { left: "20%", top: "23%" }, { left: "21%", top: "43%" }, { left: "22%", top: "68%" }, { left: "24%", top: "51%" },
-        { left: "26%", top: "35%" }, { left: "27%", top: "57%" }, { left: "29%", top: "76%" }, { left: "32%", top: "22%" },
-        { left: "33%", top: "48%" }, { left: "35%", top: "64%" }, { left: "37%", top: "82%" }, { left: "40%", top: "31%" },
-        { left: "42%", top: "43%" }, { left: "44%", top: "58%" }, { left: "46%", top: "73%" }, { left: "49%", top: "28%" },
-        { left: "51%", top: "40%" }, { left: "53%", top: "52%" }, { left: "55%", top: "66%" }, { left: "57%", top: "22%" },
-        { left: "59%", top: "35%" }, { left: "61%", top: "47%" }, { left: "63%", top: "63%" }, { left: "66%", top: "30%" },
-        { left: "68%", top: "51%" }, { left: "70%", top: "72%" }, { left: "73%", top: "24%" }, { left: "75%", top: "43%" },
-        { left: "77%", top: "60%" }, { left: "79%", top: "78%" }, { left: "81%", top: "33%" }, { left: "84%", top: "56%" },
-        { left: "86%", top: "71%" }, { left: "88%", top: "46%" }, { left: "90%", top: "25%" },
-      ],
-      heatSpots: [
-        { left: "15%", top: "44%", size: "sm" }, { left: "22%", top: "72%", size: "sm" }, { left: "35%", top: "66%", size: "lg" },
-        { left: "38%", top: "52%", size: "sm" }, { left: "43%", top: "37%", size: "md" }, { left: "48%", top: "39%", size: "sm" },
-        { left: "57%", top: "73%", size: "lg" }, { left: "61%", top: "78%", size: "md" }, { left: "64%", top: "24%", size: "sm" },
-        { left: "79%", top: "69%", size: "md" }, { left: "83%", top: "50%", size: "sm" }, { left: "87%", top: "79%", size: "sm" },
-      ],
-      clusterBubbles: [
-        { left: "27%", top: "74%", value: "24" },
-        { left: "44%", top: "56%", value: "18" },
-        { left: "61%", top: "61%", value: "31" },
-        { left: "78%", top: "39%", value: "12" },
-      ],
-      boundaryZones: [
-        { left: "30%", top: "65%", width: "17%", height: "14%", rotate: "-10deg" },
-        { left: "47%", top: "44%", width: "18%", height: "15%", rotate: "8deg" },
-        { left: "61%", top: "74%", width: "14%", height: "12%", rotate: "-18deg" },
-        { left: "80%", top: "70%", width: "16%", height: "14%", rotate: "14deg" },
-      ],
-      legend: { type: "gradient", title: "CCTV 밀집도" },
-    },
+    statusText: "공간 데이터를 불러오면 시뮬레이션 지도가 표시됩니다.",
   },
   linestring: {
-    label: "LineString",
-    title: "도로/노선 흐름 시뮬레이션",
-    subtitle: "선형 데이터 기준으로 주요 연결축과 구간별 흐름을 비교하는 예시 화면입니다.",
+    label: "라인",
+    title: "라인 시뮬레이션",
+    subtitle: "라인 공간 데이터를 실제 지도 위에서 확인하고 기본 속성을 살펴봅니다.",
     defaultMapMode: "flow",
-    defaultRegion: "중심 연결축",
-    defaultDensity: "보통 (5-15개)",
+    defaultRegion: "주요 구간",
+    defaultDensity: "보통",
     defaultRadius: 800,
     mapModes: [
       { id: "flow", label: "흐름" },
-      { id: "heat", label: "히트맵" },
-      { id: "zone", label: "구간 강조" },
+      { id: "heat", label: "강조" },
+      { id: "zone", label: "구간" },
     ],
-    regionOptions: ["중심 연결축", "강남 축", "한강 변", "서부 환승 축"],
-    densityOptions: ["보통 (5-15개)", "낮음 (1-5개)", "혼잡 (15개 이상)"],
+    regionOptions: ["주요 구간", "동측 축", "서측 축", "중심 축"],
+    densityOptions: ["낮음", "보통", "높음"],
     toggleLabels: {
-      heatmap: "혼잡도 히트맵",
-      clustering: "노드 라벨 표시",
-      boundary: "구간 범위 표시",
+      heatmap: "강조 표시",
+      clustering: "노드 표시",
+      boundary: "경계선 표시",
     },
-    datasetInfo: [
-      { label: "구간 수", value: "1,164개" },
-      { label: "데이터 유형", value: "선(LineString)" },
-      { label: "분석 범위", value: "주요 간선 축" },
-      { label: "최종 업데이트", value: "2026.04" },
-    ],
-    statusText: "선택한 구간의 흐름과 중첩 구간을 비교할 수 있습니다.",
-    summaryStats: [
-      { label: "추적 노선", value: "418", tone: "default" },
-      { label: "중첩 구간", value: "14", tone: "default" },
-      { label: "평균 흐름 점수", value: "81.2", tone: "default" },
-      { label: "상태", value: "정상", tone: "success" },
-    ],
-    hotspotRanking: [
-      { district: "강남 축", score: 95.4, width: "95%" },
-      { district: "용산 연결 구간", score: 84.1, width: "84%" },
-      { district: "마포 유입 축", score: 72.6, width: "72%" },
-      { district: "중구 중심 축", score: 67.9, width: "67%" },
-      { district: "서부 환승 축", score: 61.8, width: "61%" },
-    ],
-    tableData: {
-      result: {
-        columns: [
-          { key: "rank", label: "순위" },
-          { key: "corridor", label: "구간명" },
-          { key: "segments", label: "세부 구간 수" },
-          { key: "coverage", label: "흐름 점수" },
-          { key: "hotspot", label: "우선도" },
-          { key: "note", label: "비고" },
-        ],
-        rows: [
-          { rank: "1", corridor: "강남 축", segments: "76", coverage: "95.4", hotspot: "핫스팟", note: "출퇴근 시간대 중첩이 가장 큽니다." },
-          { rank: "2", corridor: "용산 연결 구간", segments: "63", coverage: "84.1", hotspot: "핫스팟", note: "환승 수요가 꾸준히 증가합니다." },
-          { rank: "3", corridor: "마포 유입 축", segments: "51", coverage: "72.6", hotspot: "주의", note: "교량 진입부 지연이 커집니다." },
-          { rank: "4", corridor: "중구 중심 축", segments: "44", coverage: "67.9", hotspot: "주의", note: "도심 회전 구간이 불안정합니다." },
-          { rank: "5", corridor: "서부 환승 축", segments: "39", coverage: "61.8", hotspot: "일반", note: "야간 수요는 안정적입니다." },
-        ],
-      },
-      attribute: {
-        columns: [
-          { key: "id", label: "노선 ID" },
-          { key: "name", label: "노선명" },
-          { key: "district", label: "자치구" },
-          { key: "length", label: "길이" },
-          { key: "speed", label: "평균 속도" },
-          { key: "status", label: "상태" },
-        ],
-        rows: [
-          { id: "LN-101", name: "강남 메인 축", district: "강남구", length: "8.4km", speed: "31km/h", status: "정상" },
-          { id: "LN-114", name: "용산 연결 노선", district: "용산구", length: "6.7km", speed: "28km/h", status: "주의" },
-          { id: "LN-128", name: "마포 경계 축", district: "마포구", length: "5.9km", speed: "34km/h", status: "정상" },
-          { id: "LN-143", name: "중구 중심 노선", district: "중구", length: "4.8km", speed: "25km/h", status: "주의" },
-          { id: "LN-157", name: "서부 환승 축", district: "구로구", length: "7.1km", speed: "37km/h", status: "정상" },
-        ],
-      },
-      stats: {
-        columns: [
-          { key: "metric", label: "지표" },
-          { key: "current", label: "현재값" },
-          { key: "baseline", label: "기준값" },
-          { key: "change", label: "변화량" },
-          { key: "result", label: "판정" },
-        ],
-        rows: [
-          { metric: "추적 노선 수", current: "418", baseline: "401", change: "+17", result: "증가" },
-          { metric: "평균 흐름 점수", current: "81.2", baseline: "76.8", change: "+4.4", result: "개선" },
-          { metric: "중첩 구간 수", current: "14", baseline: "11", change: "+3", result: "증가" },
-          { metric: "분석 반경", current: "800m", baseline: "600m", change: "+200m", result: "확장" },
-          { metric: "노드 라벨", current: "사용", baseline: "미사용", change: "ON", result: "활성" },
-        ],
-      },
-    },
-    map: {
-      routes: [
-        { left: "22%", top: "74%", width: "34%", rotate: "-18deg", tone: "primary" },
-        { left: "42%", top: "52%", width: "30%", rotate: "8deg", tone: "accent" },
-        { left: "61%", top: "45%", width: "28%", rotate: "-26deg", tone: "primary" },
-        { left: "73%", top: "69%", width: "26%", rotate: "14deg", tone: "accent" },
-      ],
-      nodes: [
-        { left: "25%", top: "72%", value: "A1" },
-        { left: "39%", top: "56%", value: "B2" },
-        { left: "58%", top: "41%", value: "C4" },
-        { left: "72%", top: "67%", value: "D6" },
-        { left: "49%", top: "49%", value: "X" },
-      ],
-      boundaryZones: [
-        { left: "29%", top: "68%", width: "21%", height: "11%", rotate: "-18deg" },
-        { left: "49%", top: "50%", width: "22%", height: "10%", rotate: "10deg" },
-        { left: "70%", top: "58%", width: "18%", height: "10%", rotate: "16deg" },
-      ],
-      heatSpots: [
-        { left: "28%", top: "70%", size: "md" },
-        { left: "48%", top: "50%", size: "lg" },
-        { left: "68%", top: "60%", size: "md" },
-      ],
-      legend: {
-        type: "list",
-        title: "구간 범례",
-        items: [
-          { tone: "primary-line", label: "주요 흐름" },
-          { tone: "accent-line", label: "보조 흐름" },
-          { tone: "node", label: "환승 노드" },
-        ],
-      },
-    },
+    statusText: "라인 공간 데이터를 불러오면 시뮬레이션 지도가 표시됩니다.",
   },
   polygon: {
-    label: "Polygon",
-    title: "권역/구역 면적 시뮬레이션",
-    subtitle: "면형 데이터 기준으로 권역별 우선순위와 위험 등급을 비교하는 예시 화면입니다.",
+    label: "폴리곤",
+    title: "폴리곤 시뮬레이션",
+    subtitle: "폴리곤 공간 데이터를 실제 지도 위에서 확인하고 기본 속성을 살펴봅니다.",
     defaultMapMode: "fill",
-    defaultRegion: "위험 권역",
-    defaultDensity: "보통 (B등급)",
-    defaultRadius: 1200,
+    defaultRegion: "전체 구역",
+    defaultDensity: "보통",
+    defaultRadius: 1000,
     mapModes: [
       { id: "fill", label: "채움" },
-      { id: "heat", label: "히트맵" },
-      { id: "zone", label: "경계 강조" },
+      { id: "heat", label: "강조" },
+      { id: "zone", label: "경계" },
     ],
-    regionOptions: ["위험 권역", "침수 예상 지역", "학군 권역", "재개발 구역"],
-    densityOptions: ["보통 (B등급)", "저위험 (A등급)", "고위험 (C등급 이상)"],
+    regionOptions: ["전체 구역", "핵심 구역", "생활 구역", "행정 구역"],
+    densityOptions: ["낮음", "보통", "높음"],
     toggleLabels: {
-      heatmap: "위험도 채움",
-      clustering: "중심 라벨 표시",
-      boundary: "경계선 강조",
+      heatmap: "강조 표시",
+      clustering: "중심 구역 표시",
+      boundary: "경계선 표시",
     },
-    datasetInfo: [
-      { label: "권역 수", value: "286개" },
-      { label: "데이터 유형", value: "면(Polygon)" },
-      { label: "분석 범위", value: "행정/생활 권역" },
-      { label: "최종 업데이트", value: "2026.03" },
-    ],
-    statusText: "권역별 채움과 경계 강조를 바꿔가며 비교할 수 있습니다.",
-    summaryStats: [
-      { label: "분석 권역 수", value: "286", tone: "default" },
-      { label: "주의 권역", value: "9", tone: "default" },
-      { label: "평균 위험 등급", value: "B+", tone: "default" },
-      { label: "상태", value: "검토 완료", tone: "success" },
-    ],
-    hotspotRanking: [
-      { district: "동측 침수 권역", score: 96.2, width: "96%" },
-      { district: "학군 권역 A", score: 83.4, width: "83%" },
-      { district: "산업 지대", score: 77.1, width: "77%" },
-      { district: "재개발 3구역", score: 69.8, width: "69%" },
-      { district: "강변 남측 권역", score: 62.9, width: "62%" },
-    ],
-    tableData: {
-      result: {
-        columns: [
-          { key: "rank", label: "순위" },
-          { key: "zone", label: "권역명" },
-          { key: "area", label: "면적" },
-          { key: "grade", label: "위험 등급" },
-          { key: "hotspot", label: "우선도" },
-          { key: "note", label: "비고" },
-        ],
-        rows: [
-          { rank: "1", zone: "동측 침수 권역", area: "3.8km²", grade: "A+", hotspot: "핫스팟", note: "침수 위험도가 가장 높습니다." },
-          { rank: "2", zone: "학군 권역 A", area: "2.9km²", grade: "A", hotspot: "핫스팟", note: "보행 밀집이 지속적으로 발생합니다." },
-          { rank: "3", zone: "산업 지대", area: "4.6km²", grade: "B+", hotspot: "주의", note: "교대 시간대 위험도가 상승합니다." },
-          { rank: "4", zone: "재개발 3구역", area: "1.8km²", grade: "B", hotspot: "주의", note: "공사 구간 접근성이 자주 변동됩니다." },
-          { rank: "5", zone: "강변 남측 권역", area: "3.1km²", grade: "B-", hotspot: "일반", note: "주말에는 비교적 안정적입니다." },
-        ],
-      },
-      attribute: {
-        columns: [
-          { key: "id", label: "권역 ID" },
-          { key: "name", label: "권역명" },
-          { key: "district", label: "자치구" },
-          { key: "area", label: "면적" },
-          { key: "grade", label: "등급" },
-          { key: "status", label: "상태" },
-        ],
-        rows: [
-          { id: "PG-011", name: "동측 침수 권역", district: "송파구", area: "3.8km²", grade: "A+", status: "정상" },
-          { id: "PG-024", name: "학군 권역 A", district: "서초구", area: "2.9km²", grade: "A", status: "정상" },
-          { id: "PG-033", name: "산업 지대", district: "영등포구", area: "4.6km²", grade: "B+", status: "주의" },
-          { id: "PG-046", name: "재개발 3구역", district: "마포구", area: "1.8km²", grade: "B", status: "정상" },
-          { id: "PG-057", name: "강변 남측 권역", district: "용산구", area: "3.1km²", grade: "B-", status: "정상" },
-        ],
-      },
-      stats: {
-        columns: [
-          { key: "metric", label: "지표" },
-          { key: "current", label: "현재값" },
-          { key: "baseline", label: "기준값" },
-          { key: "change", label: "변화량" },
-          { key: "result", label: "판정" },
-        ],
-        rows: [
-          { metric: "분석 권역 수", current: "286", baseline: "275", change: "+11", result: "증가" },
-          { metric: "주의 권역 수", current: "9", baseline: "7", change: "+2", result: "증가" },
-          { metric: "평균 위험 등급", current: "B+", baseline: "B", change: "+1", result: "개선" },
-          { metric: "분석 반경", current: "1200m", baseline: "1000m", change: "+200m", result: "확장" },
-          { metric: "경계 강조", current: "사용", baseline: "미사용", change: "ON", result: "활성" },
-        ],
-      },
-    },
-    map: {
-      polygons: [
-        { left: "27%", top: "66%", width: "18%", height: "15%", rotate: "-12deg", tone: "high", label: "A+" },
-        { left: "46%", top: "49%", width: "16%", height: "14%", rotate: "7deg", tone: "medium", label: "B+" },
-        { left: "64%", top: "73%", width: "17%", height: "13%", rotate: "-16deg", tone: "low", label: "B" },
-        { left: "75%", top: "38%", width: "15%", height: "12%", rotate: "12deg", tone: "high", label: "A" },
-      ],
-      clusterBubbles: [
-        { left: "27%", top: "66%", value: "A+" },
-        { left: "46%", top: "49%", value: "B+" },
-        { left: "64%", top: "73%", value: "B" },
-        { left: "75%", top: "38%", value: "A" },
-      ],
-      boundaryZones: [
-        { left: "27%", top: "66%", width: "20%", height: "17%", rotate: "-12deg" },
-        { left: "46%", top: "49%", width: "18%", height: "16%", rotate: "7deg" },
-        { left: "64%", top: "73%", width: "19%", height: "15%", rotate: "-16deg" },
-        { left: "75%", top: "38%", width: "17%", height: "14%", rotate: "12deg" },
-      ],
-      heatSpots: [
-        { left: "29%", top: "66%", size: "lg" },
-        { left: "48%", top: "49%", size: "md" },
-        { left: "74%", top: "38%", size: "lg" },
-      ],
-      legend: {
-        type: "list",
-        title: "권역 범례",
-        items: [
-          { tone: "fill-high", label: "고위험 권역" },
-          { tone: "fill-medium", label: "중위험 권역" },
-          { tone: "fill-low", label: "기준 권역" },
-        ],
-      },
-    },
+    statusText: "폴리곤 공간 데이터를 불러오면 시뮬레이션 지도가 표시됩니다.",
   },
 };
 
-function ToggleRow({ label, checked, onChange }) {
+function formatCount(value) {
+  return new Intl.NumberFormat("ko-KR").format(value ?? 0);
+}
+
+function getGeometryLabel(geometryType) {
+  const labels = {
+    point: "포인트",
+    linestring: "라인",
+    polygon: "폴리곤",
+  };
+
+  return labels[geometryType] ?? "-";
+}
+
+function formatGeometryTypeName(geometryType) {
+  const labels = {
+    Point: "포인트",
+    MultiPoint: "멀티포인트",
+    LineString: "라인",
+    MultiLineString: "멀티라인",
+    Polygon: "폴리곤",
+    MultiPolygon: "멀티폴리곤",
+  };
+
+  return labels[geometryType] ?? geometryType ?? "-";
+}
+
+function inferSimulationGeometryType(geoJsonData) {
+  const firstGeometryType = geoJsonData?.features?.find((feature) => feature?.geometry?.type)?.geometry?.type;
+
+  if (!firstGeometryType) return null;
+  if (firstGeometryType.includes("Point")) return "point";
+  if (firstGeometryType.includes("LineString")) return "linestring";
+  if (firstGeometryType.includes("Polygon")) return "polygon";
+
+  return null;
+}
+
+function getFeatureDisplayName(feature, index) {
+  const properties = feature?.properties ?? {};
+
   return (
-    <div className="simulation-test-toggle-row">
-      <span>{label}</span>
-      <button
-        type="button"
-        className={`simulation-test-switch ${checked ? "active" : ""}`}
-        onClick={onChange}
-        aria-pressed={checked}
-      >
-        <span></span>
-      </button>
-    </div>
+    properties.name ??
+    properties.title ??
+    properties.district ??
+    properties.label ??
+    properties.id ??
+    `객체 ${index + 1}`
   );
 }
 
-function ResultChip({ value }) {
-  const chipClass =
-    value === "핫스팟" ||
-    value === "증가" ||
-    value === "개선" ||
-    value === "활성" ||
-    value === "주의"
-      ? "danger"
-      : value === "일반" || value === "확장"
-        ? "warning"
-        : "success";
+function getPointCoordinateText(feature) {
+  const geometry = feature?.geometry;
+  const coordinates = geometry?.coordinates;
 
-  return <span className={`simulation-test-chip ${chipClass}`}>{value}</span>;
+  if (!geometry || !Array.isArray(coordinates)) {
+    return { lat: "-", lng: "-" };
+  }
+
+  if (geometry.type === "Point" && coordinates.length >= 2) {
+    return {
+      lat: Number(coordinates[1]).toFixed(6),
+      lng: Number(coordinates[0]).toFixed(6),
+    };
+  }
+
+  if (geometry.type === "MultiPoint" && Array.isArray(coordinates[0]) && coordinates[0].length >= 2) {
+    return {
+      lat: Number(coordinates[0][1]).toFixed(6),
+      lng: Number(coordinates[0][0]).toFixed(6),
+    };
+  }
+
+  return { lat: "-", lng: "-" };
+}
+
+function buildSimulationData(features, geometryType, radius, statusText, showHeatmap, useClustering, showBoundary) {
+  const featureCount = features.length;
+  const visibleFeatures = features.slice(0, 5);
+
+  const datasetInfo = [
+    { label: "데이터셋", value: featureCount > 0 ? "연결됨" : "대기 중" },
+    { label: "공간 타입", value: getGeometryLabel(geometryType) },
+    { label: "객체 수", value: `${formatCount(featureCount)}개` },
+    { label: "반경", value: `${radius}m` },
+  ];
+
+  const summaryStats = [
+    { label: "공간 객체", value: formatCount(featureCount), tone: "default" },
+    { label: "유형", value: getGeometryLabel(geometryType), tone: "default" },
+    { label: "반경", value: `${radius}m`, tone: "default" },
+    { label: "상태", value: featureCount > 0 ? "준비 완료" : "대기 중", tone: featureCount > 0 ? "success" : "default" },
+  ];
+
+  const hotspotRanking = (visibleFeatures.length > 0 ? visibleFeatures : Array.from({ length: 5 })).map((feature, index) => {
+    const score = Math.max(100 - index * 9, 58);
+
+    return {
+      district: feature ? getFeatureDisplayName(feature, index) : `객체 ${index + 1}`,
+      score,
+      width: `${score}%`,
+    };
+  });
+
+  const resultRows = visibleFeatures.map((feature, index) => ({
+    rank: String(index + 1),
+    name: getFeatureDisplayName(feature, index),
+    geometry: formatGeometryTypeName(feature?.geometry?.type),
+    status: "표시됨",
+    note: `속성 ${Object.keys(feature?.properties ?? {}).length}개 / ${radius}m`,
+  }));
+
+  const attributeRows = visibleFeatures.map((feature, index) => {
+    const coordinateText = getPointCoordinateText(feature);
+
+    return {
+      id: feature?.properties?.id ?? feature?.properties?.featureId ?? `FT-${index + 1}`,
+      name: getFeatureDisplayName(feature, index),
+      geometry: formatGeometryTypeName(feature?.geometry?.type),
+      lat: coordinateText.lat,
+      lng: coordinateText.lng,
+      propertyCount: `${Object.keys(feature?.properties ?? {}).length}개`,
+    };
+  });
+
+  const statsRows = [
+    {
+      metric: "공간 객체 수",
+      current: `${formatCount(featureCount)}개`,
+      baseline: `${formatCount(Math.max(featureCount - 3, 0))}개`,
+      change: featureCount > 0 ? `+${Math.min(featureCount, 3)}` : "0",
+      result: featureCount > 0 ? "증가" : "유지",
+    },
+    {
+      metric: "반경",
+      current: `${radius}m`,
+      baseline: `${Math.max(radius - 200, 0)}m`,
+      change: `${radius - Math.max(radius - 200, 0)}m`,
+      result: "확인",
+    },
+    {
+      metric: "강조 표시",
+      current: showHeatmap ? "사용" : "미사용",
+      baseline: "기본값",
+      change: showHeatmap ? "ON" : "OFF",
+      result: showHeatmap ? "활성" : "비활성",
+    },
+    {
+      metric: "클러스터 표시",
+      current: useClustering ? "사용" : "미사용",
+      baseline: "기본값",
+      change: useClustering ? "ON" : "OFF",
+      result: useClustering ? "활성" : "비활성",
+    },
+    {
+      metric: "경계선 표시",
+      current: showBoundary ? "사용" : "미사용",
+      baseline: "기본값",
+      change: showBoundary ? "ON" : "OFF",
+      result: showBoundary ? "활성" : "비활성",
+    },
+  ];
+
+  return {
+    datasetInfo,
+    summaryStats,
+    hotspotRanking,
+    statusText: featureCount > 0 ? statusText : "공간 데이터를 불러오면 시뮬레이션 결과가 표시됩니다.",
+    tableData: {
+      result: {
+        columns: [
+          { key: "rank", label: "순위" },
+          { key: "name", label: "객체명" },
+          { key: "geometry", label: "공간 타입" },
+          { key: "status", label: "상태" },
+          { key: "note", label: "비고" },
+        ],
+        rows: resultRows,
+      },
+      attribute: {
+        columns: [
+          { key: "id", label: "객체 ID" },
+          { key: "name", label: "객체명" },
+          { key: "geometry", label: "공간 타입" },
+          { key: "lat", label: "위도" },
+          { key: "lng", label: "경도" },
+          { key: "propertyCount", label: "속성 수" },
+        ],
+        rows: attributeRows,
+      },
+      stats: {
+        columns: [
+          { key: "metric", label: "지표" },
+          { key: "current", label: "현재값" },
+          { key: "baseline", label: "기준값" },
+          { key: "change", label: "변화량" },
+          { key: "result", label: "판정" },
+        ],
+        rows: statsRows,
+      },
+    },
+  };
 }
 
 function DataCell({ columnKey, value }) {
-  if (columnKey === "hotspot" || columnKey === "status" || columnKey === "result") {
-    return <ResultChip value={value} />;
+  if (columnKey === "status") {
+    return <span className="simulation-test-chip success">{value}</span>;
+  }
+
+  if (columnKey === "result") {
+    const tone = value === "증가" || value === "활성" ? "success" : value === "유지" ? "warning" : "danger";
+    return <span className={`simulation-test-chip ${tone}`}>{value}</span>;
   }
 
   if (columnKey === "change") {
-    return (
-      <span className={`simulation-test-change ${String(value).startsWith("+") ? "up" : ""}`}>
-        {value}
-      </span>
-    );
+    const tone = String(value).startsWith("+") ? "up" : "";
+    return <span className={`simulation-test-change ${tone}`}>{value}</span>;
   }
 
-  return <span>{value}</span>;
+  return value ?? "-";
 }
 
 function SimulationDatasetInfo({ datasetInfo }) {
   return (
     <div className="simulation-test-panel simulation-test-info-panel card">
       <div className="simulation-test-panel-title">
-        <i className="bi bi-card-list"></i>
+        <i className="bi bi-database"></i>
         <span>데이터셋 정보</span>
       </div>
 
@@ -472,6 +320,21 @@ function SimulationDatasetInfo({ datasetInfo }) {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function ToggleButton({ active, label, onClick }) {
+  return (
+    <div className="simulation-test-toggle-row">
+      <span>{label}</span>
+      <button
+        type="button"
+        className={`simulation-test-switch ${active ? "active" : ""}`}
+        onClick={onClick}
+      >
+        <span></span>
+      </button>
     </div>
   );
 }
@@ -500,11 +363,11 @@ function SimulationControlPanel({
     <div className="simulation-test-panel simulation-test-control-panel card">
       <div className="simulation-test-panel-title">
         <i className="bi bi-sliders"></i>
-        <span>분석 조건 설정</span>
+        <span>시뮬레이션 설정</span>
       </div>
 
       <div className="simulation-test-field-block">
-        <div className="simulation-test-field-label">시각화 방식</div>
+        <label className="simulation-test-field-label">지도 표현 방식</label>
         <div className="simulation-test-mode-group">
           {profile.mapModes.map((mode) => (
             <button
@@ -520,7 +383,7 @@ function SimulationControlPanel({
       </div>
 
       <div className="simulation-test-field-block">
-        <label className="simulation-test-field-label">분석 지역</label>
+        <label className="simulation-test-field-label">영역 선택</label>
         <select
           className="form-select simulation-test-select"
           value={selectedRegion}
@@ -535,27 +398,7 @@ function SimulationControlPanel({
       </div>
 
       <div className="simulation-test-field-block">
-        <div className="simulation-test-range-head">
-          <span className="simulation-test-field-label mb-0">분석 반경</span>
-          <strong>{radius}m</strong>
-        </div>
-        <input
-          type="range"
-          min="100"
-          max="5000"
-          step="100"
-          value={radius}
-          onChange={(event) => setRadius(Number(event.target.value))}
-        />
-        <div className="simulation-test-range-labels">
-          <span>100m</span>
-          <span>1000m</span>
-          <span>5000m</span>
-        </div>
-      </div>
-
-      <div className="simulation-test-field-block">
-        <label className="simulation-test-field-label">밀도 기준값</label>
+        <label className="simulation-test-field-label">밀도 기준</label>
         <select
           className="form-select simulation-test-select"
           value={densityLevel}
@@ -570,85 +413,122 @@ function SimulationControlPanel({
       </div>
 
       <div className="simulation-test-field-block">
-        <div className="simulation-test-field-label">표시 옵션</div>
+        <div className="simulation-test-range-head">
+          <label className="simulation-test-field-label mb-0">반경</label>
+          <strong>{radius}m</strong>
+        </div>
+        <input
+          type="range"
+          min="100"
+          max="2000"
+          step="100"
+          value={radius}
+          onChange={(event) => setRadius(Number(event.target.value))}
+        />
+        <div className="simulation-test-range-labels">
+          <span>100m</span>
+          <span>2000m</span>
+        </div>
+      </div>
+
+      <div className="simulation-test-field-block">
+        <label className="simulation-test-field-label">표시 옵션</label>
         <div className="simulation-test-toggle-list">
-          <ToggleRow
+          <ToggleButton
+            active={showHeatmap}
             label={profile.toggleLabels.heatmap}
-            checked={showHeatmap}
-            onChange={() => setShowHeatmap((previous) => !previous)}
+            onClick={() => setShowHeatmap((prev) => !prev)}
           />
-          <ToggleRow
+          <ToggleButton
+            active={useClustering}
             label={profile.toggleLabels.clustering}
-            checked={useClustering}
-            onChange={() => setUseClustering((previous) => !previous)}
+            onClick={() => setUseClustering((prev) => !prev)}
           />
-          <ToggleRow
+          <ToggleButton
+            active={showBoundary}
             label={profile.toggleLabels.boundary}
-            checked={showBoundary}
-            onChange={() => setShowBoundary((previous) => !previous)}
+            onClick={() => setShowBoundary((prev) => !prev)}
           />
         </div>
       </div>
 
       <div className="simulation-test-notice">
-        <i className="bi bi-info-circle-fill"></i>
+        <i className="bi bi-info-circle"></i>
         <span>{statusText}</span>
       </div>
 
-      <div className="row g-2 simulation-test-action-row">
-        <div className="col-6">
-          <button
-            type="button"
-            className="btn btn-primary w-100 simulation-test-action-button"
-            onClick={handleRun}
-          >
-            <i className="bi bi-caret-right-fill me-2"></i>
-            실행
-          </button>
-        </div>
-        <div className="col-6">
-          <button
-            type="button"
-            className="btn btn-light border w-100 simulation-test-action-button secondary"
-            onClick={handleReset}
-          >
-            <i className="bi bi-arrow-clockwise me-2"></i>
-            초기화
-          </button>
+      <div className="simulation-test-action-row">
+        <div className="row g-2">
+          <div className="col-6">
+            <button
+              type="button"
+              className="btn btn-primary w-100 simulation-test-action-button"
+              onClick={handleRun}
+            >
+              실행
+            </button>
+          </div>
+          <div className="col-6">
+            <button
+              type="button"
+              className="btn btn-light border w-100 simulation-test-action-button secondary"
+              onClick={handleReset}
+            >
+              초기화
+            </button>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-function SimulationLegend({ legend }) {
-  if (legend.type === "gradient") {
-    return (
-      <div className="simulation-test-legend">
-        <div className="simulation-test-legend-title">{legend.title}</div>
-        <div className="simulation-test-legend-bar"></div>
-        <div className="simulation-test-legend-labels">
-          <span>낮음</span>
-          <span>보통</span>
-          <span>높음</span>
-        </div>
-      </div>
-    );
-  }
-
+function SimulationLegend({ geometryType }) {
   return (
     <div className="simulation-test-legend">
-      <div className="simulation-test-legend-title">{legend.title}</div>
-      <div className="simulation-test-legend-list">
-        {legend.items.map((item) => (
-          <div key={item.label} className="simulation-test-legend-item">
-            <span className={`simulation-test-legend-swatch ${item.tone}`}></span>
-            <span>{item.label}</span>
+      <div className="simulation-test-legend-title">범례</div>
+
+      {geometryType === "linestring" ? (
+        <div className="simulation-test-legend-list">
+          <div className="simulation-test-legend-item">
+            <span className="simulation-test-legend-swatch primary-line"></span>
+            <span>라인 객체</span>
           </div>
-        ))}
-      </div>
+        </div>
+      ) : geometryType === "polygon" ? (
+        <div className="simulation-test-legend-list">
+          <div className="simulation-test-legend-item">
+            <span className="simulation-test-legend-swatch fill-low"></span>
+            <span>폴리곤 객체</span>
+          </div>
+        </div>
+      ) : (
+        <div className="simulation-test-legend-list">
+          <div className="simulation-test-legend-item">
+            <span className="simulation-test-legend-swatch node"></span>
+            <span>포인트 객체</span>
+          </div>
+        </div>
+      )}
     </div>
   );
+}
+
+function SimulationMapBoundsUpdater({ geoJsonData }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!geoJsonData) return;
+
+    const layer = L.geoJSON(geoJsonData);
+    const bounds = layer.getBounds();
+
+    if (bounds.isValid()) {
+      map.fitBounds(bounds, { padding: [24, 24] });
+    }
+  }, [geoJsonData, map]);
+
+  return null;
 }
 
 function SimulationMapView({
@@ -656,12 +536,32 @@ function SimulationMapView({
   mapMode,
   selectedRegion,
   radius,
-  showHeatmap,
-  useClustering,
-  showBoundary,
   profile,
+  previewGeoJson,
+  previewLoading,
+  previewErrorMessage,
 }) {
-  const mapData = profile.map;
+  const hasPreviewFeatures =
+    Array.isArray(previewGeoJson?.features) &&
+    previewGeoJson.features.some((feature) => feature?.geometry);
+
+  const geoJsonStyle = {
+    color: mapMode === "zone" ? "#0f766e" : "#2563eb",
+    weight: geometryType === "linestring" ? 5 : 3,
+    fillColor: mapMode === "fill" || geometryType === "polygon" ? "#60a5fa" : "#93c5fd",
+    fillOpacity: geometryType === "polygon" ? 0.32 : 0.18,
+  };
+
+  const pointRadius = mapMode === "heat" ? 9 : 7;
+
+  const pointToLayer = (_, latlng) =>
+    L.circleMarker(latlng, {
+      radius: pointRadius,
+      fillColor: "#2563eb",
+      color: "#ffffff",
+      weight: 2,
+      fillOpacity: 0.95,
+    });
 
   return (
     <div className="simulation-test-panel card simulation-test-map-panel h-100">
@@ -679,146 +579,33 @@ function SimulationMapView({
       </div>
 
       <div className={`simulation-test-map-stage mode-${mapMode}`}>
-        <img src={mapPreviewImg} alt="시뮬레이션 지도 미리보기" className="simulation-test-map-image" />
-        <div className="simulation-test-map-overlay"></div>
-
-        {DISTRICT_LABELS.map((item) => (
-          <span
-            key={item.name}
-            className="simulation-test-district-label"
-            style={{ left: item.left, top: item.top }}
-          >
-            {item.name}
-          </span>
-        ))}
-
-        {geometryType === "point" &&
-          mapData.markerDots.map((item, index) => (
-            <span
-              key={`${item.left}-${item.top}-${index}`}
-              className="simulation-test-map-dot"
-              style={{ left: item.left, top: item.top }}
-            ></span>
-          ))}
-
-        {geometryType === "point" &&
-          showHeatmap &&
-          mapData.heatSpots.map((item, index) => (
-            <span
-              key={`${item.left}-${item.top}-${index}`}
-              className={`simulation-test-heatspot ${item.size}`}
-              style={{ left: item.left, top: item.top }}
-            ></span>
-          ))}
-
-        {geometryType === "point" &&
-          useClustering &&
-          mapData.clusterBubbles.map((item, index) => (
-            <span
-              key={`${item.left}-${item.top}-${index}`}
-              className="simulation-test-cluster-bubble"
-              style={{ left: item.left, top: item.top }}
+        {previewLoading ? (
+          <div className="simulation-test-map-empty">공간 데이터를 불러오는 중입니다.</div>
+        ) : previewErrorMessage ? (
+          <div className="simulation-test-map-empty">{previewErrorMessage}</div>
+        ) : !hasPreviewFeatures ? (
+          <div className="simulation-test-map-empty">표시할 공간 좌표 데이터가 없습니다.</div>
+        ) : (
+          <>
+            <MapContainer
+              center={[36.5, 127.8]}
+              zoom={7}
+              className="simulation-test-leaflet-map"
             >
-              {item.value}
-            </span>
-          ))}
-
-        {geometryType === "linestring" &&
-          mapData.routes.map((item, index) => (
-            <span
-              key={`${item.left}-${item.top}-${index}`}
-              className={`simulation-test-map-route ${item.tone}`}
-              style={{
-                left: item.left,
-                top: item.top,
-                width: item.width,
-                transform: `translate(-50%, -50%) rotate(${item.rotate})`,
-              }}
-            ></span>
-          ))}
-
-        {geometryType === "linestring" &&
-          showHeatmap &&
-          mapData.heatSpots.map((item, index) => (
-            <span
-              key={`${item.left}-${item.top}-${index}`}
-              className={`simulation-test-heatspot ${item.size}`}
-              style={{ left: item.left, top: item.top }}
-            ></span>
-          ))}
-
-        {geometryType === "linestring" &&
-          useClustering &&
-          mapData.nodes.map((item, index) => (
-            <span
-              key={`${item.left}-${item.top}-${index}`}
-              className="simulation-test-map-node"
-              style={{ left: item.left, top: item.top }}
-            >
-              {item.value}
-            </span>
-          ))}
-
-        {geometryType === "polygon" &&
-          mapData.polygons.map((item, index) => (
-            <span
-              key={`${item.left}-${item.top}-${index}`}
-              className={`simulation-test-map-polygon ${item.tone}`}
-              style={{
-                left: item.left,
-                top: item.top,
-                width: item.width,
-                height: item.height,
-                transform: `translate(-50%, -50%) rotate(${item.rotate})`,
-              }}
-            ></span>
-          ))}
-
-        {geometryType === "polygon" &&
-          showHeatmap &&
-          mapData.heatSpots.map((item, index) => (
-            <span
-              key={`${item.left}-${item.top}-${index}`}
-              className={`simulation-test-heatspot ${item.size}`}
-              style={{ left: item.left, top: item.top }}
-            ></span>
-          ))}
-
-        {geometryType === "polygon" &&
-          useClustering &&
-          mapData.clusterBubbles.map((item, index) => (
-            <span
-              key={`${item.left}-${item.top}-${index}`}
-              className="simulation-test-cluster-bubble"
-              style={{ left: item.left, top: item.top }}
-            >
-              {item.value}
-            </span>
-          ))}
-
-        {(showBoundary || mapMode === "zone") &&
-          mapData.boundaryZones.map((item, index) => (
-            <span
-              key={`${item.left}-${item.top}-${index}`}
-              className="simulation-test-boundary-zone"
-              style={{
-                left: item.left,
-                top: item.top,
-                width: item.width,
-                height: item.height,
-                transform: `translate(-50%, -50%) rotate(${item.rotate})`,
-              }}
-            ></span>
-          ))}
-
-        <div className="simulation-test-map-controls">
-          <button type="button"><i className="bi bi-plus-lg"></i></button>
-          <button type="button"><i className="bi bi-dash-lg"></i></button>
-          <button type="button"><i className="bi bi-layers"></i></button>
-          <button type="button"><i className="bi bi-fullscreen"></i></button>
-        </div>
-
-        <SimulationLegend legend={mapData.legend} />
+              <TileLayer
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution="&copy; OpenStreetMap contributors"
+              />
+              <SimulationMapBoundsUpdater geoJsonData={previewGeoJson} />
+              <GeoJSON
+                data={previewGeoJson}
+                style={geoJsonStyle}
+                pointToLayer={pointToLayer}
+              />
+            </MapContainer>
+            <SimulationLegend geometryType={geometryType} />
+          </>
+        )}
       </div>
     </div>
   );
@@ -846,12 +633,12 @@ function SimulationResultSummary({ summaryStats, hotspotRanking }) {
       <div className="simulation-test-panel simulation-test-summary-panel card">
         <div className="simulation-test-panel-title">
           <i className="bi bi-bar-chart"></i>
-          <span>우선순위 구역</span>
+          <span>대표 객체</span>
         </div>
 
         <div className="simulation-test-ranking-list">
           {hotspotRanking.map((item, index) => (
-            <div key={item.district} className="simulation-test-ranking-row">
+            <div key={`${item.district}-${index}`} className="simulation-test-ranking-row">
               <div className="simulation-test-ranking-head">
                 <span>{index + 1}.</span>
                 <strong>{item.district}</strong>
@@ -879,7 +666,7 @@ function SimulationResultTable({ selectedTab, setSelectedTab, activeTable }) {
 
         <button type="button" className="btn btn-light border simulation-test-export-button">
           <i className="bi bi-download me-2"></i>
-          CSV 내려받기
+          내보내기
         </button>
       </div>
 
@@ -906,36 +693,40 @@ function SimulationResultTable({ selectedTab, setSelectedTab, activeTable }) {
             </tr>
           </thead>
           <tbody>
-            {activeTable.rows.map((row, rowIndex) => (
-              <tr key={`row-${rowIndex}`}>
-                {activeTable.columns.map((column) => (
-                  <td key={column.key}>
-                    <DataCell columnKey={column.key} value={row[column.key]} />
-                  </td>
-                ))}
+            {activeTable.rows.length > 0 ? (
+              activeTable.rows.map((row, rowIndex) => (
+                <tr key={`row-${rowIndex}`}>
+                  {activeTable.columns.map((column) => (
+                    <td key={column.key}>
+                      <DataCell columnKey={column.key} value={row[column.key]} />
+                    </td>
+                  ))}
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={activeTable.columns.length} className="text-center py-4 text-secondary">
+                  표시할 결과가 없습니다.
+                </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>
 
       <div className="simulation-test-table-footer">
-        <span>전체 25개 중 1-5 표시</span>
+        <span>현재 탭 기준 최대 5개 결과를 표시합니다.</span>
 
         <div className="simulation-test-pagination">
           <button type="button"><i className="bi bi-chevron-left"></i></button>
           <button type="button" className="active">1</button>
-          <button type="button">2</button>
-          <button type="button">3</button>
-          <button type="button">4</button>
-          <button type="button">5</button>
           <button type="button"><i className="bi bi-chevron-right"></i></button>
         </div>
 
-        <select className="form-select simulation-test-page-size" defaultValue="5개씩 보기">
-          <option>5개씩 보기</option>
-          <option>10개씩 보기</option>
-          <option>20개씩 보기</option>
+        <select className="form-select simulation-test-page-size" defaultValue="5개 보기">
+          <option>5개 보기</option>
+          <option>10개 보기</option>
+          <option>20개 보기</option>
         </select>
       </div>
     </div>
@@ -943,20 +734,32 @@ function SimulationResultTable({ selectedTab, setSelectedTab, activeTable }) {
 }
 
 function UserDatasetSimulationTestPage() {
+  const { datasetId } = useParams();
   const [geometryType, setGeometryType] = useState("point");
-  const currentProfile = SIMULATION_PROFILES[geometryType];
-
-  const [mapMode, setMapMode] = useState(currentProfile.defaultMapMode);
-  const [selectedRegion, setSelectedRegion] = useState(currentProfile.defaultRegion);
-  const [radius, setRadius] = useState(currentProfile.defaultRadius);
-  const [densityLevel, setDensityLevel] = useState(currentProfile.defaultDensity);
+  const [mapMode, setMapMode] = useState(SIMULATION_PROFILES.point.defaultMapMode);
+  const [selectedRegion, setSelectedRegion] = useState(SIMULATION_PROFILES.point.defaultRegion);
+  const [radius, setRadius] = useState(SIMULATION_PROFILES.point.defaultRadius);
+  const [densityLevel, setDensityLevel] = useState(SIMULATION_PROFILES.point.defaultDensity);
   const [showHeatmap, setShowHeatmap] = useState(true);
   const [useClustering, setUseClustering] = useState(true);
   const [showBoundary, setShowBoundary] = useState(false);
   const [selectedTab, setSelectedTab] = useState("result");
-  const [statusText, setStatusText] = useState(currentProfile.statusText);
+  const [previewGeoJson, setPreviewGeoJson] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(true);
+  const [previewErrorMessage, setPreviewErrorMessage] = useState("");
 
-  const activeTable = currentProfile.tableData[selectedTab];
+  const currentProfile = SIMULATION_PROFILES[geometryType] ?? SIMULATION_PROFILES.point;
+  const features = Array.isArray(previewGeoJson?.features) ? previewGeoJson.features : [];
+  const simulationData = buildSimulationData(
+    features,
+    geometryType,
+    radius,
+    currentProfile.statusText,
+    showHeatmap,
+    useClustering,
+    showBoundary,
+  );
+  const activeTable = simulationData.tableData[selectedTab];
 
   const resetWithProfile = (profile) => {
     setMapMode(profile.defaultMapMode);
@@ -967,7 +770,6 @@ function UserDatasetSimulationTestPage() {
     setUseClustering(true);
     setShowBoundary(false);
     setSelectedTab("result");
-    setStatusText(profile.statusText);
   };
 
   const handleReset = () => {
@@ -975,12 +777,70 @@ function UserDatasetSimulationTestPage() {
   };
 
   const handleRun = () => {
-    setStatusText(
-      `${currentProfile.label} 타입 기준으로 ${selectedRegion} / 반경 ${radius}m 결과가 반영되었습니다.`,
-    );
+    setSelectedTab("result");
   };
 
-  // Geometry 버튼을 바꾸면 각 타입에 맞는 기본 제어값과 표시 요소를 함께 초기화합니다.
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchPreviewGeoJson = async () => {
+      try {
+        setPreviewLoading(true);
+        setPreviewErrorMessage("");
+
+        const previewResponse = await getDatasetPreviewGeoJsonApi(datasetId);
+        const previewData =
+          typeof previewResponse.data === "string"
+            ? JSON.parse(previewResponse.data)
+            : previewResponse.data;
+
+        if (cancelled) {
+          return;
+        }
+
+        setPreviewGeoJson(previewData);
+
+        const inferredGeometryType = inferSimulationGeometryType(previewData);
+        if (inferredGeometryType && SIMULATION_PROFILES[inferredGeometryType]) {
+          const nextProfile = SIMULATION_PROFILES[inferredGeometryType];
+          setGeometryType(inferredGeometryType);
+          resetWithProfile(nextProfile);
+        }
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        setPreviewGeoJson(null);
+
+        if (error?.response?.status === 403) {
+          setPreviewErrorMessage("공간 데이터를 확인할 권한이 없습니다.");
+        } else if (error?.response?.status === 404) {
+          setPreviewErrorMessage("공간 데이터를 찾을 수 없습니다.");
+        } else {
+          setPreviewErrorMessage("공간 데이터를 불러오지 못했습니다.");
+        }
+      } finally {
+        if (!cancelled) {
+          setPreviewLoading(false);
+        }
+      }
+    };
+
+    if (!datasetId) {
+      setPreviewGeoJson(null);
+      setPreviewLoading(false);
+      setPreviewErrorMessage("데이터셋 정보를 확인할 수 없습니다.");
+      return undefined;
+    }
+
+    fetchPreviewGeoJson();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [datasetId]);
+
   const handleGeometryChange = (nextGeometryType) => {
     const nextProfile = SIMULATION_PROFILES[nextGeometryType];
     setGeometryType(nextGeometryType);
@@ -1003,7 +863,7 @@ function UserDatasetSimulationTestPage() {
         <div className="col-12 col-xl-3 simulation-test-side-column">
           <div className="row g-3 simulation-test-side-stack">
             <div className="col-12">
-              <SimulationDatasetInfo datasetInfo={currentProfile.datasetInfo} />
+              <SimulationDatasetInfo datasetInfo={simulationData.datasetInfo} />
             </div>
             <div className="col-12">
               <SimulationControlPanel
@@ -1021,7 +881,7 @@ function UserDatasetSimulationTestPage() {
                 setUseClustering={setUseClustering}
                 showBoundary={showBoundary}
                 setShowBoundary={setShowBoundary}
-                statusText={statusText}
+                statusText={simulationData.statusText}
                 handleRun={handleRun}
                 handleReset={handleReset}
                 profile={currentProfile}
@@ -1038,17 +898,17 @@ function UserDatasetSimulationTestPage() {
                 mapMode={mapMode}
                 selectedRegion={selectedRegion}
                 radius={radius}
-                showHeatmap={showHeatmap}
-                useClustering={useClustering}
-                showBoundary={showBoundary}
                 profile={currentProfile}
+                previewGeoJson={previewGeoJson}
+                previewLoading={previewLoading}
+                previewErrorMessage={previewErrorMessage}
               />
             </div>
 
             <div className="col-12 col-xxl-4 simulation-test-summary-column">
               <SimulationResultSummary
-                summaryStats={currentProfile.summaryStats}
-                hotspotRanking={currentProfile.hotspotRanking}
+                summaryStats={simulationData.summaryStats}
+                hotspotRanking={simulationData.hotspotRanking}
               />
             </div>
           </div>
@@ -1070,7 +930,7 @@ function UserDatasetSimulationTestPage() {
           <div className="simulation-test-panel simulation-test-geometry-switch-card card">
             <div className="simulation-test-panel-title mb-0">
               <i className="bi bi-bezier2"></i>
-              <span>도형 타입 전환</span>
+              <span>공간 타입 전환</span>
             </div>
 
             <div className="simulation-test-geometry-switch-grid">

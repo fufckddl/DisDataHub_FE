@@ -145,7 +145,7 @@ function DatasetInfoCard({dataset, stats, sourceFile}){
                             /> 
                             <DatasetInfoPairRow
                                 leftTitle="제공기관" leftContent={dataset?.provider ?? "-"}
-                                rightTitle="데이터유형" rightContent={dataset?.category ?? "-"}
+                                rightTitle="데이터유형" rightContent={dataset?.categoryNameKo ?? "-"}
                             />
                             <DatasetInfoPairRow
                                 leftTitle="지역" leftContent="서울시"
@@ -436,107 +436,85 @@ function FileDownloadCard({ availableFormats, sourceFile, dataset }){
         CSV: "success",
         GeoJSON: "warning",
         SHP: "info",
-        // GeoTIFF: "primary",
-        KML: "danger",
+        // TIFF: "primary",
+        XLSX: "danger",
+        // KML: "danger"
     };
 
-    
+    const extractDownloadFileName = (contentDisposition, fallbackName) => {
+        if (!contentDisposition) return fallbackName;
+
+        const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+        if (utf8Match?.[1]) {
+            return decodeURIComponent(utf8Match[1]);
+        }
+
+        const plainMatch = contentDisposition.match(/filename=\"?([^\";]+)\"?/i);
+        if (plainMatch?.[1]) {
+            return plainMatch[1];
+        }
+
+        return fallbackName;
+    };
 
 
-    // const downloadButtonClick = async () => {
-    //     if (!sourceFile?.filePath || !sourceFile?.storedFilename || !sourceFile?.originalFilename) {
-    //         alert("다운로드할 원본 파일 정보가 없습니다.");
-    //         return;
-    //     }
-        
-    //     try{
-    //         const response = await downloadFileApi({
-    //             filePath: sourceFile.filePath,
-    //             storedFilename: sourceFile.storedFilename,
-    //             originalFilename: sourceFile.originalFilename,
-    //         });
-
-    //         const blob = response.data; // blob = 웹 프론트엔드에서 파일 데이터 자체를 담는 객체
-    //         const url = window.URL.createObjectURL(blob); // Blob을 브라우저가 읽을 수 있는 URL로 변환
-
-    //         const a = document.createElement("a"); // a태그 생성
-    //         a.href = url;  // href 에 url 넣기
-    //         a.download = sourceFile.originalFilename;
-
-            
-    //         document.body.appendChild(a);
-    //         a.click();
-    //         document.body.removeChild(a);
-
-    //         window.URL.revokeObjectURL(url);
-    //     }catch(e){
-    //         if(e.response.status == "404"){
-    //             alert("다운로드할 파일을 찾을 수 없습니다.(S3연동되면 해결)")
-    //             return;
-    //         }
-
-    //         if(e.response.status == "403"){
-    //             alert("다운로드 할 권한이 없습니다.")
-    //             return;
-    //         }
-
-    //         alert("파일 다운로드 중 오류가 발생했습니다.")
-    //     }
-
-    // };    
-
-const downloadButtonClick = async () => {
-    // 1. 먼저 형식을 고르기
-    if (!selectFileFormat) {
-        alert("다운로드 형식을 먼저 선택해주세요.");
-        return;
-    }
-
-    try {
-        // 2. 프론트는 파일 형식(원본인지, 변환인지)을 상관하지 않고 항상 같은 API 호출
-        // 원본, 변환은 백에서 판단
-        const response = await downloadDatasetByFormatApi(dataset.datasetId, selectFileFormat);
-
-        const blob = response.data;
-        const url = window.URL.createObjectURL(blob);
-
-        const a = document.createElement("a");
-        a.href = url;
-
-        // 파일명은 응답 헤더에서 받는 게 더 정확하지만,
-        // 1차는 형식 기반 기본 파일명으로 내려도 됨
-        a.download = `${dataset.title}.${selectFileFormat.toLowerCase()}`;
-
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-
-        window.URL.revokeObjectURL(url);
-    } catch (e) {
-        // 원본 형식인데 S3에 파일이 없을 때
-        if (e?.response?.status === 404) {
-            alert("원본 파일 또는 변환 대상 데이터를 찾을 수 없습니다.(S3연동 시 업로드 된 원본파일 다운로드 가능)");
+    const downloadButtonClick = async () => {
+        // 1. 먼저 형식을 고르기
+        if (!selectFileFormat) {
+            alert("다운로드 형식을 먼저 선택해주세요.");
             return;
         }
 
-        // 지원하지 않는 형식
-        if (e?.response?.status === 400) {
-            alert("지원하지 않는 다운로드 형식입니다.");
-            return;
-        }
+        try {
+            // 2. 프론트는 파일 형식(원본인지, 변환인지)을 상관하지 않고 항상 같은 API 호출
+            // 원본, 변환은 백에서 판단
+            const response = await downloadDatasetByFormatApi(dataset.datasetId, selectFileFormat);
 
-        if(e?.response?.stauts == 501){
-            alert("해당 형식은 아직 준비 중입니다.")
-            return;
-        }
-        if(e?.response?.stauts == 403){
-            alert("다운로드 권한이 없습니다.");
-            return;
-        }
+            const blob = response.data;
+            const url = window.URL.createObjectURL(blob);
 
-        alert("파일 다운로드 중 오류가 발생했습니다.");
-    }
-};    
+            const a = document.createElement("a");
+            a.href = url;
+
+            // 파일명은 응답 헤더에서 받는 게 더 정확하지만,
+            // 1차는 형식 기반 기본 파일명으로 내려도 됨
+            const defaultFileName = `${dataset.title}.${selectFileFormat.toLowerCase()}`;
+            const serverFileName = extractDownloadFileName(
+                response.headers?.["content-disposition"],
+                defaultFileName
+            );
+            a.download = serverFileName;
+
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            window.URL.revokeObjectURL(url);
+        } catch (e) {
+            // 원본 형식인데 S3에 파일이 없을 때
+            if (e?.response?.status === 404) {
+                alert("원본 파일 또는 변환 대상 데이터를 찾을 수 없습니다.(S3연동 시 업로드 된 원본파일 다운로드 가능)");
+                return;
+            }
+
+            // 지원하지 않는 형식
+            if (e?.response?.status === 400) {
+                alert("지원하지 않는 다운로드 형식입니다.");
+                return;
+            }
+
+            if(e?.response?.status === 501){
+                alert("해당 형식은 아직 준비 중입니다.")
+                return;
+            }
+            if(e?.response?.status === 403){
+                alert("다운로드 권한이 없습니다.");
+                return;
+            }
+
+            alert("파일 다운로드 중 오류가 발생했습니다.");
+        }
+    };    
 
     // 파일 크기 형식변환
     const formatFileSize = (value) => {
@@ -556,7 +534,7 @@ const downloadButtonClick = async () => {
 
     return(
         <>
-            <div className="row mb-2">
+            <div className="row mb-3">
                 <div className="col">
                     <div className="card px-3 py-2">
                         <div className="row mb-3">
@@ -593,7 +571,7 @@ const downloadButtonClick = async () => {
                         </div>
 
                         {/* 다운로드 버튼 */}
-                        <div className="row mb-4">
+                        <div className="row mb-2">
                             <div className="col">
                                 <button className="btn btn-primary form-control" onClick={downloadButtonClick}>
                                     <i className="bi bi-download me-2"></i>
@@ -625,7 +603,7 @@ function FileSelectButton({type, color, size, selectFileFormat, setSelectFileFor
                         onClick={() => setSelectFileFormat(type)}>
                     <div>
                         <span className={`badge bg-${color}-subtle text-${color} border border-${color}-subtle me-1`}>{type}</span>
-                        <span className="fw-bold text-secondary" style={{fontSize: "12px"}}>({size})</span>
+                        <span className="fw-bold text-secondary" style={{fontSize: "10px"}}>({size})</span>
                     </div>
                 </button>
             </div>        
