@@ -93,6 +93,11 @@ function InquiryDetailPage() {
     );
   }
 
+  const hasAnswer =
+    inquiry.inquiryStatusCode === "ANSWERED" &&
+    inquiry.answerContent &&
+    inquiry.answerContent.trim() !== "";
+
   return (
     <div className="inquiry-detail-page">
       <div className="inquiry-detail-container">
@@ -134,20 +139,20 @@ function InquiryDetailPage() {
 
         <section className="inquiry-detail-content">
           <h2>문의 내용</h2>
-          <p>{inquiry.content}</p>
+          <p>{inquiry.content || "등록된 문의 내용이 없습니다."}</p>
         </section>
 
         <section className="inquiry-answer-section">
           <h2>관리자 답변</h2>
 
-          {inquiry.inquiryStatusCode === "ANSWERED" ? (
+          {hasAnswer ? (
             <div className="answer-complete-box">
               <div className="answer-meta">
-                <strong>관리자</strong>
+                <strong>{inquiry.replyWriterName || "관리자"}</strong>
                 <span>{formatDate(inquiry.answeredAt)}</span>
               </div>
 
-              <p>{inquiry.answerContent ?? "등록된 답변 내용이 없습니다."}</p>
+              <p>{inquiry.answerContent}</p>
             </div>
           ) : (
             <div className="answer-waiting-box">

@@ -53,3 +53,9 @@ export const downloadDatasetByFormatApi = (datasetId, format) => {
     responseType: "blob",
   });
 };
+
+export const runPointRadiusSimulationApi = (datasetId, radius) => {
+  return axiosInstance.post(`/api/download/simulation/datasets/${datasetId}/point-radius`, {
+    radius,
+  });
+};
