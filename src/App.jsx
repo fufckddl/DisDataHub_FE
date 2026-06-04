@@ -12,6 +12,9 @@ import UserDownloadRouter from './download/user/pages/UserDownloadRouter'
 import AdminDownloadRouter from './download/admin/pages/AdminDownloadRouter'
 import UserUploadRouter from './upload/user/pages/UserUploadRouter'
 import AdminUploadRouter from './upload/admin/pages/AdminUploadRouter'
+import AdminMainPageRouter from './admin/main/AdminMainPageRouter'
+import SystemIntroPage from "./system/pages/SystemIntroPage";
+
 import DashboardPage from './dashboard/pages/DashboardPage'
 
 function App() {
@@ -45,6 +48,10 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/admin/login" element={<AdminLoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+
+          {/* 시스템 소개 */}
+          <Route path="/system/intro" element={<SystemIntroPage />} />
+
           <Route path="/board/*" element={<BoardUserRoutes />} />
           <Route path="/admin/board/*" element={<BoardAdminRoutes />} />
 
@@ -56,8 +63,12 @@ function App() {
           <Route path="/upload/user/*" element={<UserUploadRouter />} />
           <Route path="/upload/admin/*" element={<AdminUploadRouter />} />
 
+          {/* 관리자 */}
+          <Route path="/admin/*" element={<AdminMainPageRouter />} />
+
           {/* 대시보드 */}
           <Route path="/dashboard/*" element={<DashboardPage />} />
+
         </Routes>
       </main>
     </div>

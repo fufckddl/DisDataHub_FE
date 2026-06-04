@@ -194,20 +194,39 @@ function DatasetForm({dataset}){
     )
 }
 
-function CardForm({children, color, title, content, caption}){
+function CardForm({children, color, title, content, caption, onClick, isCompactContent = false}){
     return(
         <>
             <div className="col">
-                <div className="card shadow-sm p-4">
-                    <div className="row">
+                <div
+                    className="card shadow-sm p-4 h-100"
+                    role={onClick ? "button" : undefined}
+                    onClick={onClick}
+                    style={{ cursor: onClick ? "pointer" : "default" }}
+                >
+                    <div className="row flex-nowrap align-items-start">
                         <div className={`col-2 rounded-circle bg-${color}-subtle text-${color} d-flex align-items-center justify-content-center`}
-                            style={{ width: "56px", height: "56px" }}>
+                            style={{ width: "56px", height: "56px", flex: "0 0 56px" }}>
                             {children}
                         </div>
-                        <div className="col">
+                        <div className="col" style={{ minWidth: 0 }}>
                             <div className="fw-bold" style={{fontSize: "14px"}}>{title}</div>
-                            <div className="fw-bold">{content}</div>
-                            {/* <div className="text-secondary" style={{fontSize: "12px"}}>승인된 데이터 기준</div> */}
+                            <div
+                                className="fw-bold"
+                                style={isCompactContent ? {
+                                    display: "-webkit-box",
+                                    WebkitLineClamp: 2,
+                                    WebkitBoxOrient: "vertical",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    wordBreak: "break-word",
+                                    lineHeight: "1.35",
+                                    minHeight: "2.7em",
+                                } : undefined}
+                                title={typeof content === "string" ? content : undefined}
+                            >
+                                {content}
+                            </div>
                             <div className="text-secondary" style={{ fontSize: "12px" }}>
                                 {caption}
                             </div>                            
@@ -270,6 +289,8 @@ function Paging(){
 }
 
 function UserDownloadMainPage(){
+    const navigate = useNavigate();
+    const userInfo = useAuthStore((state) => state.userInfo);
 
     const [apiDatasetList, setApiDatasetList] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -300,7 +321,35 @@ function UserDownloadMainPage(){
             : best;
     }, null);
 
-    console.log("popularDataset : ", popularDataset)
+    const handlePopularDatasetClick = async () => {
+        if (!popularDataset) {
+            return;
+        }
+
+        if (!popularDataset.isPublic) {
+            if (userInfo == null) {
+                if (confirm("비공개 데이터셋입니다. 로그인 페이지로 이동하시겠습니까?")) {
+                    navigate("/login");
+                }
+                return;
+            }
+
+            try {
+                await getDatasetDownloadPageApi(popularDataset.id);
+            } catch (error) {
+                if (error?.response?.status === 403) {
+                    alert("같은 소속기관 사용자만 접근할 수 있습니다.");
+                    return;
+                }
+
+                alert("데이터셋 정보를 불러오지 못했습니다.");
+                return;
+            }
+        }
+
+        navigate(`/download/user/${popularDataset.id}`);
+    };
+
     const summaryCards = [
         {
             color: "primary",
@@ -331,6 +380,8 @@ function UserDownloadMainPage(){
                 ? `누적 다운로드 ${formatNumber(Number(popularDataset.downloadCount ?? 0))}건`
                 : "다운로드 데이터 없음",
             icon: "bi-fire",
+            onClick: popularDataset ? handlePopularDatasetClick : undefined,
+            isCompactContent: true,
         },
     ];    
 
@@ -382,13 +433,15 @@ function UserDownloadMainPage(){
                 {/* 중간 데시보드 카드 */}
                 <div className="row mb-3">
                     {summaryCards.map((card, index) => (
-                        <CardForm
-                            key={index}
-                            color={card.color}
-                            title={card.title}
-                            content={card.content}
-                            caption={card.caption}
-                        >
+                            <CardForm
+                                key={index}
+                                color={card.color}
+                                title={card.title}
+                                content={card.content}
+                                caption={card.caption}
+                                onClick={card.onClick}
+                                isCompactContent={card.isCompactContent}
+                            >
                             <i className={` bi ${card.icon} fs-3`}></i>    
                         </CardForm>
                     ))}

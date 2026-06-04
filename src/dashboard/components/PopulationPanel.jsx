@@ -7,6 +7,7 @@ import {
     Tooltip,
 } from "chart.js";
 import { Bar } from "react-chartjs-2";
+import { getAreaDisplayName } from "../utils/areaDisplay";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
@@ -101,6 +102,7 @@ const chartOptions = {
             labels: {
                 boxWidth: 12,
                 boxHeight: 12,
+                color: "#cbd5e1",
             },
         },
         tooltip: {
@@ -115,13 +117,18 @@ const chartOptions = {
                 display: false,
             },
             ticks: {
+                color: "#94a3b8",
                 maxRotation: 60,
                 minRotation: 0,
             },
         },
         y: {
             beginAtZero: true,
+            grid: {
+                color: "rgba(148, 163, 184, 0.16)",
+            },
             ticks: {
+                color: "#94a3b8",
                 callback: (value) => `${Number(value).toLocaleString()}명`,
             },
         },
@@ -165,7 +172,7 @@ function PopulationPanel({ selectedArea, populationData, queryDate, notice, load
                 {selectedArea ? (
                     <div className="mb-3">
                         <div className="small text-secondary">선택 지역</div>
-                        <div className="fw-bold">{selectedArea.fullName ?? selectedArea.name}</div>
+                        <div className="fw-bold">{getAreaDisplayName(selectedArea)}</div>
                         <div className="small text-secondary">
                             지역코드 {selectedArea.areaCode}
                         </div>

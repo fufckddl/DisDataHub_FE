@@ -433,4 +433,12 @@
     position: static;
     margin-left: 10px;
   }
+
+  .admin-gis-clickable-row {
+  cursor: pointer;
+  }
+
+  .admin-gis-clickable-row:hover {
+    background: #f8fbff;
+  }
 }

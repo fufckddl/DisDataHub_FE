@@ -122,3 +122,17 @@ export const getDashboardGisRegionStats = async ({ datasetCode } = {}) => {
 
     return response.data;
 };
+
+// GIS/통계 관측형 데이터셋의 최신 저장값을 차트용으로 조회합니다.
+export const getDashboardGisObservations = async ({ datasetCode, areaCode, limit = 12 } = {}) => {
+    const params = { datasetCode, limit };
+    if (areaCode) {
+        params.areaCode = areaCode;
+    }
+
+    const response = await axiosInstance.get("/api/dashboard/gis-observations", {
+        params,
+    });
+
+    return response.data;
+};

@@ -1,13 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import {
-  importantNoticeMock,
-  noticeCategoryMockList,
-  noticeSummaryMock,
-  recentNoticeMockList,
-} from "../../mock/boardMockData";
-
 import "../css/NoticeListPage.css";
 import { getNoticeListApi } from "../../api/noticeApi";
 
@@ -15,6 +8,7 @@ function NoticeListPage() {
   const navigate = useNavigate();
 
   const [noticeList, setNoticeList] = useState([]);
+  const [searchWord, setSearchWord] = useState("");
 
   const getNoticeList = async () => {
     try {
@@ -31,6 +25,11 @@ function NoticeListPage() {
   useEffect(() => {
     getNoticeList();
   }, []);
+
+  const filteredNoticeList = noticeList.filter((notice) => {
+    const title = notice.title ?? "";
+    return title.toLowerCase().includes(searchWord.toLowerCase());
+  });
 
   const handleNoticeRowClick = (postId) => {
     navigate(`/board/notice/${postId}`);
@@ -55,38 +54,16 @@ function NoticeListPage() {
       <div className="notice-layout">
         <main className="notice-main">
           <section className="notice-search-section">
-            <input type="text" placeholder="공지사항 제목을 검색하세요" />
+            <input
+              type="text"
+              placeholder="공지사항 제목을 검색하세요"
+              value={searchWord}
+              onChange={(e) => setSearchWord(e.target.value)}
+            />
 
-            <select>
-              {noticeCategoryMockList.map((category) => (
-                <option key={category.code} value={category.code}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-
-            <button type="button">검색</button>
-          </section>
-
-          <section className="notice-important-section">
-            <div className="important-label">중요 공지</div>
-
-            <div className="important-content">
-              <div className="important-icon">📢</div>
-
-              <div>
-                <h2>{importantNoticeMock.title}</h2>
-                <p>{importantNoticeMock.content}</p>
-
-                <div className="important-meta">
-                  <span>
-                    📅 {importantNoticeMock.startAt} ~{" "}
-                    {importantNoticeMock.endAt}
-                  </span>
-                  <span>{importantNoticeMock.categoryName}</span>
-                </div>
-              </div>
-            </div>
+            <button type="button" onClick={getNoticeList}>
+              새로고침
+            </button>
           </section>
 
           <section className="notice-list-section">
@@ -102,7 +79,7 @@ function NoticeListPage() {
               </thead>
 
               <tbody>
-                {noticeList.map((notice) => (
+                {filteredNoticeList.map((notice) => (
                   <tr
                     key={notice.postId}
                     className="notice-row"
@@ -112,49 +89,19 @@ function NoticeListPage() {
                     <td>{notice.title}</td>
                     <td>공지사항</td>
                     <td>{formatDate(notice.createdAt)}</td>
-                    <td>{notice.viewCount}</td>
+                    <td>{notice.viewCount ?? 0}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
+
+            {filteredNoticeList.length === 0 && (
+              <div className="notice-empty-message">
+                등록된 공지사항이 없습니다.
+              </div>
+            )}
           </section>
         </main>
-
-        <aside className="notice-sidebar">
-          <section className="notice-summary-section">
-            <h3>공지사항 요약</h3>
-
-            <div className="summary-item">
-              <p>전체 공지</p>
-              <strong>{noticeSummaryMock.totalCount}건</strong>
-            </div>
-
-            <div className="summary-item">
-              <p>중요 공지</p>
-              <strong>{noticeSummaryMock.importantCount}건</strong>
-            </div>
-
-            <div className="summary-item">
-              <p>오늘 조회수</p>
-              <strong>{noticeSummaryMock.todayViewCount}</strong>
-            </div>
-          </section>
-
-          <section className="notice-recent-section">
-            <h3>최근 업데이트</h3>
-
-            {recentNoticeMockList.map((notice) => (
-              <div
-                className="recent-item"
-                key={notice.postId}
-                onClick={() => handleNoticeRowClick(notice.postId)}
-              >
-                <p>{notice.title}</p>
-                <span>{notice.createdAt}</span>
-              </div>
-            ))}
-          </section>
-        </aside>
       </div>
     </div>
   );
