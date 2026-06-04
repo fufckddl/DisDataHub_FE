@@ -1,7 +1,7 @@
 .simulation-test-page {
     min-height: 100%;
     color: #1f2937;
-    background: linear-gradient(180deg, #f8fbff 0%, #f1f6fd 100%);
+    background: #ffffff;
 }
 
 .simulation-test-main-row {
@@ -12,7 +12,7 @@
     padding: 18px 18px 16px;
     border: 1px solid #e2e8f0;
     border-radius: 18px;
-    background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+    background: #ffffff;
     box-shadow: 0 10px 28px rgba(15, 23, 42, 0.07);
 }
 
@@ -74,7 +74,7 @@
 }
 
 .simulation-test-control-panel {
-    background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+    background: #ffffff;
 }
 
 .simulation-test-field-block + .simulation-test-field-block {
@@ -229,19 +229,49 @@
     border-bottom: 1px solid #eef2f7;
 }
 
-.simulation-test-map-meta {
-    gap: 8px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
+.simulation-test-map-header-main {
+    min-width: 0;
 }
 
-.simulation-test-map-meta span {
-    padding: 7px 10px;
-    border-radius: 999px;
-    background: #f8fafc;
+.simulation-test-map-caption {
+    margin: 8px 0 0;
     color: #64748b;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     font-weight: 700;
+    line-height: 1.5;
+}
+
+.simulation-test-map-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.simulation-test-map-tool-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    padding: 7px 14px;
+    border: 1px solid #d8e2ef;
+    border-radius: 12px;
+    background: #ffffff;
+    color: #334155;
+    font-size: 0.8rem;
+    font-weight: 800;
+    transition: all 0.2s ease;
+}
+
+.simulation-test-map-tool-button.active {
+    border-color: #2563eb;
+    background: #2563eb;
+    color: #ffffff;
+}
+
+.simulation-test-map-tool-button.secondary {
+    background: #f8fafc;
 }
 
 .simulation-test-map-stage {
@@ -279,6 +309,191 @@
         radial-gradient(circle at 20% 20%, rgba(96, 165, 250, 0.16), transparent 24%),
         radial-gradient(circle at 80% 78%, rgba(37, 99, 235, 0.12), transparent 22%),
         linear-gradient(180deg, #f8fbff 0%, #eef4fb 100%);
+}
+
+.simulation-test-measure-type-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.simulation-test-measure-type-row.compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.simulation-test-measure-type-button {
+    min-height: 42px;
+    padding: 8px 12px;
+    border: 1px solid #d8e2ef;
+    border-radius: 12px;
+    background: #f8fafc;
+    color: #334155;
+    font-size: 0.84rem;
+    font-weight: 800;
+    transition: all 0.2s ease;
+}
+
+.simulation-test-measure-type-button.active {
+    border-color: #2563eb;
+    background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+    color: #ffffff;
+    box-shadow: 0 10px 22px rgba(37, 99, 235, 0.18);
+}
+
+.simulation-test-measure-reset-button {
+    min-height: 36px;
+    border: 1px dashed #cbd5e1;
+    border-radius: 12px;
+    background: #ffffff;
+    color: #475569;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.simulation-test-measure-result-card {
+    display: grid;
+    gap: 6px;
+    height: 100%;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: linear-gradient(180deg, #eff6ff 0%, #f8fbff 100%);
+}
+
+.simulation-test-measure-result-card.compact {
+    align-content: start;
+}
+
+.simulation-test-measure-result-card strong {
+    color: #1e40af;
+    font-size: 1.35rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+.simulation-test-measure-result-card small {
+    color: #64748b;
+    font-size: 0.77rem;
+    font-weight: 700;
+    line-height: 1.45;
+}
+
+.simulation-test-measure-result-label {
+    color: #2563eb;
+    font-size: 0.78rem;
+    font-weight: 800;
+}
+
+.simulation-test-measure-empty {
+    display: flex;
+    align-items: center;
+    min-height: 100%;
+    padding: 12px 14px;
+    border: 1px dashed #cbd5e1;
+    border-radius: 14px;
+    color: #64748b;
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1.5;
+    background: #f8fafc;
+}
+
+.simulation-test-measure-float {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    z-index: 1200;
+    display: grid;
+    gap: 10px;
+    width: min(220px, calc(100% - 28px));
+    padding: 12px;
+    border: 1px solid rgba(226, 232, 240, 0.92);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 16px 30px rgba(15, 23, 42, 0.12);
+    backdrop-filter: blur(10px);
+}
+
+.simulation-test-measure-float-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.simulation-test-measure-float-head strong {
+    color: #1e3a8a;
+    font-size: 0.88rem;
+    font-weight: 800;
+}
+
+.simulation-test-measure-float-head button {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #64748b;
+    font-size: 0.78rem;
+    font-weight: 800;
+}
+
+.simulation-test-home-control {
+    margin-bottom: 10px;
+}
+
+.simulation-test-home-control-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border: 0;
+    background: #ffffff;
+    color: #334155;
+    font-size: 0.9rem;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.simulation-test-home-control-button:hover {
+    background: #f8fafc;
+}
+
+.simulation-test-home-control-button i {
+    font-size: 0.9rem;
+    line-height: 1;
+}
+
+@media (max-width: 767.98px) {
+    .simulation-test-measure-float {
+        width: min(200px, calc(100% - 24px));
+    }
+}
+
+.simulation-test-leaflet-tooltip {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+}
+
+.simulation-test-leaflet-tooltip .leaflet-tooltip-content {
+    margin: 0;
+}
+
+.simulation-test-map-tooltip {
+    display: grid;
+    gap: 4px;
+    min-width: 170px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.92);
+    color: #f8fafc;
+    font-size: 0.78rem;
+    line-height: 1.45;
+    box-shadow: 0 12px 26px rgba(15, 23, 42, 0.24);
+}
+
+.simulation-test-map-tooltip strong {
+    font-size: 0.84rem;
+    font-weight: 800;
 }
 
 .simulation-test-map-stage .leaflet-control-zoom a {
