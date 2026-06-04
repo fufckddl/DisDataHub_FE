@@ -1,0 +1,236 @@
+.gis-report-write-page {
+  min-height: 100vh;
+  padding: 40px 56px;
+  background: #f4f8fc;
+  color: #17202a;
+  box-sizing: border-box;
+}
+
+.gis-report-write-header {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 30px;
+}
+
+.gis-report-write-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 14px;
+  border: 3px solid #1f6feb;
+  color: #1f6feb;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  box-shadow: 0 6px 16px rgba(31, 111, 235, 0.12);
+}
+
+.gis-report-write-header h1 {
+  margin: 0;
+  font-size: 34px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.gis-report-write-form-card {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 34px 40px 46px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.gis-report-form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.gis-report-form-row {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr);
+  gap: 22px;
+  align-items: center;
+}
+
+.gis-report-form-row label {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.gis-report-form-row input,
+.gis-report-form-row select,
+.gis-report-form-row textarea {
+  width: 100%;
+  border: 1px solid #d6dee9;
+  border-radius: 8px;
+  padding: 0 16px;
+  font-size: 16px;
+  color: #1f2937;
+  background: #ffffff;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.gis-report-form-row input,
+.gis-report-form-row select {
+  height: 52px;
+}
+
+.gis-report-form-row textarea {
+  min-height: 170px;
+  padding-top: 16px;
+  resize: vertical;
+  line-height: 1.6;
+}
+
+.gis-report-form-row input:focus,
+.gis-report-form-row select:focus,
+.gis-report-form-row textarea:focus {
+  border-color: #1f6feb;
+  box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.12);
+}
+
+.textarea-row {
+  align-items: start;
+}
+
+.textarea-row label {
+  padding-top: 14px;
+}
+
+.gis-report-divider {
+  height: 1px;
+  margin: 30px 0;
+  background: #e5eaf2;
+}
+
+.gis-report-write-map-section h2,
+.gis-report-location-info h2 {
+  margin: 0 0 18px;
+  font-size: 22px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.gis-report-write-map {
+  width: 100%;
+  height: 310px;
+  border: 1px solid #d6dee9;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #eef5ff;
+}
+
+.map-help-text {
+  margin: 12px 0 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.gis-report-location-info {
+  margin-top: 28px;
+  padding: 24px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fbfdff;
+}
+
+.gis-report-location-info .gis-report-form-row {
+  margin-top: 14px;
+}
+
+.gis-report-button-area {
+  display: flex;
+  justify-content: flex-end;
+  gap: 20px;
+  margin-top: 38px;
+}
+
+.gis-report-button-area button {
+  width: 180px;
+  height: 54px;
+  border-radius: 8px;
+  font-size: 17px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.cancel-button {
+  border: 1px solid #d6dee9;
+  background: #ffffff;
+  color: #334155;
+}
+
+.cancel-button:hover {
+  background: #f8fafc;
+}
+
+.submit-button {
+  border: none;
+  background: #1f6feb;
+  color: #ffffff;
+}
+
+.submit-button:hover {
+  background: #155dcc;
+}
+
+.gis-report-write-map .ol-zoom {
+  top: 14px;
+  left: 14px;
+}
+
+.gis-report-write-map .ol-zoom button {
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #0f172a;
+  border: 1px solid #d6dee9;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.gis-report-write-map .ol-attribution {
+  right: 10px;
+  bottom: 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.85);
+}
+
+@media (max-width: 768px) {
+  .gis-report-write-page {
+    padding: 28px 20px;
+  }
+
+  .gis-report-write-header h1 {
+    font-size: 28px;
+  }
+
+  .gis-report-write-form-card {
+    padding: 26px 22px 34px;
+  }
+
+  .gis-report-form-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .textarea-row label {
+    padding-top: 0;
+  }
+
+  .gis-report-button-area {
+    flex-direction: column;
+  }
+
+  .gis-report-button-area button {
+    width: 100%;
+  }
+}

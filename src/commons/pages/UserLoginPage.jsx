@@ -112,18 +112,29 @@ function UserLoginPage() {
                         </div>
                     </div>
 
-                    <div className="col-12 col-md-6 auth-hero">
-                        <div className="auth-hero-shapes" aria-hidden>
-                            <span className="auth-hero-bar" />
-                            <span className="auth-hero-bar" />
-                            <span className="auth-hero-bar" />
-                            <span className="auth-hero-bar" />
-                            <span className="auth-hero-bar" />
+                    <div className="col-12 col-md-6 auth-hero auth-lab-hero">
+                        <div className="auth-lab-grid" aria-hidden />
+                        <div className="auth-lab-orbit" aria-hidden />
+                        <div className="auth-lab-map" aria-hidden>
+                            <span className="auth-lab-node auth-lab-node--one" />
+                            <span className="auth-lab-node auth-lab-node--two" />
+                            <span className="auth-lab-node auth-lab-node--three" />
+                            <span className="auth-lab-route" />
+                        </div>
+                        <div className="auth-lab-samples" aria-hidden>
+                            <span />
+                            <span />
+                            <span />
+                        </div>
+                        <div className="auth-lab-panel" aria-hidden>
+                            <span>GIS-LAB</span>
+                            <strong>37.5665 N</strong>
+                            <small>126.9780 E</small>
                         </div>
                         <div className="auth-hero-copy">
-                            <p className="auth-hero-line1 mb-0">안녕하세요!</p>
+                            <p className="auth-hero-line1 mb-0">데이터 랩에 오신 것을 환영합니다</p>
                             <p className="auth-hero-line2 mb-0">
-                                좋은 하루 되세요
+                                공간 데이터를 분석하고 연결하세요
                             </p>
                             <p className="auth-link-muted small mt-3 mb-0">
                                 GIS 데이터 허브

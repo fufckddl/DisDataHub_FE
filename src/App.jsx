@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import Header from './commons/components/Header'
 import { Route, Routes } from 'react-router-dom'
 import LoginPage from './commons/pages/UserLoginPage'
+import AdminLoginPage from './commons/pages/AdminLoginPage'
 import useAuthStore from './commons/auth/useAuthStore'
 import { getUserInfoFromTokenApi } from './commons/api/userApi'
 import RegisterPage from './commons/pages/UserRegisterPage'
@@ -13,6 +14,7 @@ import UserUploadRouter from './upload/user/pages/UserUploadRouter'
 import AdminUploadRouter from './upload/admin/pages/AdminUploadRouter'
 import AdminMainPageRouter from './admin/main/AdminMainPageRouter'
 
+import DashboardPage from './dashboard/pages/DashboardPage'
 
 function App() {
   
@@ -43,6 +45,7 @@ function App() {
       <main className="flex-grow-1">
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/admin/login" element={<AdminLoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/board/*" element={<BoardUserRoutes />} />
           <Route path="/admin/board/*" element={<BoardAdminRoutes />} />
@@ -57,6 +60,10 @@ function App() {
 
           {/* 관리자 */}
           <Route path="/admin/*" element={<AdminMainPageRouter />} />
+
+          {/* 대시보드 */}
+          <Route path="/dashboard/*" element={<DashboardPage />} />
+
         </Routes>
       </main>
     </div>

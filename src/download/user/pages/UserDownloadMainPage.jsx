@@ -1,31 +1,13 @@
+import { Link, useNavigate } from "react-router-dom";
 import "../../style/download.css";
+import TopTitle from "../../components/TopTitle";
+import { datasetMainDummy } from "../../dummy/datasetMainDummy";
+import { useEffect, useState } from "react";
+import { getApprovedDownloadDatasetListApi, getDatasetDownloadPageApi } from "../../api/userDownloadApi";
+import useAuthStore from "../../../commons/auth/useAuthStore";
 
-function TopTitle(){
-    return(
-        <>
-            <div className="row align-items-center mb-3">
-                <div className="col "> 
-                    <div className="row">
-                        <div className="col">
-                            <h2 className="fw-bold mb-2">GIS 데이터 다운로드</h2>
-                        </div>
-                        <div className="col-auto">
-                            
-                            <button className="btn btn-light text-secondary">
-                                <i className="bi bi-question-circle me-2"></i>
-                                이용가이드
-                            </button>
-                        </div>
-                    </div>
-                    <div className="text-secondary" style={{fontSize: "12px"}}>
-                        승인된 공공 GIS 데이터를 조회하고 파일을 다운로드 할 수 있습니다.
-                    </div>
-                    
-                </div>
-            </div>
-        </>
-    )
-}
+
+
 
 function SearchForm({type, title, placeholder, form, options}){
     return(
@@ -75,7 +57,7 @@ function Search(){
 
                         <div className="row">
                             <div className="col">
-                                <button className="me-3 btn btn-light" style={{width: "150px"}}>
+                                <button className="me-3 border btn btn-light" style={{width: "150px"}}>
                                     <i className="bi bi-arrow-repeat me-2"></i>
                                     초기화
                                 </button>
@@ -94,32 +76,125 @@ function Search(){
         </>
     )
 }
+function DatasetList({datasetList, loading}){
 
-function DatasetForm(){
+ 
     return(
         <>
-            <tr>
-                <td className="col-2 text-primary fw-bold ps-3">서울시 CCTV 위치 데이터</td>
-                <td className="col-3 td-text">서울시 공공 CCTV 설치 위치 및 주요 속성 정보</td>
-                <td className="col-1 td-text text-center">서울시</td>
-                <td className="col-1 td-text text-center">2026-05-17</td>
+            <div className="row ">
+                <div className="col">
+
+                    <div className="card shadow-sm overflow-hidden">
+                        <table className="table table-hover align-middle">
+                            <thead className="table-light">
+                                <tr>
+                                    <th className="col-2 ps-3">데이터셋 명</th>
+                                    <th className="col-3">설명</th>
+                                    <th className="col-1 text-center">제공기관</th>
+                                    <th className="col-1 text-center">등록일</th>
+                                    <th className="col-1 text-center">파일 형식</th>
+                                    <th className="col-1 text-center">다운로드 수</th>
+                                    <th className="col-1 text-center">조회 수 </th>
+                                    <th className="col-2 text-center">액션</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {datasetList.length > 0 ? (
+                                    datasetList.map((dataset) => (
+                                        <DatasetForm
+                                            key={dataset.id}
+                                            dataset={dataset}
+                                        />
+                                    ))
+                                ): (
+                                    <tr>
+                                        <td colSpan="8" className="text-center py-4 text-secondary">
+                                            {loading ? "목록을 불러오는 중입니다." : "표시할 데이터셋이 없습니다."}
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                            
+
+
+                        </table>
+                        
+                        {/* 페이징 */}
+                        <div>
+                            <Paging />
+                        </div>
+                        
+                    </div>
+
+                </div>
+            </div>        
+        </>
+    )
+}
+
+function DatasetForm({dataset}){
+
+    const navigate = useNavigate();
+    const userInfo = useAuthStore((state) => state.userInfo);
+
+    const handleDetailPageClick = async (isPublic) => {
+        if(!isPublic){
+            if(userInfo == null){
+                if(confirm("비공개 데이터셋입니다. 로그인 페이지로 이동하시겠습니까?")){
+                    navigate("/login")
+                }
+                return;                
+            }
+            // alert("같은 소속기관 사용자만 접근할 수 있습니다.");
+            // return;
+
+            try {
+                await getDatasetDownloadPageApi(dataset.id);
+            } catch (error) {
+                if (error?.response?.status === 403) {
+                    alert("같은 소속기관 사용자만 접근할 수 있습니다.");
+                    return;
+                }
+
+                alert("데이터셋 정보를 불러오지 못했습니다.");
+                return;
+            }
+
+        }
+        
+        // navigate("/download/user/detail")
+        navigate(`/download/user/${dataset.id}`)
+    }
+
+    return(
+        <>
+            <tr >
+                <td className="col-2 text-primary fw-bold ps-3" style={{fontSize : "15px"}}>
+                    <Link onClick={() => handleDetailPageClick(dataset.isPublic)} className="text-decoration-none">{dataset.title}</Link>
+                </td>  
+                
+                <td className="col-3 sm-text text-secondary">{dataset.description}</td>
+                <td className="col-1 sm-text text-secondary text-center">{dataset.provider}</td>
+                <td className="col-1 sm-text text-secondary text-center">{dataset.createAt}</td>
                 <td className="col-1 text-center">
-                    <span className="badge bg-success-subtle text-success border border-success-subtle me-1">CSV</span>
+                    <span className="badge bg-success-subtle text-success border border-success-subtle me-1">{dataset.fileExtension}</span>
                 </td>
-                <td className="col-1 td-text text-center">12,345</td>
-                <td className="col-1 text-center">
-                    <span className="badge bg-success-subtle text-success border border-success-subtle me-1">승인됨</span>
-                </td>
-                <td className="col-2 td-text text-center">
-                    <button className="btn btn-light btn-sm me-4">상세보기</button>
-                    <button className="btn btn-primary btn-sm">다운로드</button>
+                <td className="col-1 sm-text text-secondary text-center">{dataset.downloadCount}</td>
+                {/* <td className="col-1 text-center">
+                    <span className="badge bg-success-subtle text-success border border-success-subtle me-1">{dataset.status}</span>
+                </td> */}
+                <td className="col-1 sm-text text-secondary text-center">{dataset.viewCount}</td>
+                <td className="col-2 sm-text text-center">
+                    {/* 상세보기 할 때 데이터 조회 권환 확인 필요 */}
+                    <button className="btn btn-light btn-sm sm-text border text-secondary me-4" onClick={() => handleDetailPageClick(dataset.isPublic)}>상세보기</button>
+                    <button className="btn btn-primary btn-sm" style={{fontSize: "13px"}} >다운로드</button>
                 </td>
             </tr> 
         </>
     )
 }
 
-function CardForm({children, color, title, content}){
+function CardForm({children, color, title, content, caption}){
     return(
         <>
             <div className="col">
@@ -132,7 +207,10 @@ function CardForm({children, color, title, content}){
                         <div className="col">
                             <div className="fw-bold" style={{fontSize: "14px"}}>{title}</div>
                             <div className="fw-bold">{content}</div>
-                            <div className="text-secondary" style={{fontSize: "12px"}}>승인된 데이터 기준</div>
+                            {/* <div className="text-secondary" style={{fontSize: "12px"}}>승인된 데이터 기준</div> */}
+                            <div className="text-secondary" style={{ fontSize: "12px" }}>
+                                {caption}
+                            </div>                            
                         </div>
                     </div>
                 </div>
@@ -142,29 +220,160 @@ function CardForm({children, color, title, content}){
 }
 
 function Paging(){
+    const pageNumbers = [1, 2, 3, 4, 5];
+
     return(
         <>
-            <nav aria-label="Page navigation example">
-                <ul className="pagination justify-content-center">
-                    <li className="page-item"><a className="page-link" href="#">Previous</a></li>
-                    <li className="page-item"><a className="page-link" href="#">1</a></li>
-                    <li className="page-item"><a className="page-link" href="#">2</a></li>
-                    <li className="page-item"><a className="page-link" href="#">3</a></li>
-                    <li className="page-item"><a className="page-link" href="#">Next</a></li>
-                </ul>
-            </nav>        
+            {/* 페이징 하단 바 UI */}
+            <div className="download-pagination-bar">
+                <div className="download-pagination-total">전체 1,248건</div>
+
+                <div className="download-pagination-center">
+                    <button type="button" className="download-pagination-arrow disabled" aria-label="첫 페이지">
+                        <i className="bi bi-chevron-double-left"></i>
+                    </button>
+                    <button type="button" className="download-pagination-arrow disabled" aria-label="이전 페이지">
+                        <i className="bi bi-chevron-left"></i>
+                    </button>
+
+                    {pageNumbers.map((pageNumber) => (
+                        <button
+                            key={pageNumber}
+                            type="button"
+                            className={`download-pagination-number ${pageNumber === 1 ? "active" : ""}`}
+                        >
+                            {pageNumber}
+                        </button>
+                    ))}
+
+                    <span className="download-pagination-ellipsis">...</span>
+                    <button type="button" className="download-pagination-number">125</button>
+
+                    <button type="button" className="download-pagination-arrow" aria-label="다음 페이지">
+                        <i className="bi bi-chevron-right"></i>
+                    </button>
+                    <button type="button" className="download-pagination-arrow" aria-label="마지막 페이지">
+                        <i className="bi bi-chevron-double-right"></i>
+                    </button>
+                </div>
+
+                <div className="download-pagination-size">
+                    <select className="form-select form-select-sm">
+                        <option>10개씩 보기</option>
+                        <option>20개씩 보기</option>
+                        <option>50개씩 보기</option>
+                    </select>
+                </div>
+            </div>
         </>
     )
 }
 
 function UserDownloadMainPage(){
+
+    const [apiDatasetList, setApiDatasetList] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [errorMessage, setErrorMessage] = useState("");
+
+    const datasetList = apiDatasetList ?? [];
+
+    const formatNumber = (value) => {
+        return new Intl.NumberFormat("ko-KR").format(value ?? 0);
+    };
+
+    const totalDownloadCount = datasetList.reduce(
+        (sum, item) => sum + Number(item.downloadCount ?? 0),
+        0
+    );
+
+    const supportedFormatCount = new Set(
+        datasetList
+            .map((item) => item.fileExtension)
+            .filter((item) => item && item !== "-")
+    ).size;
+
+    const popularDataset = datasetList.reduce((best, current) => {
+        if (!best) return current;
+
+        return Number(current.downloadCount ?? 0) > Number(best.downloadCount ?? 0)
+            ? current
+            : best;
+    }, null);
+
+    console.log("popularDataset : ", popularDataset)
+    const summaryCards = [
+        {
+            color: "primary",
+            title: "전체 데이터 수",
+            content: `${formatNumber(datasetList.length)}건`,
+            caption: "승인 데이터 기준",
+            icon: "bi-layers-fill",
+        },
+        {
+            color: "success",
+            title: "오늘 다운로드 수 ",
+            content: `${formatNumber(totalDownloadCount)}건`,
+            caption: "전일 대비, (전날 비교)",
+            icon: "bi-download",
+        },
+        {
+            color: "warning",
+            title: "지원 파일 형식",
+            content: `${formatNumber(supportedFormatCount)}종`,
+            caption: "목록에서 확인된 형식",
+            icon: "bi-file-earmark-text-fill",
+        },
+        {
+            color: "danger",
+            title: "인기 데이터",
+            content: popularDataset?.title ?? "-",
+            caption: popularDataset
+                ? `누적 다운로드 ${formatNumber(Number(popularDataset.downloadCount ?? 0))}건`
+                : "다운로드 데이터 없음",
+            icon: "bi-fire",
+        },
+    ];    
+
+    // console.log("datasetList : ",datasetList);
+
+    useEffect(() => {
+        const fetchDatasetList = async () => {
+            try{
+                setLoading(true);
+                setErrorMessage("");
+                const response = await getApprovedDownloadDatasetListApi();
+                console.log("response.data :" , response.data)
+                const mappedList = response.data.map((item) => ({
+                    id: String(item.datasetId),
+                    title: item.title,
+                    description: item.description,
+                    provider: item.provider,
+                    createAt: item.createdAt ? item.createdAt.slice(0, 10) : "-",
+                    isPublic: item.isPublic,
+                    fileExtension: item.fileExtension ?? "-",
+                    downloadCount: item.downloadCount ?? 0,
+                    viewCount: item.viewCount ?? 0,
+                    
+                }))
+
+                setApiDatasetList(mappedList);
+            }catch(e){
+                setErrorMessage("데이터셋 목록을 불러오지 못했습니다.");
+            }finally{
+                setLoading(false);
+            }
+        };
+
+        fetchDatasetList();
+    }, [])
+
     return(
         <>
 
             <div className="container-fluid px-4 py-3">
 
                 {/* 상단 제목 */}
-                <TopTitle />
+                <TopTitle title="GIS 데이터 다운로드" subTitle="승인된 공공 GIS 데이터를 조회하고 파일을 다운로드 할 수 있습니다." showGuide={true}/>
 
                 {/* 검색창 */}
                 <Search />
@@ -172,7 +381,18 @@ function UserDownloadMainPage(){
 
                 {/* 중간 데시보드 카드 */}
                 <div className="row mb-3">
-                    <CardForm color="primary" title="전체 데이터 수" content="1,234건">
+                    {summaryCards.map((card, index) => (
+                        <CardForm
+                            key={index}
+                            color={card.color}
+                            title={card.title}
+                            content={card.content}
+                            caption={card.caption}
+                        >
+                            <i className={` bi ${card.icon} fs-3`}></i>    
+                        </CardForm>
+                    ))}
+                    {/* <CardForm color="primary" title="전체 데이터 수" content="1,234건">
                         <i className=" bi bi-layers-fill fs-3"></i>
                     </CardForm>
                     <CardForm color="success" title="오늘 다운로드 수" content="1,234건">
@@ -183,50 +403,13 @@ function UserDownloadMainPage(){
                     </CardForm>
                     <CardForm color="danger" title="인기 데이터" content="서울시 CCTV 위치 데이터">
                         <i className="bi bi-fire fs-3"></i>
-                    </CardForm>
+                    </CardForm> */}
                 </div>
 
 
                 {/* 승인 데이터셋 목록 */}
-                <div className="row ">
-                    <div className="col">
 
-                        <div className="card shadow-sm overflow-hidden">
-                            <table className="table table-hover align-middle">
-                                <thead className="table-light">
-                                    <tr>
-                                        <th className="col-2 ps-3">데이터셋 명</th>
-                                        <th className="col-3">설명</th>
-                                        <th className="col-1 text-center">지역 정보</th>
-                                        <th className="col-1 text-center">등록일</th>
-                                        <th className="col-1 text-center">파일 형식</th>
-                                        <th className="col-1 text-center">다운로드 수</th>
-                                        <th className="col-1 text-center">상태</th>
-                                        <th className="col-2 text-center">액션</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <DatasetForm></DatasetForm>
-                                    <DatasetForm></DatasetForm>
-                                    <DatasetForm></DatasetForm>
-                                    <DatasetForm></DatasetForm>
-                                    <DatasetForm></DatasetForm>
-                                    <DatasetForm></DatasetForm>
-                                </tbody>
-                                
-
-
-                            </table>
-                            
-                            {/* 페이징 */}
-                            <div>
-                                <Paging />
-                            </div>
-                            
-                        </div>
-
-                    </div>
-                </div>
+                <DatasetList  datasetList={datasetList} loading={loading}/>
 
 
               
