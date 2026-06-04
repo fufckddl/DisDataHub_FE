@@ -10,6 +10,7 @@ import {
 import { Bar } from "react-chartjs-2";
 import { useDashboardInsights } from "../hooks/useDashboardInsights";
 import { INSIGHT_DATASETS } from "./dashboardInsightDefinitions";
+import { formatAreaScopedLabel, getAreaDisplayName } from "../utils/areaDisplay";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
@@ -106,11 +107,14 @@ function getPopulationTotal(populationData) {
     return toNumber(row?.TOT_LVPOP_CO);
 }
 
-function createObservationChartData(stats, definition) {
+function createObservationChartData(stats, definition, selectedArea) {
     const items = (stats?.items ?? []).slice(0, 8);
 
     return {
-        labels: items.map((item) => item.label ?? item.metricName ?? item.sourceAreaCode ?? "-"),
+        labels: items.map((item) => formatAreaScopedLabel(
+            item.label ?? item.metricName ?? item.sourceAreaCode,
+            selectedArea
+        )),
         datasets: [
             {
                 label: stats?.metricName ?? definition.title,
@@ -229,7 +233,7 @@ function DashboardKpiCard({ label, value, meta, icon, tone, loading, error }) {
     );
 }
 
-function DatasetValueTableCard({ definition, stats, loading, error }) {
+function DatasetValueTableCard({ definition, stats, loading, error, selectedArea }) {
     const rows = useMemo(() => getTableRows(stats), [stats]);
     const hasItems = rows.length > 0;
 
@@ -272,7 +276,7 @@ function DatasetValueTableCard({ definition, stats, loading, error }) {
                             {rows.map((item, index) => (
                                 <tr key={`${definition.key}-${tableRowKey(item, index)}`}>
                                     <td>
-                                        <strong>{item.label ?? item.metricName ?? "-"}</strong>
+                                        <strong>{formatAreaScopedLabel(item.label ?? item.metricName, selectedArea)}</strong>
                                         <span>{item.sourceAreaCode ?? item.areaLevel ?? ""}</span>
                                     </td>
                                     <td>
@@ -293,11 +297,11 @@ function DatasetValueTableCard({ definition, stats, loading, error }) {
     );
 }
 
-function DatasetChartCard({ definition, stats, loading, error }) {
+function DatasetChartCard({ definition, stats, loading, error, selectedArea }) {
     const hasItems = Boolean(stats?.items?.length);
     const chartData = useMemo(
-        () => createObservationChartData(stats, definition),
-        [definition, stats]
+        () => createObservationChartData(stats, definition, selectedArea),
+        [definition, selectedArea, stats]
     );
     const chartOptions = useMemo(
         () => createObservationChartOptions(definition),
@@ -338,7 +342,7 @@ function DatasetChartCard({ definition, stats, loading, error }) {
                         {(stats.items ?? []).slice(0, 5).map((item, index) => (
                             <div className="dashboard-insight-rank-item" key={`${definition.key}-${item.label}-${index}`}>
                                 <span>{index + 1}</span>
-                                <strong>{item.label ?? item.metricName ?? "-"}</strong>
+                                <strong>{formatAreaScopedLabel(item.label ?? item.metricName, selectedArea)}</strong>
                                 <em>{formatValue(item, definition)}</em>
                             </div>
                         ))}
@@ -363,7 +367,7 @@ export function DashboardInsightSummaryPanel({
     const insights = insightState?.insights ?? {};
     const loading = Boolean(insightState?.loading);
     const errorByDataset = insightState?.errorByDataset ?? {};
-    const selectedAreaName = selectedArea?.fullName ?? selectedArea?.name ?? "전국";
+    const selectedAreaName = getAreaDisplayName(selectedArea);
     const populationTotal = getPopulationTotal(populationData);
 
     const kpiCards = [
@@ -393,7 +397,9 @@ export function DashboardInsightSummaryPanel({
                 key: definition.key,
                 label: definition.kpiLabel,
                 value: formatValue(item, definition),
-                meta: item?.label ?? stats?.notice ?? stats?.baseDate ?? "최신 저장값",
+                meta: item?.label
+                    ? formatAreaScopedLabel(item.label, selectedArea)
+                    : stats?.notice ?? stats?.baseDate ?? "최신 저장값",
                 icon: definition.icon,
                 tone: definition.tone,
                 loading,
@@ -441,7 +447,7 @@ export function DashboardInsightSummaryPanel({
     );
 }
 
-export function DashboardInsightChartsPanel({ insightState }) {
+export function DashboardInsightChartsPanel({ insightState, selectedArea }) {
     const insights = insightState?.insights ?? {};
     const loading = Boolean(insightState?.loading);
     const errorByDataset = insightState?.errorByDataset ?? {};
@@ -467,6 +473,7 @@ export function DashboardInsightChartsPanel({ insightState }) {
                             stats={insights[definition.key]}
                             loading={loading}
                             error={errorByDataset[definition.key]}
+                            selectedArea={selectedArea}
                         />
                     );
                 })}
@@ -481,7 +488,10 @@ function DashboardInsightsPanel(props) {
     return (
         <div className="dashboard-insight-stack">
             <DashboardInsightSummaryPanel {...props} insightState={insightState} />
-            <DashboardInsightChartsPanel insightState={insightState} />
+            <DashboardInsightChartsPanel
+                selectedArea={props.selectedArea}
+                insightState={insightState}
+            />
         </div>
     );
 }

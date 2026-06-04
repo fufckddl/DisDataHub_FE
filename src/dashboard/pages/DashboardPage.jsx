@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import DashboardMap from "../components/DashboardMap";
 import {
     DashboardInsightChartsPanel,
@@ -82,10 +82,15 @@ function DashboardSidePanel({
     loading,
     error,
     insightState,
+    isOpen,
     onClearSelection,
 }) {
     return (
-        <aside className="dashboard-side-panel" aria-label="선택 지역 상세 정보">
+        <aside
+            className={`dashboard-side-panel ${isOpen ? "open" : "closed"}`}
+            aria-hidden={!isOpen}
+            aria-label="선택 지역 상세 정보"
+        >
             <div className="dashboard-side-head">
                 <div>
                     <span>선택 지역</span>
@@ -100,9 +105,9 @@ function DashboardSidePanel({
                     type="button"
                     className="dashboard-icon-button"
                     onClick={onClearSelection}
-                    disabled={!selectedArea}
-                    aria-label="상세 패널 선택 초기화"
-                    title="선택 초기화"
+                    disabled={!selectedArea || !isOpen}
+                    aria-label="통계 패널 닫기"
+                    title="통계 패널 닫기"
                 >
                     <i className="bi bi-x-lg" />
                 </button>
@@ -136,7 +141,10 @@ function DashboardSidePanel({
             </div>
 
             <div className="dashboard-side-section">
-                <DashboardInsightChartsPanel insightState={insightState} />
+                <DashboardInsightChartsPanel
+                    selectedArea={selectedArea}
+                    insightState={insightState}
+                />
             </div>
         </aside>
     );
@@ -144,18 +152,29 @@ function DashboardSidePanel({
 
 function DashboardPage() {
     const [selectedArea, setSelectedArea] = useState(null);
+    const [isStatsPanelOpen, setIsStatsPanelOpen] = useState(false);
+    const [mapSelectionResetSeq, setMapSelectionResetSeq] = useState(0);
     const [mapLevel, setMapLevel] = useState("SIDO");
     const [populationData, setPopulationData] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [queryDate, setQueryDate] = useState(null);
     const [populationNotice, setPopulationNotice] = useState(null);
+    const closeStatsTimerRef = useRef(null);
     const insightState = useDashboardInsights(selectedArea);
 
     const handleAreaSelect = useCallback(async (area) => {
+        if (closeStatsTimerRef.current) {
+            window.clearTimeout(closeStatsTimerRef.current);
+            closeStatsTimerRef.current = null;
+        }
+        if (area) {
+            setIsStatsPanelOpen(true);
+        }
         setSelectedArea(area);
 
         if (!area) {
+            setMapSelectionResetSeq((value) => value + 1);
             setPopulationData(null);
             setError(null);
             setQueryDate(null);
@@ -191,6 +210,12 @@ function DashboardPage() {
         }
     }, []);
 
+    useEffect(() => () => {
+        if (closeStatsTimerRef.current) {
+            window.clearTimeout(closeStatsTimerRef.current);
+        }
+    }, []);
+
     const handleRefreshDashboard = useCallback(() => {
         insightState?.refresh?.();
         if (selectedArea) {
@@ -198,8 +223,14 @@ function DashboardPage() {
         }
     }, [handleAreaSelect, insightState, selectedArea]);
 
-    const handleClearSelection = useCallback(() => {
-        void handleAreaSelect(null);
+    const handleCloseStatsPanel = useCallback(() => {
+        setIsStatsPanelOpen(false);
+        if (closeStatsTimerRef.current) {
+            window.clearTimeout(closeStatsTimerRef.current);
+        }
+        closeStatsTimerRef.current = window.setTimeout(() => {
+            void handleAreaSelect(null);
+        }, 360);
     }, [handleAreaSelect]);
 
     return (
@@ -212,11 +243,12 @@ function DashboardPage() {
                 onRefresh={handleRefreshDashboard}
             />
 
-            <div className="dashboard-workspace">
+            <div className={`dashboard-workspace ${isStatsPanelOpen ? "stats-open" : "stats-closed"}`}>
                 <main className="dashboard-map-stage" aria-label="행정구역 Polygon 지도">
                     <DashboardMap
                         onAreaSelect={handleAreaSelect}
                         onViewLevelChange={setMapLevel}
+                        clearSelectionSignal={mapSelectionResetSeq}
                     />
                     <div className="dashboard-map-legend" aria-label="지도 범례">
                         <strong>줌 기반 행정경계</strong>
@@ -239,7 +271,8 @@ function DashboardPage() {
                     loading={loading}
                     error={error}
                     insightState={insightState}
-                    onClearSelection={handleClearSelection}
+                    isOpen={isStatsPanelOpen}
+                    onClearSelection={handleCloseStatsPanel}
                 />
             </div>
         </div>
