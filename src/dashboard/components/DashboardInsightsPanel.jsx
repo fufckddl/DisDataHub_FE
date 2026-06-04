@@ -58,10 +58,24 @@ function formatValue(item, definition) {
     })}${item.unit ?? ""}`;
 }
 
-function getPrimaryItem(stats, definition) {
+function getPrimaryItem(stats, definition, selectedAreaName) {
     const items = stats?.items ?? [];
     if (items.length === 0) {
         return null;
+    }
+
+    if (definition.kpiAggregation === "sum" || definition.kpiAggregation === "average") {
+        const total = toNumber(stats?.totalNumericValue);
+        const count = toNumber(stats?.totalRowCount);
+        if (total !== null && (definition.kpiAggregation === "sum" || (count !== null && count > 0))) {
+            return {
+                ...items[0],
+                label: selectedAreaName ?? items[0]?.label,
+                metricName: stats?.metricName ?? items[0]?.metricName,
+                unit: stats?.unit ?? items[0]?.unit,
+                value: definition.kpiAggregation === "average" ? total / count : total,
+            };
+        }
     }
 
     if (definition.preferredLabels?.length) {
@@ -373,7 +387,7 @@ export function DashboardInsightSummaryPanel({
         },
         ...INSIGHT_DATASETS.map((definition) => {
             const stats = insights[definition.key];
-            const item = getPrimaryItem(stats, definition);
+            const item = getPrimaryItem(stats, definition, selectedAreaName);
 
             return {
                 key: definition.key,

@@ -7,6 +7,7 @@ export const INSIGHT_DATASETS = [
         description: "세대원수별 주민등록 세대 현황",
         icon: "bi-house-door",
         tone: "blue",
+        kpiAggregation: "sum",
     },
     {
         key: "averageAge",
@@ -17,6 +18,7 @@ export const INSIGHT_DATASETS = [
         icon: "bi-person-lines-fill",
         tone: "green",
         decimals: 1,
+        kpiAggregation: "average",
     },
     {
         key: "populationChange",
@@ -27,6 +29,7 @@ export const INSIGHT_DATASETS = [
         icon: "bi-graph-up-arrow",
         tone: "orange",
         signed: true,
+        kpiAggregation: "sum",
     },
     {
         key: "weather",
@@ -39,6 +42,7 @@ export const INSIGHT_DATASETS = [
         preferredLabels: ["기온", "T1H"],
         decimals: 1,
         detailDisplay: "table",
+        kpiAggregation: "average",
     },
     {
         key: "airQuality",
@@ -49,5 +53,6 @@ export const INSIGHT_DATASETS = [
         icon: "bi-wind",
         tone: "purple",
         detailDisplay: "table",
+        kpiAggregation: "average",
     },
 ];
