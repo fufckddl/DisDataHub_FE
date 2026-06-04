@@ -29,6 +29,13 @@ export function useDashboardInsights(selectedArea) {
     }, [selectedAreaCode]);
 
     useEffect(() => {
+        if (!selectedAreaCode) {
+            setInsights({});
+            setLoading(false);
+            setErrorByDataset({});
+            return undefined;
+        }
+
         let cancelled = false;
         const timerId = window.setTimeout(async () => {
             if (cancelled) {

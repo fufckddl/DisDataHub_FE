@@ -7,6 +7,7 @@ import {
     Tooltip,
 } from "chart.js";
 import { Bar } from "react-chartjs-2";
+import { getAreaDisplayName } from "../utils/areaDisplay";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
@@ -171,7 +172,7 @@ function PopulationPanel({ selectedArea, populationData, queryDate, notice, load
                 {selectedArea ? (
                     <div className="mb-3">
                         <div className="small text-secondary">선택 지역</div>
-                        <div className="fw-bold">{selectedArea.fullName ?? selectedArea.name}</div>
+                        <div className="fw-bold">{getAreaDisplayName(selectedArea)}</div>
                         <div className="small text-secondary">
                             지역코드 {selectedArea.areaCode}
                         </div>

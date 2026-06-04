@@ -16,7 +16,9 @@ import axiosInstance from "../../commons/api/axiosinstance.js";
 
 const KOREA_CENTER = fromLonLat([127.8, 36.2]);
 const KOREA_BBOX = "124.50,32.80,132.20,39.60";
-const INITIAL_ZOOM = 6.25;
+const INITIAL_ZOOM = 7.4;
+const MIN_ZOOM = 7.4;
+const MAX_ZOOM = 13;
 const SIGUNGU_MIN_ZOOM = 7.6;
 const EUPMYEONDONG_MIN_ZOOM = 10.4;
 const BOUNDARY_CACHE_LEVELS = ["SIDO", "SIGUNGU", "EUPMYEONDONG"];
@@ -45,6 +47,26 @@ function createInitialView() {
         stack: [],
         zoom: INITIAL_ZOOM,
     };
+}
+
+function isRenderableExtent(extent) {
+    return Array.isArray(extent)
+        && extent.length === 4
+        && extent.every((value) => Number.isFinite(value));
+}
+
+function fitMapToExtent(map, extent, options = {}) {
+    if (!map || !isRenderableExtent(extent)) {
+        return false;
+    }
+
+    map.updateSize();
+    map.getView().fit(extent, {
+        padding: [64, 64, 64, 64],
+        maxZoom: options.maxZoom ?? INITIAL_ZOOM,
+        duration: options.duration ?? 0,
+    });
+    return true;
 }
 
 function getLevelForZoom(zoom) {
@@ -192,10 +214,10 @@ function getBoundaryStyle(feature, selectedFeature) {
     return [
         new Style({
             fill: new Fill({
-                color: isSelected ? "rgba(255, 177, 35, 0.28)" : "rgba(15, 23, 42, 0.18)",
+                color: isSelected ? "rgba(249, 115, 22, 0.24)" : "rgba(37, 99, 235, 0.1)",
             }),
             stroke: new Stroke({
-                color: isSelected ? "#ff9f1c" : "#f2e94e",
+                color: isSelected ? "#f97316" : "#2563eb",
                 width: isSelected ? 3.2 : 1.55,
             }),
         }),
@@ -205,10 +227,10 @@ function getBoundaryStyle(feature, selectedFeature) {
                 text: name,
                 font: labelFont,
                 fill: new Fill({
-                    color: "#f8fafc",
+                    color: "#0f172a",
                 }),
                 stroke: new Stroke({
-                    color: "rgba(2, 6, 23, 0.96)",
+                    color: "rgba(255, 255, 255, 0.96)",
                     width: 3.4,
                 }),
                 offsetY: -2,
@@ -269,7 +291,7 @@ function emptyFeatureCollection() {
     };
 }
 
-function DashboardMap({ onAreaSelect, gisLayer, onViewLevelChange }) {
+function DashboardMap({ onAreaSelect, gisLayer, onViewLevelChange, clearSelectionSignal = 0 }) {
     const onAreaSelectRef = useRef(onAreaSelect);
     const onViewLevelChangeRef = useRef(onViewLevelChange);
     const mapElementRef = useRef(null);
@@ -297,6 +319,7 @@ function DashboardMap({ onAreaSelect, gisLayer, onViewLevelChange }) {
 
     const resetToNationalView = useCallback(() => {
         const initialView = createInitialView();
+        const map = mapRef.current;
         selectedFeatureRef.current = null;
         setActiveBoundaryLevelRef.current?.("SIDO", { clearSelection: true });
         currentViewRef.current = initialView;
@@ -304,11 +327,16 @@ function DashboardMap({ onAreaSelect, gisLayer, onViewLevelChange }) {
         setMapNotice(null);
         setGisFeatureNotice(null);
         setHoverArea(null);
-        mapRef.current?.getView().animate({
-            center: KOREA_CENTER,
-            zoom: INITIAL_ZOOM,
+        const fitted = fitMapToExtent(map, boundarySourcesRef.current.SIDO?.getExtent(), {
             duration: 220,
         });
+        if (!fitted) {
+            map?.getView().animate({
+                center: KOREA_CENTER,
+                zoom: INITIAL_ZOOM,
+                duration: 220,
+            });
+        }
         onAreaSelectRef.current?.(null);
     }, []);
 
@@ -317,8 +345,8 @@ function DashboardMap({ onAreaSelect, gisLayer, onViewLevelChange }) {
         if (!view) return;
 
         const currentZoom = view.getZoom() ?? INITIAL_ZOOM;
-        const minZoom = view.getMinZoom() ?? 5.2;
-        const maxZoom = view.getMaxZoom() ?? 13;
+        const minZoom = view.getMinZoom() ?? MIN_ZOOM;
+        const maxZoom = view.getMaxZoom() ?? MAX_ZOOM;
         const nextZoom = Math.min(maxZoom, Math.max(minZoom, currentZoom + delta));
 
         view.animate({ zoom: nextZoom, duration: 180 });
@@ -335,6 +363,16 @@ function DashboardMap({ onAreaSelect, gisLayer, onViewLevelChange }) {
     useEffect(() => {
         onViewLevelChangeRef.current?.(viewState.level);
     }, [viewState.level]);
+
+    useEffect(() => {
+        if (clearSelectionSignal === 0) {
+            return;
+        }
+
+        selectedFeatureRef.current = null;
+        setHoverArea(null);
+        Object.values(boundaryLayersRef.current).forEach((layer) => layer.changed());
+    }, [clearSelectionSignal]);
 
     useEffect(() => {
         if (!mapElementRef.current) return undefined;
@@ -374,10 +412,30 @@ function DashboardMap({ onAreaSelect, gisLayer, onViewLevelChange }) {
             view: new View({
                 center: KOREA_CENTER,
                 zoom: INITIAL_ZOOM,
-                minZoom: 5.2,
-                maxZoom: 13,
+                minZoom: MIN_ZOOM,
+                maxZoom: MAX_ZOOM,
             }),
         });
+
+        let resizeFrameId = null;
+        function scheduleMapSizeUpdate() {
+            if (resizeFrameId !== null) {
+                window.cancelAnimationFrame(resizeFrameId);
+            }
+            resizeFrameId = window.requestAnimationFrame(() => {
+                resizeFrameId = null;
+                if (isMounted) {
+                    map.updateSize();
+                }
+            });
+        }
+
+        const resizeObserver = typeof ResizeObserver !== "undefined"
+            ? new ResizeObserver(scheduleMapSizeUpdate)
+            : null;
+        resizeObserver?.observe(mapElementRef.current);
+        window.addEventListener("resize", scheduleMapSizeUpdate);
+        scheduleMapSizeUpdate();
 
         function changeBoundaryLayerStyles() {
             Object.values(boundaryLayers).forEach((layer) => layer.changed());
@@ -447,6 +505,7 @@ function DashboardMap({ onAreaSelect, gisLayer, onViewLevelChange }) {
 
                 boundaryCacheLoadedRef.current = true;
                 const activeLevel = setActiveBoundaryLevel(currentViewRef.current.level);
+                fitMapToExtent(map, boundarySources[activeLevel]?.getExtent());
                 const nextView = createViewFromMap(map, activeLevel);
                 currentViewRef.current = nextView;
 
@@ -559,6 +618,11 @@ function DashboardMap({ onAreaSelect, gisLayer, onViewLevelChange }) {
             window.clearTimeout(moveEndTimerId);
             boundaryAbortControllerRef.current?.abort();
             gisAbortControllerRef.current?.abort();
+            resizeObserver?.disconnect();
+            window.removeEventListener("resize", scheduleMapSizeUpdate);
+            if (resizeFrameId !== null) {
+                window.cancelAnimationFrame(resizeFrameId);
+            }
             map.setTarget(undefined);
             mapRef.current = null;
             boundaryLayersRef.current = {};

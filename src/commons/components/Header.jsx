@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import appLogo from "../../assets/images/app-logo.png";
 import { getUserInfoFromTokenApi } from "../api/userApi";
 import useAuthStore from "../auth/useAuthStore";
 
@@ -7,6 +8,41 @@ const ROLE_LABELS = {
     USER: "사용자",
     RESEARCHER: "연구자",
     ADMIN: "관리자",
+};
+
+const HEADER_STYLES = {
+    shell: {
+        background: "rgba(255, 255, 255, 0.96)",
+        backdropFilter: "blur(14px)",
+        borderColor: "rgba(15, 23, 42, 0.08)",
+        zIndex: 1030,
+    },
+    brandMark: {
+        width: "34px",
+        height: "34px",
+        borderRadius: "10px",
+        boxShadow: "0 10px 24px rgba(37, 99, 235, 0.22)",
+        objectFit: "cover",
+    },
+    navLink: {
+        borderRadius: "999px",
+        color: "#475569",
+        fontSize: "0.93rem",
+        fontWeight: 700,
+        transition: "background-color 0.16s ease, color 0.16s ease",
+    },
+    dropdownMenu: {
+        minWidth: "210px",
+        border: "1px solid rgba(15, 23, 42, 0.08)",
+        borderRadius: "14px",
+        boxShadow: "0 18px 45px rgba(15, 23, 42, 0.14)",
+    },
+    userBadge: {
+        borderRadius: "999px",
+        border: "1px solid rgba(148, 163, 184, 0.35)",
+        background: "#f8fafc",
+        color: "#334155",
+    },
 };
 
 const BOARD_MENU = [
@@ -80,16 +116,21 @@ function HeaderDropdown({ item }) {
             <button
                 type="button"
                 id={dropdownId}
-                className="nav-link dropdown-toggle btn btn-link"
+                className="nav-link dropdown-toggle btn border-0 px-3 py-2"
+                style={HEADER_STYLES.navLink}
                 data-bs-toggle="dropdown"
                 aria-expanded="false"
             >
                 {item.label}
             </button>
-            <ul className="dropdown-menu" aria-labelledby={dropdownId}>
+            <ul
+                className="dropdown-menu mt-2 py-2"
+                style={HEADER_STYLES.dropdownMenu}
+                aria-labelledby={dropdownId}
+            >
                 {item.children.map((child) => (
                     <li key={`${item.label}-${child.to}`}>
-                        <Link className="dropdown-item" to={child.to}>
+                        <Link className="dropdown-item py-2 fw-semibold text-secondary" to={child.to}>
                             {child.label}
                         </Link>
                     </li>
@@ -106,7 +147,7 @@ function HeaderMenuItem({ item }) {
 
     return (
         <li className="nav-item">
-            <Link className="nav-link" to={item.to}>
+            <Link className="nav-link px-3 py-2" style={HEADER_STYLES.navLink} to={item.to}>
                 {item.label}
             </Link>
         </li>
@@ -166,14 +207,23 @@ function Header() {
     };
 
     return (
-        <nav className="navbar navbar-expand-md navbar-light bg-hub-primary border-bottom shadow-sm">
-            <div className="container-fluid">
+        <nav className="navbar navbar-expand-lg navbar-light border-bottom shadow-sm sticky-top py-2" style={HEADER_STYLES.shell}>
+            <div className="container-fluid px-3 px-lg-4">
                 <button
                     type="button"
-                    className="navbar-brand btn btn-link text-dark text-decoration-none p-0 me-3 fw-semibold"
+                    className="navbar-brand btn btn-link d-inline-flex align-items-center gap-2 text-dark text-decoration-none p-0 me-lg-4"
                     onClick={handleBrandClick}
                 >
-                    GIS 데이터 허브
+                    <img
+                        src={appLogo}
+                        alt="GIS 데이터 허브"
+                        className="d-inline-block"
+                        style={HEADER_STYLES.brandMark}
+                    />
+                    <span className="d-flex flex-column align-items-start lh-sm">
+                        <span className="fw-bold fs-6">GIS 데이터 허브</span>
+                        <span className="d-none d-sm-inline small text-secondary">Research Data Hub</span>
+                    </span>
                 </button>
                 <button
                     className="navbar-toggler"
@@ -187,7 +237,7 @@ function Header() {
                     <span className="navbar-toggler-icon" />
                 </button>
                 <div className="collapse navbar-collapse" id="headerNavbar">
-                    <ul className="navbar-nav me-auto mb-2 mb-md-0">
+                    <ul className="navbar-nav align-items-lg-center gap-lg-1 me-auto mb-3 mb-lg-0 mt-3 mt-lg-0">
                         {userInfo ? (
                             roleMenus.map((item) => (
                                 <HeaderMenuItem key={item.label} item={item} />
@@ -195,27 +245,31 @@ function Header() {
                         ) : (
                             <>
                                 <li className="nav-item">
-                                    <Link className="nav-link" to="/system/intro">
+                                    <Link className="nav-link px-3 py-2" style={HEADER_STYLES.navLink} to="/system/intro">
                                         시스템 소개
                                     </Link>
                                 </li>
                                 <li className="nav-item">
-                                    <Link className="nav-link" to="/register">
+                                    <Link className="nav-link px-3 py-2" style={HEADER_STYLES.navLink} to="/register">
                                         회원가입
                                     </Link>
                                 </li>
                             </>
                         )}
                     </ul>
-                    <div className="d-flex align-items-center gap-2 ms-md-auto">
+                    <div className="d-flex align-items-center gap-2 ms-lg-auto">
                         {userInfo ? (
                             <>
-                                <span className="small d-none d-sm-inline text-secondary">
-                                    {getNickname(userInfo)} · {ROLE_LABELS[userRole ?? "USER"]}
+                                <span
+                                    className="small d-inline-flex align-items-center gap-2 px-3 py-2 fw-semibold"
+                                    style={HEADER_STYLES.userBadge}
+                                >
+                                    <span className="text-dark">{getNickname(userInfo)}님</span>
+                                    <span className="text-secondary">{ROLE_LABELS[userRole ?? "USER"]}</span>
                                 </span>
                                 <button
                                     type="button"
-                                    className="btn btn-outline-secondary btn-sm"
+                                    className="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-semibold"
                                     onClick={handleLogoutClick}
                                 >
                                     로그아웃
@@ -224,7 +278,7 @@ function Header() {
                         ) : (
                             <button
                                 type="button"
-                                className="btn btn-dark btn-sm"
+                                className="btn btn-dark btn-sm rounded-pill px-3 fw-semibold"
                                 onClick={() => navigate("/login")}
                             >
                                 로그인
