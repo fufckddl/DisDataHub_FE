@@ -1,11 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { MapContainer, TileLayer, GeoJSON, useMap } from "react-leaflet";
+import { CircleMarker, GeoJSON, MapContainer, Polygon, Polyline, TileLayer, useMap, useMapEvents, ZoomControl } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import TopTitle from "../../components/TopTitle";
 import "../../style/simulationTest.css";
-import { getDatasetPreviewGeoJsonApi } from "../../api/userDownloadApi";
+import {
+  getDatasetDownloadPageApi,
+  getDatasetPreviewGeoJsonApi,
+  runPointRadiusSimulationApi,
+} from "../../api/userDownloadApi";
 
 const RESULT_TABS = [
   { id: "result", label: "결과 목록" },
@@ -16,8 +20,7 @@ const RESULT_TABS = [
 const SIMULATION_PROFILES = {
   point: {
     label: "포인트",
-    title: "포인트 시뮬레이션",
-    subtitle: "포인트 공간 데이터를 실제 지도 위에서 확인하고 기본 속성을 살펴봅니다.",
+    subtitle: "포인트 공간 데이터를 기준으로 반경 시뮬레이션 결과를 확인합니다.",
     defaultMapMode: "marker",
     defaultRegion: "전체 영역",
     defaultDensity: "보통",
@@ -34,12 +37,11 @@ const SIMULATION_PROFILES = {
       clustering: "클러스터 표시",
       boundary: "경계선 표시",
     },
-    statusText: "공간 데이터를 불러오면 시뮬레이션 지도가 표시됩니다.",
+    statusText: "반경 값을 조절한 뒤 실행 버튼을 눌러 포인트 시뮬레이션 결과를 확인하세요.",
   },
   linestring: {
     label: "라인",
-    title: "라인 시뮬레이션",
-    subtitle: "라인 공간 데이터를 실제 지도 위에서 확인하고 기본 속성을 살펴봅니다.",
+    subtitle: "라인 데이터 화면입니다. 현재 1차 시뮬레이션 API는 포인트 데이터만 연결되어 있습니다.",
     defaultMapMode: "flow",
     defaultRegion: "주요 구간",
     defaultDensity: "보통",
@@ -56,12 +58,11 @@ const SIMULATION_PROFILES = {
       clustering: "노드 표시",
       boundary: "경계선 표시",
     },
-    statusText: "라인 공간 데이터를 불러오면 시뮬레이션 지도가 표시됩니다.",
+    statusText: "현재 1차 시뮬레이션 API는 포인트 데이터만 연결되어 있습니다.",
   },
   polygon: {
     label: "폴리곤",
-    title: "폴리곤 시뮬레이션",
-    subtitle: "폴리곤 공간 데이터를 실제 지도 위에서 확인하고 기본 속성을 살펴봅니다.",
+    subtitle: "폴리곤 데이터 화면입니다. 현재 1차 시뮬레이션 API는 포인트 데이터만 연결되어 있습니다.",
     defaultMapMode: "fill",
     defaultRegion: "전체 구역",
     defaultDensity: "보통",
@@ -71,19 +72,65 @@ const SIMULATION_PROFILES = {
       { id: "heat", label: "강조" },
       { id: "zone", label: "경계" },
     ],
-    regionOptions: ["전체 구역", "핵심 구역", "생활 구역", "행정 구역"],
+    regionOptions: ["전체 구역", "주거 구역", "생활 구역", "행정 구역"],
     densityOptions: ["낮음", "보통", "높음"],
     toggleLabels: {
       heatmap: "강조 표시",
       clustering: "중심 구역 표시",
       boundary: "경계선 표시",
     },
-    statusText: "폴리곤 공간 데이터를 불러오면 시뮬레이션 지도가 표시됩니다.",
+    statusText: "현재 1차 시뮬레이션 API는 포인트 데이터만 연결되어 있습니다.",
   },
 };
 
 function formatCount(value) {
   return new Intl.NumberFormat("ko-KR").format(value ?? 0);
+}
+
+function formatDecimal(value) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) {
+    return "-";
+  }
+
+  return Number(value).toFixed(2);
+}
+
+function formatDistance(distanceMeters) {
+  if (distanceMeters === null || distanceMeters === undefined || Number.isNaN(Number(distanceMeters))) {
+    return "-";
+  }
+
+  if (distanceMeters >= 1000) {
+    return `${(Number(distanceMeters) / 1000).toFixed(2)}km`;
+  }
+
+  return `${Math.round(Number(distanceMeters))}m`;
+}
+
+function formatArea(areaSquareMeters) {
+  if (areaSquareMeters === null || areaSquareMeters === undefined || Number.isNaN(Number(areaSquareMeters))) {
+    return "-";
+  }
+
+  if (areaSquareMeters >= 1000000) {
+    return `${(Number(areaSquareMeters) / 1000000).toFixed(2)}km²`;
+  }
+
+  if (areaSquareMeters >= 10000) {
+    return `${(Number(areaSquareMeters) / 10000).toFixed(2)}ha`;
+  }
+
+  return `${Math.round(Number(areaSquareMeters))}㎡`;
+}
+
+function parseGeoJson(data) {
+  if (!data) return null;
+
+  try {
+    return typeof data === "string" ? JSON.parse(data) : data;
+  } catch {
+    return null;
+  }
 }
 
 function getGeometryLabel(geometryType) {
@@ -126,6 +173,7 @@ function getFeatureDisplayName(feature, index) {
   return (
     properties.name ??
     properties.title ??
+    properties.featureName ??
     properties.district ??
     properties.label ??
     properties.id ??
@@ -158,20 +206,91 @@ function getPointCoordinateText(feature) {
   return { lat: "-", lng: "-" };
 }
 
-function buildSimulationData(features, geometryType, radius, statusText, showHeatmap, useClustering, showBoundary) {
+function getLayerCenterCoordinate(layer) {
+  if (layer && typeof layer.getLatLng === "function") {
+    return layer.getLatLng();
+  }
+
+  if (layer && typeof layer.getBounds === "function") {
+    const bounds = layer.getBounds();
+    if (bounds?.isValid?.()) {
+      return bounds.getCenter();
+    }
+  }
+
+  return null;
+}
+
+function bindFeatureTooltip(feature, layer, layerLabel) {
+  const properties = feature?.properties ?? {};
+  const featureName =
+    properties.featureName ??
+    properties.name ??
+    properties.title ??
+    properties.label ??
+    properties.id ??
+    "이름 없음";
+  const geometryName = formatGeometryTypeName(feature?.geometry?.type);
+  const centerCoordinate = getLayerCenterCoordinate(layer);
+  const latText = centerCoordinate ? Number(centerCoordinate.lat).toFixed(6) : "-";
+  const lngText = centerCoordinate ? Number(centerCoordinate.lng).toFixed(6) : "-";
+  const nearbyCountText = properties.nearbyCount !== undefined ? formatCount(properties.nearbyCount) : null;
+
+  const tooltipHtml = `
+    <div class="simulation-test-map-tooltip">
+      <strong>${featureName}</strong>
+      <span>레이어: ${layerLabel}</span>
+      <span>공간 유형: ${geometryName}</span>
+      <span>위도: ${latText}</span>
+      <span>경도: ${lngText}</span>
+      ${nearbyCountText !== null ? `<span>인접 개수: ${nearbyCountText}개</span>` : ""}
+    </div>
+  `;
+
+  layer.bindTooltip(tooltipHtml, {
+    sticky: true,
+    direction: "top",
+    opacity: 0.96,
+    className: "simulation-test-leaflet-tooltip",
+  });
+
+  layer.on({
+    mouseover: () => layer.openTooltip(),
+    mouseout: () => layer.closeTooltip(),
+  });
+}
+
+function calculateProjectedArea(latlngs) {
+  if (!Array.isArray(latlngs) || latlngs.length < 3) {
+    return null;
+  }
+
+  const projectedPoints = latlngs.map((latlng) => L.CRS.EPSG3857.project(latlng));
+  let area = 0;
+
+  for (let index = 0; index < projectedPoints.length; index += 1) {
+    const currentPoint = projectedPoints[index];
+    const nextPoint = projectedPoints[(index + 1) % projectedPoints.length];
+    area += currentPoint.x * nextPoint.y - nextPoint.x * currentPoint.y;
+  }
+
+  return Math.abs(area / 2);
+}
+
+function buildPreviewData(features, geometryType, radius, selectedRegion, showHeatmap, useClustering, showBoundary) {
   const featureCount = features.length;
   const visibleFeatures = features.slice(0, 5);
 
   const datasetInfo = [
-    { label: "데이터셋", value: featureCount > 0 ? "연결됨" : "대기 중" },
-    { label: "공간 타입", value: getGeometryLabel(geometryType) },
+    { label: "기준 데이터", value: featureCount > 0 ? "미리보기 데이터" : "대기 중" },
+    { label: "공간 유형", value: getGeometryLabel(geometryType) },
     { label: "객체 수", value: `${formatCount(featureCount)}개` },
     { label: "반경", value: `${radius}m` },
   ];
 
   const summaryStats = [
-    { label: "공간 객체", value: formatCount(featureCount), tone: "default" },
-    { label: "유형", value: getGeometryLabel(geometryType), tone: "default" },
+    { label: "미리보기 객체", value: formatCount(featureCount), tone: "default" },
+    { label: "공간 유형", value: getGeometryLabel(geometryType), tone: "default" },
     { label: "반경", value: `${radius}m`, tone: "default" },
     { label: "상태", value: featureCount > 0 ? "준비 완료" : "대기 중", tone: featureCount > 0 ? "success" : "default" },
   ];
@@ -190,8 +309,8 @@ function buildSimulationData(features, geometryType, radius, statusText, showHea
     rank: String(index + 1),
     name: getFeatureDisplayName(feature, index),
     geometry: formatGeometryTypeName(feature?.geometry?.type),
-    status: "표시됨",
-    note: `속성 ${Object.keys(feature?.properties ?? {}).length}개 / ${radius}m`,
+    status: "미리보기",
+    note: `속성 ${Object.keys(feature?.properties ?? {}).length}개 / 반경 ${radius}m`,
   }));
 
   const attributeRows = visibleFeatures.map((feature, index) => {
@@ -209,7 +328,7 @@ function buildSimulationData(features, geometryType, radius, statusText, showHea
 
   const statsRows = [
     {
-      metric: "공간 객체 수",
+      metric: "표시 객체 수",
       current: `${formatCount(featureCount)}개`,
       baseline: `${formatCount(Math.max(featureCount - 3, 0))}개`,
       change: featureCount > 0 ? `+${Math.min(featureCount, 3)}` : "0",
@@ -220,6 +339,13 @@ function buildSimulationData(features, geometryType, radius, statusText, showHea
       current: `${radius}m`,
       baseline: `${Math.max(radius - 200, 0)}m`,
       change: `${radius - Math.max(radius - 200, 0)}m`,
+      result: "확인",
+    },
+    {
+      metric: "선택 권역",
+      current: selectedRegion,
+      baseline: "기본값",
+      change: "선택",
       result: "확인",
     },
     {
@@ -249,13 +375,12 @@ function buildSimulationData(features, geometryType, radius, statusText, showHea
     datasetInfo,
     summaryStats,
     hotspotRanking,
-    statusText: featureCount > 0 ? statusText : "공간 데이터를 불러오면 시뮬레이션 결과가 표시됩니다.",
     tableData: {
       result: {
         columns: [
           { key: "rank", label: "순위" },
           { key: "name", label: "객체명" },
-          { key: "geometry", label: "공간 타입" },
+          { key: "geometry", label: "공간 유형" },
           { key: "status", label: "상태" },
           { key: "note", label: "비고" },
         ],
@@ -265,10 +390,125 @@ function buildSimulationData(features, geometryType, radius, statusText, showHea
         columns: [
           { key: "id", label: "객체 ID" },
           { key: "name", label: "객체명" },
-          { key: "geometry", label: "공간 타입" },
+          { key: "geometry", label: "공간 유형" },
           { key: "lat", label: "위도" },
           { key: "lng", label: "경도" },
           { key: "propertyCount", label: "속성 수" },
+        ],
+        rows: attributeRows,
+      },
+      stats: {
+        columns: [
+          { key: "metric", label: "지표" },
+          { key: "current", label: "현재값" },
+          { key: "baseline", label: "기준값" },
+          { key: "change", label: "변화량" },
+          { key: "result", label: "판정" },
+        ],
+        rows: statsRows,
+      },
+    },
+  };
+}
+
+function buildSimulationResultData(summary, tableRows, selectedRegion, radius) {
+  const maxNearbyCount = Number(summary?.maxNearbyCount ?? 0);
+
+  const datasetInfo = [
+    { label: "기준 데이터", value: summary?.datasetTitle ?? "시뮬레이션 결과" },
+    { label: "공간 유형", value: "포인트" },
+    { label: "전체 포인트", value: `${formatCount(summary?.totalPointCount)}개` },
+    { label: "반경", value: `${radius}m` },
+  ];
+
+  const summaryStats = [
+    { label: "전체 포인트", value: formatCount(summary?.totalPointCount), tone: "default" },
+    { label: "핫스팟 수", value: formatCount(summary?.hotspotCount), tone: "success" },
+    { label: "평균 인접 개수", value: formatDecimal(summary?.averageNearbyCount), tone: "default" },
+    { label: "최대 인접 개수", value: formatCount(summary?.maxNearbyCount), tone: "default" },
+  ];
+
+  const hotspotRanking = (tableRows.length > 0 ? tableRows : Array.from({ length: 5 })).map((row, index) => {
+    const score = row
+      ? Math.max(12, Math.round((Number(row.nearbyCount ?? 0) / Math.max(maxNearbyCount, 1)) * 100))
+      : 0;
+
+    return {
+      district: row?.featureName ?? `객체 ${index + 1}`,
+      score: row?.nearbyCount ?? 0,
+      width: `${score}%`,
+    };
+  });
+
+  const resultRows = tableRows.map((row) => ({
+    rank: row.rank,
+    name: row.featureName ?? `객체 ${row.rank}`,
+    nearbyCount: `${formatCount(row.nearbyCount)}개`,
+    lat: row.latitude != null ? Number(row.latitude).toFixed(6) : "-",
+    lng: row.longitude != null ? Number(row.longitude).toFixed(6) : "-",
+  }));
+
+  const attributeRows = tableRows.map((row) => ({
+    featureId: row.featureId ?? "-",
+    name: row.featureName ?? "-",
+    nearbyCount: `${formatCount(row.nearbyCount)}개`,
+    lat: row.latitude != null ? Number(row.latitude).toFixed(6) : "-",
+    lng: row.longitude != null ? Number(row.longitude).toFixed(6) : "-",
+  }));
+
+  const statsRows = [
+    {
+      metric: "전체 포인트 수",
+      current: `${formatCount(summary?.totalPointCount)}개`,
+      baseline: "기준값",
+      change: `${formatCount(summary?.hotspotCount)}개`,
+      result: "핫스팟",
+    },
+    {
+      metric: "반경",
+      current: `${radius}m`,
+      baseline: `${radius}m`,
+      change: "0m",
+      result: "확인",
+    },
+    {
+      metric: "평균 인접 개수",
+      current: formatDecimal(summary?.averageNearbyCount),
+      baseline: "-",
+      change: `${formatCount(summary?.maxNearbyCount)}개`,
+      result: "분석",
+    },
+    {
+      metric: "선택 권역",
+      current: selectedRegion,
+      baseline: "기본값",
+      change: "선택",
+      result: "확인",
+    },
+  ];
+
+  return {
+    datasetInfo,
+    summaryStats,
+    hotspotRanking,
+    tableData: {
+      result: {
+        columns: [
+          { key: "rank", label: "순위" },
+          { key: "name", label: "객체명" },
+          { key: "nearbyCount", label: "인접 개수" },
+          { key: "lat", label: "위도" },
+          { key: "lng", label: "경도" },
+        ],
+        rows: resultRows,
+      },
+      attribute: {
+        columns: [
+          { key: "featureId", label: "객체 ID" },
+          { key: "name", label: "객체명" },
+          { key: "nearbyCount", label: "인접 개수" },
+          { key: "lat", label: "위도" },
+          { key: "lng", label: "경도" },
         ],
         rows: attributeRows,
       },
@@ -292,7 +532,12 @@ function DataCell({ columnKey, value }) {
   }
 
   if (columnKey === "result") {
-    const tone = value === "증가" || value === "활성" ? "success" : value === "유지" ? "warning" : "danger";
+    const tone = value === "핫스팟" || value === "활성" || value === "분석"
+      ? "success"
+      : value === "유지" || value === "확인"
+        ? "warning"
+        : "danger";
+
     return <span className={`simulation-test-chip ${tone}`}>{value}</span>;
   }
 
@@ -358,6 +603,7 @@ function SimulationControlPanel({
   handleRun,
   handleReset,
   profile,
+  simulationLoading,
 }) {
   return (
     <div className="simulation-test-panel simulation-test-control-panel card">
@@ -464,8 +710,9 @@ function SimulationControlPanel({
               type="button"
               className="btn btn-primary w-100 simulation-test-action-button"
               onClick={handleRun}
+              disabled={simulationLoading}
             >
-              실행
+              {simulationLoading ? "실행 중..." : "실행"}
             </button>
           </div>
           <div className="col-6">
@@ -473,6 +720,7 @@ function SimulationControlPanel({
               type="button"
               className="btn btn-light border w-100 simulation-test-action-button secondary"
               onClick={handleReset}
+              disabled={simulationLoading}
             >
               초기화
             </button>
@@ -483,33 +731,22 @@ function SimulationControlPanel({
   );
 }
 
-function SimulationLegend({ geometryType }) {
+function SimulationLegend({ hasResultLayer }) {
   return (
     <div className="simulation-test-legend">
       <div className="simulation-test-legend-title">범례</div>
-
-      {geometryType === "linestring" ? (
-        <div className="simulation-test-legend-list">
-          <div className="simulation-test-legend-item">
-            <span className="simulation-test-legend-swatch primary-line"></span>
-            <span>라인 객체</span>
-          </div>
+      <div className="simulation-test-legend-list">
+        <div className="simulation-test-legend-item">
+          <span className="simulation-test-legend-swatch node"></span>
+          <span>원본 포인트</span>
         </div>
-      ) : geometryType === "polygon" ? (
-        <div className="simulation-test-legend-list">
+        {hasResultLayer ? (
           <div className="simulation-test-legend-item">
             <span className="simulation-test-legend-swatch fill-low"></span>
-            <span>폴리곤 객체</span>
+            <span>반경 결과</span>
           </div>
-        </div>
-      ) : (
-        <div className="simulation-test-legend-list">
-          <div className="simulation-test-legend-item">
-            <span className="simulation-test-legend-swatch node"></span>
-            <span>포인트 객체</span>
-          </div>
-        </div>
-      )}
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -531,6 +768,91 @@ function SimulationMapBoundsUpdater({ geoJsonData }) {
   return null;
 }
 
+function SimulationMapHomeControl({ geoJsonData }) {
+  const map = useMap();
+
+  useEffect(() => {
+    const control = L.control({ position: "bottomright" });
+
+    control.onAdd = () => {
+      const container = L.DomUtil.create("div", "leaflet-bar simulation-test-home-control");
+      const button = L.DomUtil.create("button", "simulation-test-home-control-button", container);
+      button.type = "button";
+      button.innerHTML = '<i class="bi bi-crosshair"></i>';
+      button.title = "중심으로 이동";
+
+      L.DomEvent.disableClickPropagation(container);
+      L.DomEvent.on(button, "click", (event) => {
+        L.DomEvent.preventDefault(event);
+        L.DomEvent.stopPropagation(event);
+
+        if (geoJsonData) {
+          const layer = L.geoJSON(geoJsonData);
+          const bounds = layer.getBounds();
+
+          if (bounds.isValid()) {
+            map.fitBounds(bounds, { padding: [24, 24] });
+            return;
+          }
+        }
+
+        map.setView([36.5, 127.8], 7);
+      });
+
+      return container;
+    };
+
+    control.addTo(map);
+
+    return () => {
+      control.remove();
+    };
+  }, [geoJsonData, map]);
+
+  return null;
+}
+
+function SimulationMeasureEvents({
+  measurementType,
+  setMeasurePoints,
+  setMeasureDistance,
+  setMeasureArea,
+}) {
+  useMapEvents({
+    click(event) {
+      if (measurementType === "none") {
+        return;
+      }
+
+      setMeasurePoints((prev) => {
+        const nextPoints =
+          measurementType === "distance"
+            ? (prev.length >= 2 ? [event.latlng] : [...prev, event.latlng])
+            : [...prev, event.latlng];
+
+        if (measurementType === "distance") {
+          if (nextPoints.length === 2) {
+            setMeasureDistance(nextPoints[0].distanceTo(nextPoints[1]));
+          } else {
+            setMeasureDistance(null);
+          }
+          setMeasureArea(null);
+        } else if (nextPoints.length >= 3) {
+          setMeasureArea(calculateProjectedArea(nextPoints));
+          setMeasureDistance(null);
+        } else {
+          setMeasureArea(null);
+          setMeasureDistance(null);
+        }
+
+        return nextPoints;
+      });
+    },
+  });
+
+  return null;
+}
+
 function SimulationMapView({
   geometryType,
   mapMode,
@@ -538,43 +860,127 @@ function SimulationMapView({
   radius,
   profile,
   previewGeoJson,
+  resultGeoJson,
   previewLoading,
   previewErrorMessage,
+  simulationLoading,
+  measurementPanelOpen,
+  setMeasurementPanelOpen,
+  measurementType,
+  setMeasurementType,
+  measurePoints,
+  setMeasurePoints,
+  measureDistance,
+  setMeasureDistance,
+  measureArea,
+  setMeasureArea,
 }) {
   const hasPreviewFeatures =
     Array.isArray(previewGeoJson?.features) &&
     previewGeoJson.features.some((feature) => feature?.geometry);
 
-  const geoJsonStyle = {
-    color: mapMode === "zone" ? "#0f766e" : "#2563eb",
-    weight: geometryType === "linestring" ? 5 : 3,
-    fillColor: mapMode === "fill" || geometryType === "polygon" ? "#60a5fa" : "#93c5fd",
-    fillOpacity: geometryType === "polygon" ? 0.32 : 0.18,
+  const hasResultFeatures =
+    Array.isArray(resultGeoJson?.features) &&
+    resultGeoJson.features.some((feature) => feature?.geometry);
+
+  const focusGeoJson = hasResultFeatures ? resultGeoJson : previewGeoJson;
+
+  const previewStyle = {
+    color: mapMode === "zone" ? "#64748b" : "#475569",
+    weight: geometryType === "linestring" ? 4 : 2,
+    fillColor: "#cbd5e1",
+    fillOpacity: geometryType === "polygon" ? 0.18 : 0.08,
   };
 
-  const pointRadius = mapMode === "heat" ? 9 : 7;
+  const resultStyle = {
+    color: "#2563eb",
+    weight: 3,
+    fillColor: "#60a5fa",
+    fillOpacity: 0.2,
+  };
 
-  const pointToLayer = (_, latlng) =>
+  const previewPointToLayer = (_, latlng) =>
     L.circleMarker(latlng, {
-      radius: pointRadius,
+      radius: 6,
+      fillColor: "#64748b",
+      color: "#ffffff",
+      weight: 2,
+      fillOpacity: 0.88,
+    });
+
+  const resultPointToLayer = (_, latlng) =>
+    L.circleMarker(latlng, {
+      radius: mapMode === "heat" ? 10 : 8,
       fillColor: "#2563eb",
       color: "#ffffff",
       weight: 2,
       fillOpacity: 0.95,
     });
 
+  const previewOnEachFeature = (feature, layer) => {
+    bindFeatureTooltip(feature, layer, "원본 데이터");
+  };
+
+  const resultOnEachFeature = (feature, layer) => {
+    bindFeatureTooltip(feature, layer, "시뮬레이션 결과");
+  };
+
+  const handleMeasurementPanelToggle = () => {
+    setMeasurementPanelOpen((prev) => {
+      if (prev) {
+        setMeasurementType("none");
+        setMeasurePoints([]);
+        setMeasureDistance(null);
+        setMeasureArea(null);
+      }
+
+      return !prev;
+    });
+  };
+
+  const handleMeasureReset = () => {
+    setMeasurePoints([]);
+    setMeasureDistance(null);
+    setMeasureArea(null);
+  };
+
+  const handleMeasurementTypeChange = (nextType) => {
+    setMeasurementType(nextType);
+    setMeasurementPanelOpen(true);
+    setMeasurePoints([]);
+    setMeasureDistance(null);
+    setMeasureArea(null);
+  };
+
+  const hasMeasurement = measurementType !== "none";
+  const measurementTitle = measurementType === "area" ? "면적 측정" : "거리 측정";
+  const measurementValue =
+    measurementType === "area" ? formatArea(measureArea) : formatDistance(measureDistance);
+  const measurementGuideText =
+    measurementType === "area"
+      ? "지도를 세 번 이상 클릭하면 면적이 계산됩니다."
+      : "지도를 두 번 클릭하면 두 지점 사이의 직선거리를 계산합니다.";
+
   return (
     <div className="simulation-test-panel card simulation-test-map-panel h-100">
       <div className="simulation-test-map-header">
-        <div className="simulation-test-panel-title mb-0">
-          <i className="bi bi-map"></i>
-          <span>지도 결과</span>
+        <div className="simulation-test-map-header-main">
+          <div className="simulation-test-panel-title mb-0">
+            <i className="bi bi-map"></i>
+            <span>지도 결과</span>
+          </div>
+          <p className="simulation-test-map-caption">시뮬레이션 결과와 공간 데이터를 지도에서 확인할 수 있습니다.</p>
         </div>
 
-        <div className="simulation-test-map-meta">
-          <span>{profile.label}</span>
-          <span>{selectedRegion}</span>
-          <span>반경 {radius}m</span>
+        <div className="simulation-test-map-toolbar">
+          <button
+            type="button"
+            className={`simulation-test-map-tool-button ${measurementPanelOpen || hasMeasurement ? "active" : ""}`}
+            onClick={handleMeasurementPanelToggle}
+          >
+            측정 도구
+          </button>
+          {simulationLoading ? <span>시뮬레이션 실행 중</span> : null}
         </div>
       </div>
 
@@ -587,23 +993,127 @@ function SimulationMapView({
           <div className="simulation-test-map-empty">표시할 공간 좌표 데이터가 없습니다.</div>
         ) : (
           <>
-            <MapContainer
-              center={[36.5, 127.8]}
-              zoom={7}
-              className="simulation-test-leaflet-map"
-            >
+            <MapContainer center={[36.5, 127.8]} zoom={7} zoomControl={false} className="simulation-test-leaflet-map">
               <TileLayer
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 attribution="&copy; OpenStreetMap contributors"
               />
-              <SimulationMapBoundsUpdater geoJsonData={previewGeoJson} />
+              <SimulationMapBoundsUpdater geoJsonData={focusGeoJson} />
+              <SimulationMapHomeControl geoJsonData={focusGeoJson} />
+              <ZoomControl position="bottomright" />
+              <SimulationMeasureEvents
+                measurementType={measurementType}
+                setMeasurePoints={setMeasurePoints}
+                setMeasureDistance={setMeasureDistance}
+                setMeasureArea={setMeasureArea}
+              />
               <GeoJSON
                 data={previewGeoJson}
-                style={geoJsonStyle}
-                pointToLayer={pointToLayer}
+                style={previewStyle}
+                pointToLayer={previewPointToLayer}
+                onEachFeature={previewOnEachFeature}
               />
+              {hasResultFeatures ? (
+                <GeoJSON
+                  data={resultGeoJson}
+                  style={resultStyle}
+                  pointToLayer={resultPointToLayer}
+                  onEachFeature={resultOnEachFeature}
+                />
+              ) : null}
+              {measurePoints.map((point, index) => (
+                <CircleMarker
+                  key={`measure-point-${index}`}
+                  center={point}
+                  radius={7}
+                  pathOptions={{
+                    color: "#ffffff",
+                    weight: 2,
+                    fillColor: index === 0 ? "#f97316" : "#2563eb",
+                    fillOpacity: 1,
+                  }}
+                />
+              ))}
+              {measurePoints.length === 2 ? (
+                <Polyline
+                  positions={measurePoints}
+                  pathOptions={{
+                    color: "#f97316",
+                    weight: 4,
+                    dashArray: "10 8",
+                  }}
+                />
+              ) : null}
+              {measurementType === "area" && measurePoints.length >= 2 ? (
+                <Polyline
+                  positions={measurePoints}
+                  pathOptions={{
+                    color: "#0f766e",
+                    weight: 3,
+                    dashArray: "7 6",
+                  }}
+                />
+              ) : null}
+              {measurementType === "area" && measurePoints.length >= 3 ? (
+                <Polygon
+                  positions={measurePoints}
+                  pathOptions={{
+                    color: "#0f766e",
+                    weight: 3,
+                    fillColor: "#34d399",
+                    fillOpacity: 0.22,
+                  }}
+                />
+              ) : null}
             </MapContainer>
-            <SimulationLegend geometryType={geometryType} />
+            <SimulationLegend hasResultLayer={hasResultFeatures} />
+            {measurementPanelOpen ? (
+              <div className="simulation-test-measure-float">
+                <div className="simulation-test-measure-float-head">
+                  <strong>측정 도구</strong>
+                  <button type="button" onClick={handleMeasurementPanelToggle}>
+                    닫기
+                  </button>
+                </div>
+
+                <div className="simulation-test-measure-type-row compact">
+                  <button
+                    type="button"
+                    className={`simulation-test-measure-type-button ${measurementType === "distance" ? "active" : ""}`}
+                    onClick={() => handleMeasurementTypeChange("distance")}
+                  >
+                    거리
+                  </button>
+                  <button
+                    type="button"
+                    className={`simulation-test-measure-type-button ${measurementType === "area" ? "active" : ""}`}
+                    onClick={() => handleMeasurementTypeChange("area")}
+                  >
+                    면적
+                  </button>
+                </div>
+
+                <div className="simulation-test-measure-result-card compact">
+                  <span className="simulation-test-measure-result-label">
+                    {hasMeasurement ? measurementTitle : "측정 대기"}
+                  </span>
+                  <strong>{hasMeasurement ? measurementValue : "-"}</strong>
+                  <small>
+                    {hasMeasurement
+                      ? measurementGuideText
+                      : "거리 또는 면적을 선택한 뒤 지도를 클릭해보세요."}
+                  </small>
+                </div>
+
+                <button
+                  type="button"
+                  className="simulation-test-measure-reset-button"
+                  onClick={handleMeasureReset}
+                >
+                  초기화
+                </button>
+              </div>
+            ) : null}
           </>
         )}
       </div>
@@ -633,7 +1143,7 @@ function SimulationResultSummary({ summaryStats, hotspotRanking }) {
       <div className="simulation-test-panel simulation-test-summary-panel card">
         <div className="simulation-test-panel-title">
           <i className="bi bi-bar-chart"></i>
-          <span>대표 객체</span>
+          <span>상위 객체</span>
         </div>
 
         <div className="simulation-test-ranking-list">
@@ -664,7 +1174,7 @@ function SimulationResultTable({ selectedTab, setSelectedTab, activeTable }) {
           <span>분석 결과 테이블</span>
         </div>
 
-        <button type="button" className="btn btn-light border simulation-test-export-button">
+        <button type="button" className="btn btn-light border simulation-test-export-button" disabled>
           <i className="bi bi-download me-2"></i>
           내보내기
         </button>
@@ -715,7 +1225,7 @@ function SimulationResultTable({ selectedTab, setSelectedTab, activeTable }) {
       </div>
 
       <div className="simulation-test-table-footer">
-        <span>현재 탭 기준 최대 5개 결과를 표시합니다.</span>
+        <span>현재는 최대 5개 결과를 표시합니다.</span>
 
         <div className="simulation-test-pagination">
           <button type="button"><i className="bi bi-chevron-left"></i></button>
@@ -723,7 +1233,7 @@ function SimulationResultTable({ selectedTab, setSelectedTab, activeTable }) {
           <button type="button"><i className="bi bi-chevron-right"></i></button>
         </div>
 
-        <select className="form-select simulation-test-page-size" defaultValue="5개 보기">
+        <select className="form-select simulation-test-page-size" defaultValue="5개 보기" disabled>
           <option>5개 보기</option>
           <option>10개 보기</option>
           <option>20개 보기</option>
@@ -747,19 +1257,37 @@ function UserDatasetSimulationTestPage() {
   const [previewGeoJson, setPreviewGeoJson] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(true);
   const [previewErrorMessage, setPreviewErrorMessage] = useState("");
+  const [datasetTitle, setDatasetTitle] = useState("데이터셋");
+  const [simulationLoading, setSimulationLoading] = useState(false);
+  const [simulationErrorMessage, setSimulationErrorMessage] = useState("");
+  const [simulationSummary, setSimulationSummary] = useState(null);
+  const [simulationTableRows, setSimulationTableRows] = useState([]);
+  const [simulationResultGeoJson, setSimulationResultGeoJson] = useState(null);
+  const [simulationRunMessage, setSimulationRunMessage] = useState("");
+  const [measurementPanelOpen, setMeasurementPanelOpen] = useState(false);
+  const [measurementType, setMeasurementType] = useState("none");
+  const [measurePoints, setMeasurePoints] = useState([]);
+  const [measureDistance, setMeasureDistance] = useState(null);
+  const [measureArea, setMeasureArea] = useState(null);
 
   const currentProfile = SIMULATION_PROFILES[geometryType] ?? SIMULATION_PROFILES.point;
   const features = Array.isArray(previewGeoJson?.features) ? previewGeoJson.features : [];
-  const simulationData = buildSimulationData(
-    features,
-    geometryType,
-    radius,
-    currentProfile.statusText,
-    showHeatmap,
-    useClustering,
-    showBoundary,
+
+  const previewData = useMemo(
+    () => buildPreviewData(features, geometryType, radius, selectedRegion, showHeatmap, useClustering, showBoundary),
+    [features, geometryType, radius, selectedRegion, showHeatmap, useClustering, showBoundary],
   );
-  const activeTable = simulationData.tableData[selectedTab];
+
+  const simulationData = useMemo(() => {
+    if (!simulationSummary) {
+      return null;
+    }
+
+    return buildSimulationResultData(simulationSummary, simulationTableRows, selectedRegion, radius);
+  }, [simulationSummary, simulationTableRows, selectedRegion, radius]);
+
+  const displayData = simulationData ?? previewData;
+  const activeTable = displayData.tableData[selectedTab] ?? displayData.tableData.result;
 
   const resetWithProfile = (profile) => {
     setMapMode(profile.defaultMapMode);
@@ -770,15 +1298,94 @@ function UserDatasetSimulationTestPage() {
     setUseClustering(true);
     setShowBoundary(false);
     setSelectedTab("result");
+    setSimulationErrorMessage("");
+    setSimulationRunMessage("");
+    setSimulationSummary(null);
+    setSimulationTableRows([]);
+    setSimulationResultGeoJson(null);
+    setMeasurementPanelOpen(false);
+    setMeasurementType("none");
+    setMeasurePoints([]);
+    setMeasureDistance(null);
+    setMeasureArea(null);
   };
 
   const handleReset = () => {
     resetWithProfile(currentProfile);
   };
 
-  const handleRun = () => {
-    setSelectedTab("result");
+  const handleRun = async () => {
+    if (!datasetId) {
+      setSimulationErrorMessage("데이터셋 정보를 확인할 수 없습니다.");
+      return;
+    }
+
+    if (geometryType !== "point") {
+      setSimulationErrorMessage("현재 1차 시뮬레이션 API는 포인트 데이터만 지원합니다.");
+      return;
+    }
+
+    try {
+      setSimulationLoading(true);
+      setSimulationErrorMessage("");
+      setSimulationRunMessage("");
+      setSelectedTab("result");
+
+      const response = await runPointRadiusSimulationApi(datasetId, radius);
+      const responseData = response?.data ?? {};
+      const parsedResultGeoJson = parseGeoJson(responseData.resultGeoJson);
+
+      setSimulationSummary(responseData.summary ?? null);
+      setSimulationTableRows(Array.isArray(responseData.table) ? responseData.table : []);
+      setSimulationResultGeoJson(parsedResultGeoJson);
+      setSimulationRunMessage(`반경 ${radius}m 기준 시뮬레이션 결과가 반영되었습니다.`);
+    } catch (error) {
+      setSimulationSummary(null);
+      setSimulationTableRows([]);
+      setSimulationResultGeoJson(null);
+
+      if (error?.response?.status === 403) {
+        setSimulationErrorMessage("시뮬레이션 결과를 확인할 권한이 없습니다.");
+      } else if (error?.response?.status === 404) {
+        setSimulationErrorMessage("포인트 시뮬레이션 결과를 만들 수 있는 공간 데이터가 없습니다.");
+      } else if (error?.response?.status === 400) {
+        setSimulationErrorMessage("반경 설정을 다시 확인해주세요.");
+      } else {
+        setSimulationErrorMessage("시뮬레이션 실행 중 오류가 발생했습니다.");
+      }
+    } finally {
+      setSimulationLoading(false);
+    }
   };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchDatasetTitle = async () => {
+      try {
+        const response = await getDatasetDownloadPageApi(datasetId);
+
+        if (!cancelled) {
+          setDatasetTitle(response?.data?.dataset?.title ?? "데이터셋");
+        }
+      } catch {
+        if (!cancelled) {
+          setDatasetTitle("데이터셋");
+        }
+      }
+    };
+
+    if (!datasetId) {
+      setDatasetTitle("데이터셋");
+      return undefined;
+    }
+
+    fetchDatasetTitle();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [datasetId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -789,10 +1396,7 @@ function UserDatasetSimulationTestPage() {
         setPreviewErrorMessage("");
 
         const previewResponse = await getDatasetPreviewGeoJsonApi(datasetId);
-        const previewData =
-          typeof previewResponse.data === "string"
-            ? JSON.parse(previewResponse.data)
-            : previewResponse.data;
+        const previewData = parseGeoJson(previewResponse.data);
 
         if (cancelled) {
           return;
@@ -804,14 +1408,35 @@ function UserDatasetSimulationTestPage() {
         if (inferredGeometryType && SIMULATION_PROFILES[inferredGeometryType]) {
           const nextProfile = SIMULATION_PROFILES[inferredGeometryType];
           setGeometryType(inferredGeometryType);
-          resetWithProfile(nextProfile);
+          setMapMode(nextProfile.defaultMapMode);
+          setSelectedRegion(nextProfile.defaultRegion);
+          setRadius(nextProfile.defaultRadius);
+          setDensityLevel(nextProfile.defaultDensity);
+          setShowHeatmap(true);
+          setUseClustering(true);
+          setShowBoundary(false);
+          setSelectedTab("result");
         }
+
+        setSimulationErrorMessage("");
+        setSimulationRunMessage("");
+        setSimulationSummary(null);
+        setSimulationTableRows([]);
+        setSimulationResultGeoJson(null);
+        setMeasurementPanelOpen(false);
+        setMeasurementType("none");
+        setMeasurePoints([]);
+        setMeasureDistance(null);
+        setMeasureArea(null);
       } catch (error) {
         if (cancelled) {
           return;
         }
 
         setPreviewGeoJson(null);
+        setSimulationSummary(null);
+        setSimulationTableRows([]);
+        setSimulationResultGeoJson(null);
 
         if (error?.response?.status === 403) {
           setPreviewErrorMessage("공간 데이터를 확인할 권한이 없습니다.");
@@ -847,12 +1472,14 @@ function UserDatasetSimulationTestPage() {
     resetWithProfile(nextProfile);
   };
 
+  const noticeText = simulationErrorMessage || simulationRunMessage || currentProfile.statusText;
+
   return (
     <div className="container-fluid px-4 py-3 simulation-test-page">
       <div className="row mb-3">
         <div className="col">
           <TopTitle
-            title={currentProfile.title}
+            title={`${datasetTitle || "데이터셋"} 시뮬레이션`}
             subTitle={currentProfile.subtitle}
             showGuide={false}
           />
@@ -863,7 +1490,7 @@ function UserDatasetSimulationTestPage() {
         <div className="col-12 col-xl-3 simulation-test-side-column">
           <div className="row g-3 simulation-test-side-stack">
             <div className="col-12">
-              <SimulationDatasetInfo datasetInfo={simulationData.datasetInfo} />
+              <SimulationDatasetInfo datasetInfo={displayData.datasetInfo} />
             </div>
             <div className="col-12">
               <SimulationControlPanel
@@ -881,10 +1508,11 @@ function UserDatasetSimulationTestPage() {
                 setUseClustering={setUseClustering}
                 showBoundary={showBoundary}
                 setShowBoundary={setShowBoundary}
-                statusText={simulationData.statusText}
+                statusText={noticeText}
                 handleRun={handleRun}
                 handleReset={handleReset}
                 profile={currentProfile}
+                simulationLoading={simulationLoading}
               />
             </div>
           </div>
@@ -900,15 +1528,27 @@ function UserDatasetSimulationTestPage() {
                 radius={radius}
                 profile={currentProfile}
                 previewGeoJson={previewGeoJson}
+                resultGeoJson={simulationResultGeoJson}
                 previewLoading={previewLoading}
                 previewErrorMessage={previewErrorMessage}
+                simulationLoading={simulationLoading}
+                measurementPanelOpen={measurementPanelOpen}
+                setMeasurementPanelOpen={setMeasurementPanelOpen}
+                measurementType={measurementType}
+                setMeasurementType={setMeasurementType}
+                measurePoints={measurePoints}
+                setMeasurePoints={setMeasurePoints}
+                measureDistance={measureDistance}
+                setMeasureDistance={setMeasureDistance}
+                measureArea={measureArea}
+                setMeasureArea={setMeasureArea}
               />
             </div>
 
             <div className="col-12 col-xxl-4 simulation-test-summary-column">
               <SimulationResultSummary
-                summaryStats={simulationData.summaryStats}
-                hotspotRanking={simulationData.hotspotRanking}
+                summaryStats={displayData.summaryStats}
+                hotspotRanking={displayData.hotspotRanking}
               />
             </div>
           </div>

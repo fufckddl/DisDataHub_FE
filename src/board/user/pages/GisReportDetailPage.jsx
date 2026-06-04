@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import "ol/ol.css";
@@ -18,7 +18,7 @@ import Fill from "ol/style/Fill";
 import Stroke from "ol/style/Stroke";
 
 import { VWORLD_BASE_MAP_URL } from "../../config/vworldConfig";
-import { gisReportMockList } from "../../mock/gisReportListPage";
+import { getGisReportDetailApi } from "../../api/gisReportApi";
 
 import "../css/GisReportDetailPage.css";
 
@@ -27,19 +27,38 @@ function GisReportDetailPage() {
   const navigate = useNavigate();
   const mapRef = useRef(null);
 
-  const report = gisReportMockList.find(
-    (item) => item.postId === Number(postId)
-  );
+  const [report, setReport] = useState(null);
+  const [isLoading, setLoading] = useState(false);
 
-  const getStatusClassName = (statusCode) => {
-    if (statusCode === "RECEIVED") return "status-received";
-    if (statusCode === "CHECKING") return "status-checking";
-    if (statusCode === "COMPLETED") return "status-completed";
-    return "";
+  const getGisReportDetail = async () => {
+    try {
+      setLoading(true);
+
+      const data = await getGisReportDetailApi(postId);
+
+      if (data.result === "success") {
+        setReport(data.gisReportDetail);
+      }
+    } catch (error) {
+      console.error("GIS 오류제보 상세 조회 실패:", error);
+      alert("GIS 오류제보 상세 정보를 불러오는 중 오류가 발생했습니다.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    if (!mapRef.current || !report) return;
+    if (!postId) {
+      return;
+    }
+
+    getGisReportDetail();
+  }, [postId]);
+
+  useEffect(() => {
+    if (!mapRef.current || !report) {
+      return;
+    }
 
     const longitude = Number(report.longitude || 127.0276);
     const latitude = Number(report.latitude || 37.4979);
@@ -91,12 +110,65 @@ function GisReportDetailPage() {
     };
   }, [report]);
 
+  const getStatusClassName = (statusCode) => {
+    if (statusCode === "RECEIVED") return "status-received";
+    if (statusCode === "CHECKING") return "status-checking";
+    if (statusCode === "REVIEWING") return "status-checking";
+    if (statusCode === "PROCESSING") return "status-checking";
+    if (statusCode === "COMPLETED") return "status-completed";
+    return "";
+  };
+
+  const getProcessStatusName = (statusCode) => {
+    if (statusCode === "RECEIVED") return "제보완료";
+    if (statusCode === "CHECKING") return "검토중";
+    if (statusCode === "REVIEWING") return "검토중";
+    if (statusCode === "PROCESSING") return "조치중";
+    if (statusCode === "COMPLETED") return "처리완료";
+    return statusCode ?? "-";
+  };
+
+  const getReportCategoryName = (categoryCode) => {
+    if (categoryCode === "LOCATION_ERROR") return "위치 오류";
+    if (categoryCode === "MISSING_DATA") return "데이터 누락";
+    if (categoryCode === "DATA_ERROR") return "데이터 오류";
+    if (categoryCode === "ATTRIBUTE_ERROR") return "속성 오류";
+    if (categoryCode === "ETC") return "기타";
+    return categoryCode ?? "-";
+  };
+
+  const getErrorTypeName = (errorTypeCode) => {
+    if (errorTypeCode === "COORDINATE_ERROR") return "좌표 오류";
+    if (errorTypeCode === "NAME_ERROR") return "명칭 오류";
+    if (errorTypeCode === "VALUE_ERROR") return "속성값 오류";
+    if (errorTypeCode === "POSITION") return "위치 오류";
+    return errorTypeCode ?? "-";
+  };
+
+  const formatDate = (dateValue) => {
+    if (!dateValue) return "-";
+    return dateValue.substring(0, 10);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="gis-report-detail-page">
+        <div className="gis-report-detail-container">
+          <section className="gis-report-not-found">
+            <h1>GIS 오류제보 상세 정보를 불러오는 중입니다.</h1>
+          </section>
+        </div>
+      </div>
+    );
+  }
+
   if (!report) {
     return (
       <div className="gis-report-detail-page">
         <div className="gis-report-detail-container">
           <section className="gis-report-not-found">
             <h1>제보글을 찾을 수 없습니다.</h1>
+
             <button type="button" onClick={() => navigate("/board/gis-report")}>
               목록으로
             </button>
@@ -112,7 +184,7 @@ function GisReportDetailPage() {
         <section className="gis-report-detail-header">
           <div className="gis-report-detail-badge-area">
             <span className="gis-category-badge">
-              {report.reportCategoryName}
+              {getReportCategoryName(report.reportCategoryCode)}
             </span>
 
             <span
@@ -120,7 +192,7 @@ function GisReportDetailPage() {
                 report.processStatusCode
               )}`}
             >
-              {report.processStatusName}
+              {getProcessStatusName(report.processStatusCode)}
             </span>
           </div>
 
@@ -131,12 +203,12 @@ function GisReportDetailPage() {
         <section className="gis-report-detail-meta">
           <div>
             <span>작성자</span>
-            <strong>{report.writerName}</strong>
+            <strong>{report.userId}</strong>
           </div>
 
           <div>
             <span>작성일</span>
-            <strong>{report.createdAt}</strong>
+            <strong>{formatDate(report.createdAt)}</strong>
           </div>
 
           <div>
@@ -150,24 +222,30 @@ function GisReportDetailPage() {
 
           <div className="gis-info-grid">
             <div>
+              <span>제보 유형</span>
+              <strong>{getReportCategoryName(report.reportCategoryCode)}</strong>
+            </div>
+
+            <div>
               <span>오류 유형</span>
-              <strong>{report.reportCategoryName}</strong>
+              <strong>{getErrorTypeName(report.errorTypeCode)}</strong>
             </div>
 
             <div>
               <span>대상 데이터</span>
-              <strong>{report.targetDataName}</strong>
+              <strong>{report.targetDataName || "-"}</strong>
             </div>
 
             <div>
               <span>처리 상태</span>
-              <strong>{report.processStatusName}</strong>
+              <strong>{getProcessStatusName(report.processStatusCode)}</strong>
             </div>
 
             <div>
               <span>행정구역</span>
               <strong>
-                {report.sido} {report.sigungu} {report.eupmyeondong}
+                {report.sido || "-"} {report.sigungu || ""}{" "}
+                {report.eupmyeondong || ""}
               </strong>
             </div>
           </div>
@@ -181,34 +259,30 @@ function GisReportDetailPage() {
           <div className="gis-location-grid">
             <div>
               <span>주소</span>
-              <strong>{report.address}</strong>
+              <strong>{report.address || "-"}</strong>
             </div>
 
             <div>
               <span>위도</span>
-              <strong>{report.latitude}</strong>
+              <strong>{report.latitude ?? "-"}</strong>
             </div>
 
             <div>
               <span>경도</span>
-              <strong>{report.longitude}</strong>
+              <strong>{report.longitude ?? "-"}</strong>
             </div>
           </div>
         </section>
 
         <section className="gis-report-content-section">
           <h2>제보 내용</h2>
-          <p>{report.content}</p>
+          <p>{report.content || "등록된 제보 내용이 없습니다."}</p>
         </section>
 
         <section className="gis-report-file-section">
           <h2>첨부파일</h2>
 
-          {report.attachmentName ? (
-            <div className="gis-file-item">📎 {report.attachmentName}</div>
-          ) : (
-            <div className="gis-file-empty">첨부파일이 없습니다.</div>
-          )}
+          <div className="gis-file-empty">첨부파일이 없습니다.</div>
         </section>
 
         <section className="gis-report-process-section">
@@ -223,12 +297,14 @@ function GisReportDetailPage() {
             <div
               className={
                 report.processStatusCode === "CHECKING" ||
+                report.processStatusCode === "REVIEWING" ||
+                report.processStatusCode === "PROCESSING" ||
                 report.processStatusCode === "COMPLETED"
                   ? "process-item active"
                   : "process-item"
               }
             >
-              <strong>확인 중</strong>
+              <strong>검토 / 처리 중</strong>
               <p>관리자가 제보 내용을 확인 중입니다.</p>
             </div>
 
@@ -239,7 +315,7 @@ function GisReportDetailPage() {
                   : "process-item"
               }
             >
-              <strong>수정 완료</strong>
+              <strong>처리 완료</strong>
               <p>오류 데이터 수정이 완료되었습니다.</p>
             </div>
           </div>
