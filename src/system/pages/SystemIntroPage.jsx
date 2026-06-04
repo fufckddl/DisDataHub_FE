@@ -51,34 +51,34 @@ const effects = [
   "데이터 품질 개선",
 ];
 
-function SystemIntroHeader() {
-  return (
-    <header className="system-intro-header">
-      <div className="system-intro-header-inner">
-        <div className="system-intro-logo-wrap">
-          <div className="system-intro-logo">◎</div>
-          <span className="system-intro-brand">GIS Research Data Hub</span>
-        </div>
+// function SystemIntroHeader() {
+//   return (
+//     <header className="system-intro-header">
+//       <div className="system-intro-header-inner">
+//         <div className="system-intro-logo-wrap">
+//           <div className="system-intro-logo">◎</div>
+//           <span className="system-intro-brand">GIS Research Data Hub</span>
+//         </div>
 
-        <nav className="system-intro-nav">
-          <a href="#purpose">서비스 목적</a>
-          <a href="#feature">주요 기능</a>
-          <a href="#gis">GIS 기능</a>
-          <a href="#data">활용 데이터</a>
-        </nav>
+//         <nav className="system-intro-nav">
+//           <a href="#purpose">서비스 목적</a>
+//           <a href="#feature">주요 기능</a>
+//           <a href="#gis">GIS 기능</a>
+//           <a href="#data">활용 데이터</a>
+//         </nav>
 
-        <div className="system-intro-auth">
-          <button type="button" className="system-intro-login-btn">
-            로그인
-          </button>
-          <button type="button" className="system-intro-signup-btn">
-            회원가입
-          </button>
-        </div>
-      </div>
-    </header>
-  );
-}
+//         <div className="system-intro-auth">
+//           <button type="button" className="system-intro-login-btn">
+//             로그인
+//           </button>
+//           <button type="button" className="system-intro-signup-btn">
+//             회원가입
+//           </button>
+//         </div>
+//       </div>
+//     </header>
+//   );
+// }
 
 function SectionHead({ label, title, desc }) {
   return (
@@ -137,7 +137,7 @@ function MapVisual() {
 function SystemIntroPage() {
   return (
     <main className="system-intro-page">
-      <SystemIntroHeader />
+      {/* <SystemIntroHeader /> */}
 
       <section id="hero" className="system-hero-section">
         <div className="system-hero-bg" />
