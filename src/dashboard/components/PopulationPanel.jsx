@@ -101,6 +101,7 @@ const chartOptions = {
             labels: {
                 boxWidth: 12,
                 boxHeight: 12,
+                color: "#cbd5e1",
             },
         },
         tooltip: {
@@ -115,13 +116,18 @@ const chartOptions = {
                 display: false,
             },
             ticks: {
+                color: "#94a3b8",
                 maxRotation: 60,
                 minRotation: 0,
             },
         },
         y: {
             beginAtZero: true,
+            grid: {
+                color: "rgba(148, 163, 184, 0.16)",
+            },
             ticks: {
+                color: "#94a3b8",
                 callback: (value) => `${Number(value).toLocaleString()}명`,
             },
         },

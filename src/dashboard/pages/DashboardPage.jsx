@@ -1,44 +1,156 @@
 import { useCallback, useState } from "react";
 import DashboardMap from "../components/DashboardMap";
-import DashboardGisCatalogPanel from "../components/DashboardGisCatalogPanel";
-import FloatingPopulationPanel from "../components/FloatingPopulationPanel";
+import {
+    DashboardInsightChartsPanel,
+    DashboardInsightSummaryPanel,
+} from "../components/DashboardInsightsPanel";
+import { useDashboardInsights } from "../hooks/useDashboardInsights";
 import PopulationPanel from "../components/PopulationPanel";
 import { getAreaPopulation } from "../api/dashBoardApi";
 import "./DashboardPage.css";
 
-function TopTitle() {
+function formatDashboardTimestamp() {
+    const now = new Date();
+    const pad = (value) => String(value).padStart(2, "0");
+
+    return [
+        `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`,
+        `${pad(now.getHours())}:${pad(now.getMinutes())}`,
+    ].join(" ");
+}
+
+function getSelectedAreaName(selectedArea) {
+    return selectedArea?.fullName ?? selectedArea?.name ?? "전국";
+}
+
+const MAP_LEVEL_CONTROLS = [
+    { level: "SIDO", label: "시도" },
+    { level: "SIGUNGU", label: "시군구" },
+    { level: "EUPMYEONDONG", label: "행정동" },
+];
+
+function DashboardControlBar({ selectedArea, mapLevel, insightState, loading, onRefresh }) {
+    const selectedAreaName = getSelectedAreaName(selectedArea);
+    const isRefreshing = loading || Boolean(insightState?.loading);
+
     return (
-        <>
-            <div className="row align-items-center mb-3">
-                <div className="col">
-                    <div className="row">
-                        <div className="col">
-                            <h2 className="fw-bold mb-2">대시보드</h2>
-                        </div>
-                        <div className="col-auto">
-                            <button type="button" className="btn btn-light text-secondary">
-                                <i className="bi bi-arrow-clockwise me-2" />
-                                새로고침
-                            </button>
-                        </div>
-                    </div>
-                    <div className="text-secondary" style={{ fontSize: "12px" }}>
-                        공공데이터 기반 GIS 경계와 주요 지표를 한눈에 확인할 수 있습니다.
-                    </div>
-                </div>
+        <section className="dashboard-controlbar" aria-label="대시보드 지도 제어">
+            <div className="dashboard-control-left">
+                <span className="dashboard-control-select">
+                    <i className="bi bi-diagram-3" />
+                    지역
+                </span>
+                <span className="dashboard-control-time">{formatDashboardTimestamp()} KST</span>
+                <button
+                    type="button"
+                    className="dashboard-control-button"
+                    onClick={onRefresh}
+                    disabled={isRefreshing}
+                    title="대시보드 데이터 새로고침"
+                >
+                    <i className={`bi ${isRefreshing ? "bi-arrow-repeat" : "bi-arrow-clockwise"}`} />
+                    {isRefreshing ? "갱신 중" : "갱신"}
+                </button>
             </div>
-        </>
+
+            <div className="dashboard-control-mid">
+                {MAP_LEVEL_CONTROLS.map((control) => (
+                    <span
+                        key={control.level}
+                        className={`dashboard-control-pill ${mapLevel === control.level ? "active" : ""}`}
+                    >
+                        {control.label}
+                    </span>
+                ))}
+            </div>
+
+            <div className="dashboard-control-right">
+                <span className="dashboard-control-location">
+                    <i className="bi bi-crosshair" />
+                    {selectedAreaName}
+                </span>
+            </div>
+        </section>
+    );
+}
+
+function DashboardSidePanel({
+    selectedArea,
+    populationData,
+    queryDate,
+    populationNotice,
+    loading,
+    error,
+    insightState,
+    onClearSelection,
+}) {
+    return (
+        <aside className="dashboard-side-panel" aria-label="선택 지역 상세 정보">
+            <div className="dashboard-side-head">
+                <div>
+                    <span>선택 지역</span>
+                    <h3>{getSelectedAreaName(selectedArea)}</h3>
+                    <p>
+                        {selectedArea
+                            ? `${selectedArea.levelLabel ?? selectedArea.level} / 지역코드 ${selectedArea.areaCode}`
+                            : "지도에서 Polygon을 선택하세요."}
+                    </p>
+                </div>
+                <button
+                    type="button"
+                    className="dashboard-icon-button"
+                    onClick={onClearSelection}
+                    disabled={!selectedArea}
+                    aria-label="상세 패널 선택 초기화"
+                    title="선택 초기화"
+                >
+                    <i className="bi bi-x-lg" />
+                </button>
+            </div>
+
+            <div className="dashboard-side-tabs" aria-label="대시보드 상세 구분">
+                <span className="active">요약</span>
+                <span>생활인구</span>
+                <span>지표</span>
+            </div>
+
+            <div className="dashboard-side-section">
+                <DashboardInsightSummaryPanel
+                    selectedArea={selectedArea}
+                    populationData={populationData}
+                    populationLoading={loading}
+                    populationError={error}
+                    insightState={insightState}
+                />
+            </div>
+
+            <div className="dashboard-side-section">
+                <PopulationPanel
+                    selectedArea={selectedArea}
+                    populationData={populationData}
+                    queryDate={queryDate}
+                    notice={populationNotice}
+                    loading={loading}
+                    error={error}
+                />
+            </div>
+
+            <div className="dashboard-side-section">
+                <DashboardInsightChartsPanel insightState={insightState} />
+            </div>
+        </aside>
     );
 }
 
 function DashboardPage() {
     const [selectedArea, setSelectedArea] = useState(null);
+    const [mapLevel, setMapLevel] = useState("SIDO");
     const [populationData, setPopulationData] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [queryDate, setQueryDate] = useState(null);
     const [populationNotice, setPopulationNotice] = useState(null);
-    const [gisLayer, setGisLayer] = useState(null);
+    const insightState = useDashboardInsights(selectedArea);
 
     const handleAreaSelect = useCallback(async (area) => {
         setSelectedArea(area);
@@ -79,46 +191,58 @@ function DashboardPage() {
         }
     }, []);
 
+    const handleRefreshDashboard = useCallback(() => {
+        insightState?.refresh?.();
+        if (selectedArea) {
+            void handleAreaSelect(selectedArea);
+        }
+    }, [handleAreaSelect, insightState, selectedArea]);
+
+    const handleClearSelection = useCallback(() => {
+        void handleAreaSelect(null);
+    }, [handleAreaSelect]);
+
     return (
-        <>
-            <div className="container-fluid px-4 py-3">
-                <TopTitle />
+        <div className="dashboard-ops-shell">
+            <DashboardControlBar
+                selectedArea={selectedArea}
+                mapLevel={mapLevel}
+                insightState={insightState}
+                loading={loading}
+                onRefresh={handleRefreshDashboard}
+            />
 
-                <div className="row mb-3 g-3">
-                    <div className="col-lg-8">
-                        <DashboardMap onAreaSelect={handleAreaSelect} gisLayer={gisLayer} />
+            <div className="dashboard-workspace">
+                <main className="dashboard-map-stage" aria-label="행정구역 Polygon 지도">
+                    <DashboardMap
+                        onAreaSelect={handleAreaSelect}
+                        onViewLevelChange={setMapLevel}
+                    />
+                    <div className="dashboard-map-legend" aria-label="지도 범례">
+                        <strong>줌 기반 행정경계</strong>
+                        <div>
+                            <span className="legend-line base" />
+                            기본 Polygon
+                        </div>
+                        <div>
+                            <span className="legend-line selected" />
+                            선택 지역
+                        </div>
                     </div>
-                    <div className="col-lg-4">
-                        <PopulationPanel
-                            selectedArea={selectedArea}
-                            populationData={populationData}
-                            queryDate={queryDate}
-                            notice={populationNotice}
-                            loading={loading}
-                            error={error}
-                        />
-                    </div>
-                </div>
+                </main>
 
-                <div className="row g-3 mb-3">
-                    <div className="col-12">
-                        <FloatingPopulationPanel selectedArea={selectedArea} />
-                    </div>
-                </div>
-
-                <div className="row g-3">
-                    <div className="col-12">
-                        <DashboardGisCatalogPanel
-                            selectedArea={selectedArea}
-                            populationData={populationData}
-                            populationLoading={loading}
-                            populationError={error}
-                            onGisLayerChange={setGisLayer}
-                        />
-                    </div>
-                </div>
+                <DashboardSidePanel
+                    selectedArea={selectedArea}
+                    populationData={populationData}
+                    queryDate={queryDate}
+                    populationNotice={populationNotice}
+                    loading={loading}
+                    error={error}
+                    insightState={insightState}
+                    onClearSelection={handleClearSelection}
+                />
             </div>
-        </>
+        </div>
     );
 }
 
