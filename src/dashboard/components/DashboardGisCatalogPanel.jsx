@@ -14,6 +14,7 @@ import {
     getDashboardGisDatasets,
     getDashboardGisFeatures,
     getDashboardGisMetrics,
+    getDashboardGisObservations,
     getDashboardGisRegionStats,
 } from "../api/dashBoardApi";
 
@@ -22,6 +23,10 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Le
 const RESIDENT_POPULATION_SOURCE_CODE = "MOIS_ADMM_SEXD_AGE_PPLTN";
 const RESIDENT_POPULATION_DATASET_CODE = "MOIS_ADMM_SEXD_AGE_PPLTN_MAIN";
 const EV_CHARGER_DATASET_CODE = "KECO_EV_CHARGER_MAIN";
+const OBSERVATION_TABLE_DATASET_CODES = new Set([
+    "KMA_VILAGE_FCST_MAIN",
+    "AIRKOREA_AIR_QUALITY_MAIN",
+]);
 const MAP_FEATURE_LAYER_TYPES = new Set(["POINT", "HEATMAP"]);
 const REGION_CHART_COLORS = [
     "#2563eb", "#f97316", "#10b981", "#8b5cf6", "#ec4899", "#06b6d4",
@@ -34,7 +39,6 @@ const PRIORITY_OPTIONS = [
     { label: "1순위", value: 1 },
     { label: "2순위", value: 2 },
     { label: "3순위", value: 3 },
-    { label: "4순위", value: 4 },
 ];
 
 const DIFFICULTY_LABELS = {
@@ -58,6 +62,7 @@ const LAYER_TYPE_LABELS = {
 const AREA_LEVEL_LABELS = {
     SIDO: "시·도",
     SIGUNGU: "시·군·구",
+    LEGAL_DONG: "법정동",
     EUPMYEONDONG: "읍·면·동",
     TONG_BAN: "통·반",
 };
@@ -127,6 +132,42 @@ const evChargerRegionChartOptions = {
     },
 };
 
+const observationChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: {
+            display: false,
+        },
+        tooltip: {
+            callbacks: {
+                label: (context) => {
+                    const label = context.dataset.metricNames?.[context.dataIndex] ?? context.dataset.label;
+                    const unit = context.dataset.units?.[context.dataIndex] ?? context.dataset.unit ?? "";
+                    return `${label}: ${formatNumber(context.raw)}${unit}`;
+                },
+            },
+        },
+    },
+    scales: {
+        x: {
+            grid: {
+                display: false,
+            },
+            ticks: {
+                maxRotation: 45,
+                minRotation: 0,
+            },
+        },
+        y: {
+            beginAtZero: true,
+            ticks: {
+                callback: (value) => formatNumber(value),
+            },
+        },
+    },
+};
+
 function formatNumber(value) {
     const numberValue = Number(value);
     return Number.isFinite(numberValue) ? numberValue.toLocaleString() : "0";
@@ -176,6 +217,67 @@ function createEvChargerRegionChartData(regionStats) {
             },
         ],
     };
+}
+
+function createObservationChartData(observationStats) {
+    const items = observationStats?.items ?? [];
+    const unit = observationStats?.unit ?? items[0]?.unit ?? "";
+
+    return {
+        labels: items.map((item) => item.label ?? item.sourceAreaCode ?? item.metricName ?? "-"),
+        datasets: [
+            {
+                label: observationStats?.metricName ?? items[0]?.metricName ?? "관측값",
+                data: items.map((item) => Number(item.value ?? 0)),
+                unit,
+                units: items.map((item) => item.unit ?? unit),
+                metricNames: items.map((item) => item.metricName ?? observationStats?.metricName ?? "관측값"),
+                backgroundColor: items.map((_, index) => REGION_CHART_COLORS[index % REGION_CHART_COLORS.length]),
+                borderColor: "#ffffff",
+                borderWidth: 1,
+                borderRadius: 6,
+            },
+        ],
+    };
+}
+
+function observationRowKey(item, index) {
+    return [
+        item?.label,
+        item?.metricName,
+        item?.value,
+        item?.unit,
+        item?.baseDate,
+        item?.baseHour,
+    ].filter(Boolean).join(":") || `row-${index}`;
+}
+
+function getObservationTableRows(observationStats, limit = 10) {
+    const seen = new Set();
+    const rows = [];
+
+    for (const item of observationStats?.items ?? []) {
+        const key = observationRowKey(item, rows.length);
+        if (seen.has(key)) {
+            continue;
+        }
+        seen.add(key);
+        rows.push(item);
+        if (rows.length >= limit) {
+            break;
+        }
+    }
+
+    return rows;
+}
+
+function formatObservationBaseTime(item, observationStats) {
+    const baseDate = item?.baseDate ?? observationStats?.baseDate;
+    const baseHour = item?.baseHour ?? observationStats?.baseHour;
+    if (!baseDate && !baseHour) {
+        return "-";
+    }
+    return `${baseDate ?? ""}${baseHour ? ` ${baseHour}시` : ""}`.trim();
 }
 
 function getFeatureRows(geoJson) {
@@ -247,10 +349,13 @@ function DashboardGisCatalogPanel({
     const [featureGeoJson, setFeatureGeoJson] = useState(null);
     const [regionStatsLoading, setRegionStatsLoading] = useState(false);
     const [regionStats, setRegionStats] = useState(null);
+    const [observationStatsLoading, setObservationStatsLoading] = useState(false);
+    const [observationStats, setObservationStats] = useState(null);
     const [error, setError] = useState(null);
     const [detailError, setDetailError] = useState(null);
     const [featureError, setFeatureError] = useState(null);
     const [regionStatsError, setRegionStatsError] = useState(null);
+    const [observationStatsError, setObservationStatsError] = useState(null);
 
     const loadSources = useCallback(async () => {
         setLoading(true);
@@ -258,7 +363,7 @@ function DashboardGisCatalogPanel({
 
         try {
             const data = await getDashboardGisDataSources({ activeOnly: true });
-            const loadedSources = data ?? [];
+            const loadedSources = (data ?? []).filter((source) => source.priority !== 4);
             setSources(loadedSources);
             setPreferredSourceCode((currentSourceCode) => {
                 if (currentSourceCode && loadedSources.some((source) => source.sourceCode === currentSourceCode)) {
@@ -395,6 +500,16 @@ function DashboardGisCatalogPanel({
         && Number(selectedDataset.featureCount ?? 0) > 0
     );
 
+    const canRenderObservationData = Boolean(
+        selectedDataset
+        && selectedDataset.datasetCode !== RESIDENT_POPULATION_DATASET_CODE
+        && !canRenderFeatureLayer
+        && Number(selectedDataset.observationCount ?? 0) > 0
+    );
+    const shouldRenderObservationTable = Boolean(
+        selectedDataset && OBSERVATION_TABLE_DATASET_CODES.has(selectedDataset.datasetCode)
+    );
+
     useEffect(() => {
         let cancelled = false;
         const timerId = window.setTimeout(() => {
@@ -493,12 +608,67 @@ function DashboardGisCatalogPanel({
         };
     }, [selectedDataset?.datasetCode]);
 
+    useEffect(() => {
+        let cancelled = false;
+        const timerId = window.setTimeout(() => {
+            setObservationStats(null);
+            setObservationStatsError(null);
+
+            if (!canRenderObservationData) {
+                setObservationStatsLoading(false);
+                return;
+            }
+
+            setObservationStatsLoading(true);
+
+            async function loadObservationStats() {
+                try {
+                    const data = await getDashboardGisObservations({
+                        datasetCode: selectedDataset.datasetCode,
+                        areaCode: selectedArea?.areaCode,
+                        limit: 12,
+                    });
+
+                    if (!cancelled) {
+                        setObservationStats(data);
+                    }
+                } catch (err) {
+                    console.error(err);
+                    if (!cancelled) {
+                        setObservationStats(null);
+                        setObservationStatsError("저장된 최신 관측값을 불러오지 못했습니다.");
+                    }
+                } finally {
+                    if (!cancelled) {
+                        setObservationStatsLoading(false);
+                    }
+                }
+            }
+
+            loadObservationStats();
+        }, 0);
+
+        return () => {
+            cancelled = true;
+            window.clearTimeout(timerId);
+        };
+    }, [canRenderObservationData, selectedArea?.areaCode, selectedDataset?.datasetCode]);
+
     const featureRows = useMemo(() => getFeatureRows(featureGeoJson), [featureGeoJson]);
     const evChargerRegionChartData = useMemo(
         () => createEvChargerRegionChartData(regionStats),
         [regionStats]
     );
     const hasEvChargerRegionStats = Boolean(regionStats?.items?.length);
+    const observationChartData = useMemo(
+        () => createObservationChartData(observationStats),
+        [observationStats]
+    );
+    const observationTableRows = useMemo(
+        () => getObservationTableRows(observationStats),
+        [observationStats]
+    );
+    const hasObservationStats = Boolean(observationStats?.items?.length);
 
     const summary = useMemo(() => {
         return {
@@ -857,6 +1027,92 @@ function DashboardGisCatalogPanel({
                                                                 )}
                                                             </div>
                                                         )}
+                                                    </div>
+                                                ) : canRenderObservationData ? (
+                                                    <div className="dashboard-gis-observation-preview">
+                                                        <DashboardGisCollectionSummary dataset={selectedDataset} />
+
+                                                        <div className="dashboard-gis-observation-box mt-3">
+                                                            <div className="dashboard-gis-observation-head">
+                                                                <div>
+                                                                    <strong>{shouldRenderObservationTable ? "최신 관측값 표" : "최신 관측값 차트"}</strong>
+                                                                    <p className="mb-0">
+                                                                        DB에 저장된 최신 기준일/시간의 값을 {shouldRenderObservationTable ? "수치 표로" : "차트로"} 표시합니다.
+                                                                    </p>
+                                                                </div>
+                                                                {observationStats?.totalRowCount ? (
+                                                                    <span>{formatNumber(observationStats.totalRowCount)}건</span>
+                                                                ) : null}
+                                                            </div>
+
+                                                            {observationStatsLoading && (
+                                                                <div className="text-secondary small">최신 관측값을 불러오는 중...</div>
+                                                            )}
+
+                                                            {observationStatsError && (
+                                                                <div className="alert alert-warning py-2 small mb-0">
+                                                                    {observationStatsError}
+                                                                </div>
+                                                            )}
+
+                                                            {!observationStatsLoading && !observationStatsError && observationStats?.notice && (
+                                                                <div className="alert alert-info py-2 small mb-3">
+                                                                    {observationStats.notice}
+                                                                </div>
+                                                            )}
+
+                                                            {!observationStatsLoading && !observationStatsError && hasObservationStats && shouldRenderObservationTable && (
+                                                                <div className="dashboard-gis-observation-table-wrap">
+                                                                    <table className="dashboard-gis-observation-table">
+                                                                        <thead>
+                                                                            <tr>
+                                                                                <th>항목/지역</th>
+                                                                                <th>값</th>
+                                                                                <th>기준</th>
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody>
+                                                                            {observationTableRows.map((item, index) => (
+                                                                                <tr key={`${item.sourceAreaCode ?? item.label}-${observationRowKey(item, index)}`}>
+                                                                                    <td>
+                                                                                        <strong>{item.label ?? item.metricName ?? "-"}</strong>
+                                                                                        <span>{item.sourceAreaCode ?? item.areaLevel ?? ""}</span>
+                                                                                    </td>
+                                                                                    <td>
+                                                                                        {formatNumber(item.value)}{item.unit ?? observationStats.unit ?? ""}
+                                                                                    </td>
+                                                                                    <td>{formatObservationBaseTime(item, observationStats)}</td>
+                                                                                </tr>
+                                                                            ))}
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                            )}
+
+                                                            {!observationStatsLoading && !observationStatsError && hasObservationStats && !shouldRenderObservationTable && (
+                                                                <div className="dashboard-gis-observation-body">
+                                                                    <div className="dashboard-gis-observation-chart">
+                                                                        <Bar data={observationChartData} options={observationChartOptions} />
+                                                                    </div>
+                                                                    <div className="dashboard-gis-observation-rank">
+                                                                        {(observationStats.items ?? []).slice(0, 6).map((item, index) => (
+                                                                            <div className="dashboard-gis-observation-rank-item" key={`${item.sourceAreaCode ?? item.label}-${index}`}>
+                                                                                <span>{item.label}</span>
+                                                                                <strong>
+                                                                                    {formatNumber(item.value)}{item.unit ?? observationStats.unit ?? ""}
+                                                                                </strong>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+
+                                                            {!observationStatsLoading && !observationStatsError && !hasObservationStats && (
+                                                                <div className="text-secondary small">
+                                                                    저장된 관측값은 있지만 최신 차트로 표시할 숫자값이 없습니다.
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 ) : (
                                                     <div className="dashboard-gis-empty-visual">
