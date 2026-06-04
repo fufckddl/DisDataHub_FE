@@ -43,3 +43,12 @@ export const getAdminGisReportListApi = async () => {
 
   return response.data;
 };
+
+// 관리자 GIS 오류제보 상세 조회
+export const getAdminGisReportDetailApi = async (postId) => {
+  const response = await axios.get(`${BASE_URL}/admin/detail/${postId}`, {
+    headers: getAuthHeaders(),
+  });
+
+  return response.data;
+};

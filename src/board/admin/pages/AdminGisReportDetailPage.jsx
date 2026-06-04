@@ -18,11 +18,7 @@ import Fill from "ol/style/Fill";
 import Stroke from "ol/style/Stroke";
 
 import { VWORLD_BASE_MAP_URL } from "../../config/vworldConfig";
-
-import {
-  adminGisReportMockList,
-  adminGisProcessStatusMockList,
-} from "../../mock/adminGisReportMockData";
+import { getAdminGisReportDetailApi } from "../../api/gisReportApi";
 
 import "../css/AdminGisReportDetailPage.css";
 
@@ -31,37 +27,54 @@ function AdminGisReportDetailPage() {
   const navigate = useNavigate();
   const mapRef = useRef(null);
 
-  const report = adminGisReportMockList.find(
-    (item) => item.postId === Number(postId)
-  );
+  const [report, setReport] = useState(null);
+  const [isLoading, setLoading] = useState(false);
 
-  const [processStatusCode, setProcessStatusCode] = useState(
-    report?.processStatusCode || "RECEIVED"
-  );
+  const [processStatusCode, setProcessStatusCode] = useState("RECEIVED");
+  const [adminProcessContent, setAdminProcessContent] = useState("");
 
-  const [adminProcessContent, setAdminProcessContent] = useState(
-    report?.adminProcessContent || ""
-  );
+  const adminGisProcessStatusList = [
+    { code: "RECEIVED", name: "제보완료" },
+    { code: "REVIEWING", name: "검토중" },
+    { code: "PROCESSING", name: "조치중" },
+    { code: "COMPLETED", name: "처리완료" },
+  ];
 
-  const getErrorTypeClassName = (errorTypeCode) => {
-    if (errorTypeCode === "SPATIAL_ERROR") return "error-spatial";
-    if (errorTypeCode === "MISSING_DATA") return "error-missing";
-    if (errorTypeCode === "ATTRIBUTE_ERROR") return "error-attribute";
-    if (errorTypeCode === "UPDATE_REQUEST") return "error-update";
-    if (errorTypeCode === "CLASSIFY_ERROR") return "error-classify";
-    return "error-etc";
-  };
+  const getAdminGisReportDetail = async () => {
+    try {
+      setLoading(true);
 
-  const getStatusClassName = (statusCode) => {
-    if (statusCode === "RECEIVED") return "status-received";
-    if (statusCode === "REVIEWING") return "status-reviewing";
-    if (statusCode === "ACTIONING") return "status-actioning";
-    if (statusCode === "COMPLETED") return "status-completed";
-    return "";
+      const data = await getAdminGisReportDetailApi(postId);
+
+      console.log("관리자 GIS 상세 응답:", data);
+
+      if (data.result === "success") {
+        const detail = data.adminGisReportDetail ?? data.gisReportDetail;
+
+        setReport(detail);
+        setProcessStatusCode(detail?.processStatusCode ?? "RECEIVED");
+        setAdminProcessContent(detail?.adminProcessContent ?? "");
+      }
+    } catch (error) {
+      console.error("관리자 GIS 오류제보 상세 조회 실패:", error);
+      alert("GIS 오류제보 상세 정보를 불러오는 중 오류가 발생했습니다.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    if (!mapRef.current || !report) return;
+    if (!postId) {
+      return;
+    }
+
+    getAdminGisReportDetail();
+  }, [postId]);
+
+  useEffect(() => {
+    if (!mapRef.current || !report) {
+      return;
+    }
 
     const longitude = Number(report.longitude || 127.0365);
     const latitude = Number(report.latitude || 37.5007);
@@ -113,8 +126,51 @@ function AdminGisReportDetailPage() {
     };
   }, [report]);
 
+  const getErrorTypeClassName = (errorTypeCode) => {
+    if (errorTypeCode === "COORDINATE_ERROR") return "error-spatial";
+    if (errorTypeCode === "NAME_ERROR") return "error-classify";
+    if (errorTypeCode === "VALUE_ERROR") return "error-attribute";
+    return "error-etc";
+  };
+
+  const getErrorTypeName = (errorTypeCode) => {
+    if (errorTypeCode === "COORDINATE_ERROR") return "좌표 오류";
+    if (errorTypeCode === "NAME_ERROR") return "명칭 오류";
+    if (errorTypeCode === "VALUE_ERROR") return "속성값 오류";
+    return errorTypeCode ?? "-";
+  };
+
+  const getReportCategoryName = (categoryCode) => {
+    if (categoryCode === "LOCATION_ERROR") return "위치 오류";
+    if (categoryCode === "MISSING_DATA") return "데이터 누락";
+    if (categoryCode === "ATTRIBUTE_ERROR") return "속성 오류";
+    if (categoryCode === "ETC") return "기타";
+    return categoryCode ?? "-";
+  };
+
+  const getStatusClassName = (statusCode) => {
+    if (statusCode === "RECEIVED") return "status-received";
+    if (statusCode === "REVIEWING") return "status-reviewing";
+    if (statusCode === "PROCESSING") return "status-actioning";
+    if (statusCode === "COMPLETED") return "status-completed";
+    return "";
+  };
+
+  const getProcessStatusName = (statusCode) => {
+    if (statusCode === "RECEIVED") return "제보완료";
+    if (statusCode === "REVIEWING") return "검토중";
+    if (statusCode === "PROCESSING") return "조치중";
+    if (statusCode === "COMPLETED") return "처리완료";
+    return statusCode ?? "-";
+  };
+
+  const formatDate = (dateValue) => {
+    if (!dateValue) return "-";
+    return dateValue.substring(0, 10);
+  };
+
   const handleSave = () => {
-    const selectedStatus = adminGisProcessStatusMockList.find(
+    const selectedStatus = adminGisProcessStatusList.find(
       (status) => status.code === processStatusCode
     );
 
@@ -126,8 +182,18 @@ function AdminGisReportDetailPage() {
     };
 
     console.log("GIS 제보 처리 저장 데이터:", requestData);
-    alert("현재는 디자인 단계입니다. 처리 상태 저장 API는 나중에 연결합니다.");
+    alert("처리 상태 저장 API는 다음 단계에서 연결합니다.");
   };
+
+  if (isLoading) {
+    return (
+      <div className="admin-gis-detail-page">
+        <section className="admin-gis-not-found">
+          <h1>GIS 오류 제보 상세 정보를 불러오는 중입니다.</h1>
+        </section>
+      </div>
+    );
+  }
 
   if (!report) {
     return (
@@ -146,14 +212,10 @@ function AdminGisReportDetailPage() {
     );
   }
 
-  const reportContent =
-    report.content ||
-    "사용자가 등록한 GIS 오류 제보 내용이 표시됩니다. 상세 데이터는 백엔드 API 연결 후 실제 DB 데이터로 대체됩니다.";
-
-  const processHistory = report.processHistory || [
+  const processHistory = report.processHistory ?? [
     {
       historyId: 1,
-      statusName: report.processStatusName,
+      statusName: getProcessStatusName(report.processStatusCode),
       processedAt: report.createdAt,
       content: "GIS 오류 제보가 등록되었습니다.",
     },
@@ -181,7 +243,7 @@ function AdminGisReportDetailPage() {
                 report.errorTypeCode
               )}`}
             >
-              {report.errorTypeName}
+              {getErrorTypeName(report.errorTypeCode)}
             </span>
 
             <span
@@ -189,11 +251,11 @@ function AdminGisReportDetailPage() {
                 report.processStatusCode
               )}`}
             >
-              {report.processStatusName}
+              {getProcessStatusName(report.processStatusCode)}
             </span>
           </div>
 
-          <h2>{report.title}</h2>
+          <h2>{report.title || "제목 없음"}</h2>
 
           <p>
             {report.content
@@ -206,24 +268,30 @@ function AdminGisReportDetailPage() {
           <div>
             <span>작성자</span>
             <strong>
-              {report.writerName || "사용자"}{" "}
-              {report.writerId ? `(${report.writerId})` : ""}
+              {report.writerName ||
+                report.nickname ||
+                `사용자 ${report.userId ?? "-"}`}
             </strong>
           </div>
 
           <div>
             <span>작성일</span>
-            <strong>{report.createdAt}</strong>
+            <strong>{formatDate(report.createdAt)}</strong>
+          </div>
+
+          <div>
+            <span>제보 유형</span>
+            <strong>{getReportCategoryName(report.reportCategoryCode)}</strong>
           </div>
 
           <div>
             <span>오류 유형</span>
-            <strong>{report.errorTypeName}</strong>
+            <strong>{getErrorTypeName(report.errorTypeCode)}</strong>
           </div>
 
           <div>
-            <span>대상 데이터명</span>
-            <strong>{report.targetDataName}</strong>
+            <span>조회수</span>
+            <strong>{report.viewCount ?? 0}</strong>
           </div>
         </section>
 
@@ -237,17 +305,17 @@ function AdminGisReportDetailPage() {
               <div className="admin-gis-location-info">
                 <div>
                   <span>주소</span>
-                  <strong>{report.address}</strong>
+                  <strong>{report.address || "-"}</strong>
                 </div>
 
                 <div>
                   <span>위도</span>
-                  <strong>{report.latitude || "37.500700"}</strong>
+                  <strong>{report.latitude ?? "-"}</strong>
                 </div>
 
                 <div>
                   <span>경도</span>
-                  <strong>{report.longitude || "127.036500"}</strong>
+                  <strong>{report.longitude ?? "-"}</strong>
                 </div>
               </div>
             </div>
@@ -262,7 +330,7 @@ function AdminGisReportDetailPage() {
                   <div className="timeline-dot"></div>
 
                   <div>
-                    <strong>{history.processedAt}</strong>
+                    <strong>{formatDate(history.processedAt)}</strong>
                     <span>{history.statusName}</span>
                     <p>{history.content}</p>
                   </div>
@@ -276,21 +344,14 @@ function AdminGisReportDetailPage() {
           <section className="admin-gis-content-card">
             <h3>제보 내용</h3>
 
-            <p>{reportContent}</p>
+            <p>{report.content || "등록된 제보 내용이 없습니다."}</p>
 
             <div className="admin-gis-file-area">
               <h4>첨부 파일</h4>
 
-              {report.attachmentName ? (
-                <div className="admin-gis-file-item">
-                  <span>📎 {report.attachmentName}</span>
-                  <button type="button">다운로드</button>
-                </div>
-              ) : (
-                <div className="admin-gis-file-empty">
-                  첨부파일이 없습니다.
-                </div>
-              )}
+              <div className="admin-gis-file-empty">
+                첨부파일이 없습니다.
+              </div>
             </div>
           </section>
 
@@ -304,13 +365,11 @@ function AdminGisReportDetailPage() {
                 value={processStatusCode}
                 onChange={(e) => setProcessStatusCode(e.target.value)}
               >
-                {adminGisProcessStatusMockList
-                  .filter((status) => status.code !== "")
-                  .map((status) => (
-                    <option key={status.code} value={status.code}>
-                      {status.name}
-                    </option>
-                  ))}
+                {adminGisProcessStatusList.map((status) => (
+                  <option key={status.code} value={status.code}>
+                    {status.name}
+                  </option>
+                ))}
               </select>
             </div>
 
