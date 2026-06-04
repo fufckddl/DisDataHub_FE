@@ -32,22 +32,22 @@ function GisReportListPage() {
 
   const gisReportCategoryList = [
     { code: "", name: "전체 유형" },
-    { code: "DATA_ERROR", name: "데이터 오류" },
     { code: "LOCATION_ERROR", name: "위치 오류" },
+    { code: "MISSING_DATA", name: "데이터 누락" },
     { code: "ATTRIBUTE_ERROR", name: "속성 오류" },
     { code: "ETC", name: "기타" },
   ];
 
   const regionList = [
     { code: "", name: "전체 지역" },
-    { code: "SEOUL", name: "서울" },
-    { code: "BUSAN", name: "부산" },
-    { code: "DAEGU", name: "대구" },
-    { code: "INCHEON", name: "인천" },
-    { code: "GWANGJU", name: "광주" },
-    { code: "DAEJEON", name: "대전" },
-    { code: "ULSAN", name: "울산" },
-    { code: "ETC", name: "기타" },
+    { code: "서울", name: "서울" },
+    { code: "부산", name: "부산" },
+    { code: "대구", name: "대구" },
+    { code: "인천", name: "인천" },
+    { code: "광주", name: "광주" },
+    { code: "대전", name: "대전" },
+    { code: "울산", name: "울산" },
+    { code: "기타", name: "기타" },
   ];
 
   const getGisReportList = async () => {
@@ -96,13 +96,11 @@ function GisReportListPage() {
 
   const filteredGisReportList = gisReportList.filter((report) => {
     const title = report.title ?? "";
-    const targetDataName = report.targetDataName ?? "";
     const address = report.address ?? "";
     const sido = report.sido ?? "";
 
     const matchSearch =
       title.toLowerCase().includes(searchWord.toLowerCase()) ||
-      targetDataName.toLowerCase().includes(searchWord.toLowerCase()) ||
       address.toLowerCase().includes(searchWord.toLowerCase());
 
     const matchCategory =
@@ -112,8 +110,7 @@ function GisReportListPage() {
       statusCode === "" || report.processStatusCode === statusCode;
 
     const matchRegion =
-      regionCode === "" ||
-      sido.toLowerCase().includes(regionCode.toLowerCase());
+      regionCode === "" || sido.includes(regionCode);
 
     return matchSearch && matchCategory && matchStatus && matchRegion;
   });
@@ -137,8 +134,8 @@ function GisReportListPage() {
   };
 
   const getReportCategoryName = (categoryCode) => {
-    if (categoryCode === "DATA_ERROR") return "데이터 오류";
     if (categoryCode === "LOCATION_ERROR") return "위치 오류";
+    if (categoryCode === "MISSING_DATA") return "데이터 누락";
     if (categoryCode === "ATTRIBUTE_ERROR") return "속성 오류";
     if (categoryCode === "ETC") return "기타";
     return categoryCode ?? "-";
@@ -159,7 +156,7 @@ function GisReportListPage() {
       <section className="gis-report-filter-section">
         <input
           type="text"
-          placeholder="검색어 입력"
+          placeholder="제목 또는 주소를 검색하세요."
           value={searchWord}
           onChange={(e) => setSearchWord(e.target.value)}
         />
@@ -234,16 +231,12 @@ function GisReportListPage() {
                 </div>
 
                 <div className="report-content-area">
-                  <h3>{report.title}</h3>
+                  <h3>{report.title || "제목 없음"}</h3>
 
                   <p>
                     {getReportCategoryName(report.reportCategoryCode)}
                     <span>/</span>
                     {report.address || "주소 정보 없음"}
-                  </p>
-
-                  <p>
-                    대상 데이터: {report.targetDataName || "-"}
                   </p>
 
                   <p>작성일: {formatDate(report.createdAt)}</p>

@@ -25,7 +25,9 @@ import "../css/GisReportDetailPage.css";
 function GisReportDetailPage() {
   const { postId } = useParams();
   const navigate = useNavigate();
+
   const mapRef = useRef(null);
+  const hasFetchedRef = useRef(false);
 
   const [report, setReport] = useState(null);
   const [isLoading, setLoading] = useState(false);
@@ -35,6 +37,9 @@ function GisReportDetailPage() {
       setLoading(true);
 
       const data = await getGisReportDetailApi(postId);
+
+      console.log("GIS 상세 응답:", data);
+      console.log("GIS 상세 조회수:", data.gisReportDetail?.viewCount);
 
       if (data.result === "success") {
         setReport(data.gisReportDetail);
@@ -52,6 +57,11 @@ function GisReportDetailPage() {
       return;
     }
 
+    if (hasFetchedRef.current) {
+      return;
+    }
+
+    hasFetchedRef.current = true;
     getGisReportDetail();
   }, [postId]);
 
@@ -131,7 +141,6 @@ function GisReportDetailPage() {
   const getReportCategoryName = (categoryCode) => {
     if (categoryCode === "LOCATION_ERROR") return "위치 오류";
     if (categoryCode === "MISSING_DATA") return "데이터 누락";
-    if (categoryCode === "DATA_ERROR") return "데이터 오류";
     if (categoryCode === "ATTRIBUTE_ERROR") return "속성 오류";
     if (categoryCode === "ETC") return "기타";
     return categoryCode ?? "-";
@@ -141,7 +150,6 @@ function GisReportDetailPage() {
     if (errorTypeCode === "COORDINATE_ERROR") return "좌표 오류";
     if (errorTypeCode === "NAME_ERROR") return "명칭 오류";
     if (errorTypeCode === "VALUE_ERROR") return "속성값 오류";
-    if (errorTypeCode === "POSITION") return "위치 오류";
     return errorTypeCode ?? "-";
   };
 
@@ -196,14 +204,18 @@ function GisReportDetailPage() {
             </span>
           </div>
 
-          <h1>{report.title}</h1>
+          <h1>{report.title || "제목 없음"}</h1>
           <p>GIS 데이터 오류 제보 상세 정보를 확인할 수 있습니다.</p>
         </section>
 
         <section className="gis-report-detail-meta">
           <div>
             <span>작성자</span>
-            <strong>{report.userId}</strong>
+            <strong>
+              {report.writerName ||
+                report.nickname ||
+                `사용자 ${report.userId ?? "-"}`}
+            </strong>
           </div>
 
           <div>
@@ -213,7 +225,7 @@ function GisReportDetailPage() {
 
           <div>
             <span>조회수</span>
-            <strong>{report.viewCount}</strong>
+            <strong>{report.viewCount ?? 0}</strong>
           </div>
         </section>
 
@@ -232,21 +244,13 @@ function GisReportDetailPage() {
             </div>
 
             <div>
-              <span>대상 데이터</span>
-              <strong>{report.targetDataName || "-"}</strong>
-            </div>
-
-            <div>
               <span>처리 상태</span>
               <strong>{getProcessStatusName(report.processStatusCode)}</strong>
             </div>
 
             <div>
-              <span>행정구역</span>
-              <strong>
-                {report.sido || "-"} {report.sigungu || ""}{" "}
-                {report.eupmyeondong || ""}
-              </strong>
+              <span>주소</span>
+              <strong>{report.address || "-"}</strong>
             </div>
           </div>
         </section>
