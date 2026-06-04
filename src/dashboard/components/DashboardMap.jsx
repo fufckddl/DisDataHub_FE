@@ -16,7 +16,9 @@ import axiosInstance from "../../commons/api/axiosinstance.js";
 
 const KOREA_CENTER = fromLonLat([127.8, 36.2]);
 const KOREA_BBOX = "124.50,32.80,132.20,39.60";
-const INITIAL_ZOOM = 6.25;
+const INITIAL_ZOOM = 7.4;
+const MIN_ZOOM = 7.4;
+const MAX_ZOOM = 13;
 const SIGUNGU_MIN_ZOOM = 7.6;
 const EUPMYEONDONG_MIN_ZOOM = 10.4;
 const BOUNDARY_CACHE_LEVELS = ["SIDO", "SIGUNGU", "EUPMYEONDONG"];
@@ -212,10 +214,10 @@ function getBoundaryStyle(feature, selectedFeature) {
     return [
         new Style({
             fill: new Fill({
-                color: isSelected ? "rgba(255, 177, 35, 0.28)" : "rgba(15, 23, 42, 0.18)",
+                color: isSelected ? "rgba(249, 115, 22, 0.24)" : "rgba(37, 99, 235, 0.1)",
             }),
             stroke: new Stroke({
-                color: isSelected ? "#ff9f1c" : "#f2e94e",
+                color: isSelected ? "#f97316" : "#2563eb",
                 width: isSelected ? 3.2 : 1.55,
             }),
         }),
@@ -225,10 +227,10 @@ function getBoundaryStyle(feature, selectedFeature) {
                 text: name,
                 font: labelFont,
                 fill: new Fill({
-                    color: "#f8fafc",
+                    color: "#0f172a",
                 }),
                 stroke: new Stroke({
-                    color: "rgba(2, 6, 23, 0.96)",
+                    color: "rgba(255, 255, 255, 0.96)",
                     width: 3.4,
                 }),
                 offsetY: -2,
@@ -343,8 +345,8 @@ function DashboardMap({ onAreaSelect, gisLayer, onViewLevelChange, clearSelectio
         if (!view) return;
 
         const currentZoom = view.getZoom() ?? INITIAL_ZOOM;
-        const minZoom = view.getMinZoom() ?? 5.2;
-        const maxZoom = view.getMaxZoom() ?? 13;
+        const minZoom = view.getMinZoom() ?? MIN_ZOOM;
+        const maxZoom = view.getMaxZoom() ?? MAX_ZOOM;
         const nextZoom = Math.min(maxZoom, Math.max(minZoom, currentZoom + delta));
 
         view.animate({ zoom: nextZoom, duration: 180 });
@@ -410,8 +412,8 @@ function DashboardMap({ onAreaSelect, gisLayer, onViewLevelChange, clearSelectio
             view: new View({
                 center: KOREA_CENTER,
                 zoom: INITIAL_ZOOM,
-                minZoom: 5.2,
-                maxZoom: 13,
+                minZoom: MIN_ZOOM,
+                maxZoom: MAX_ZOOM,
             }),
         });
 
