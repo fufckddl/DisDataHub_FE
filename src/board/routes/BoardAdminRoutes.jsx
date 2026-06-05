@@ -1,4 +1,6 @@
 import { useRoutes } from "react-router-dom";
+import ProtectedRoute from "../../commons/components/ProtectedRoute";
+
 import AdminNoticeManagePage from "../admin/pages/AdminNoticeManagePage";
 import AdminNoticeWritePage from "../admin/pages/AdminNoticeWritePage";
 import AdminNoticeDetailPage from "../admin/pages/AdminNoticeDetailPage";
@@ -24,7 +26,7 @@ function BoardAdminRoutes() {
     },
     {
       path: "notice/edit/:postId",
-      element: <AdminNoticeEditPage/>
+      element: <AdminNoticeEditPage />,
     },
     {
       path: "inquiry",
@@ -44,7 +46,11 @@ function BoardAdminRoutes() {
     },
   ]);
 
-  return routes;
+  return (
+    <ProtectedRoute allowedRoles={["ADMIN"]}>
+      {routes}
+    </ProtectedRoute>
+  );
 }
 
 export default BoardAdminRoutes;

@@ -197,7 +197,7 @@ function Header() {
     }, [login, userInfo, userRole]);
 
     const handleBrandClick = () => {
-        navigate(userInfo ? "/board/main" : "/login");
+        navigate("/system/intro");
     };
 
     const handleLogoutClick = () => {

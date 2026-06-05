@@ -25,6 +25,12 @@
   font-weight: 800;
 }
 
+.admin-gis-top-button-area {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
 .top-list-button {
   height: 42px;
   padding: 0 18px;
@@ -39,6 +45,26 @@
 
 .top-list-button:hover {
   background: #f8fafc;
+}
+
+.delete-button {
+  height: 42px;
+  padding: 0 18px;
+  border: none;
+  border-radius: 8px;
+  background: #ef4444;
+  color: #ffffff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.delete-button:hover {
+  background: #dc2626;
+}
+
+.delete-button:disabled {
+  background: #fca5a5;
+  cursor: not-allowed;
 }
 
 /* 상단 제목 카드 */
@@ -435,6 +461,11 @@
   background: #155dcc;
 }
 
+.process-save-button:disabled {
+  background: #93c5fd;
+  cursor: not-allowed;
+}
+
 /* not found */
 .admin-gis-not-found {
   max-width: 700px;
@@ -496,6 +527,11 @@
 
   .admin-gis-detail-top h1 {
     font-size: 28px;
+  }
+
+  .admin-gis-top-button-area {
+    width: 100%;
+    justify-content: flex-start;
   }
 
   .admin-gis-meta-card {
