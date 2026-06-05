@@ -28,8 +28,30 @@ export const createGisReportApi = async (gisReportData) => {
 };
 
 // 사용자 GIS 오류제보 상세 조회
+// 중요: isOwner 판단을 위해 토큰을 같이 보냄
 export const getGisReportDetailApi = async (postId) => {
-  const response = await axios.get(`${BASE_URL}/${postId}`);
+  const response = await axios.get(`${BASE_URL}/${postId}`, {
+    headers: getAuthHeaders(),
+  });
+
+  return response.data;
+};
+
+// 사용자 본인 GIS 오류제보 수정
+export const updateMyGisReportApi = async (postId, gisReportData) => {
+  const response = await axios.put(`${BASE_URL}/${postId}`, gisReportData, {
+    headers: getAuthHeaders(),
+  });
+
+  return response.data;
+};
+
+// 사용자 본인 GIS 오류제보 삭제
+export const deleteMyGisReportApi = async (postId) => {
+  const response = await axios.delete(`${BASE_URL}/${postId}`, {
+    headers: getAuthHeaders(),
+  });
+
   return response.data;
 };
 

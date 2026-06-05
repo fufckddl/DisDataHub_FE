@@ -1,18 +1,23 @@
-import GisReportDeatilPage from "../user/pages/GisReportDetailPage";
+import GisReportDetailPage from "../user/pages/GisReportDetailPage";
 import GisReportListPage from "../user/pages/GisReportListPage";
-import GisReportWriterPage from "../user/pages/GisReportWritePage";
+import GisReportWritePage from "../user/pages/GisReportWritePage";
+import GisReportEditPage from "../user/pages/GisReportEditPage";
 
 export const gisReportRoutes = [
-    {
-        path: "gis-report",
-        element: <GisReportListPage />,
-    },
-    {
-        path: "gis-report/write",
-        element: <GisReportWriterPage />,
-    },
-    {
-        path: "gis-report/:postId",
-        element: <GisReportDeatilPage />,
-    },
+  {
+    path: "gis-report",
+    element: <GisReportListPage />,
+  },
+  {
+    path: "gis-report/write",
+    element: <GisReportWritePage />,
+  },
+  {
+    path: "gis-report/:postId",
+    element: <GisReportDetailPage />,
+  },
+  {
+    path: "gis-report/edit/:postId",
+    element: <GisReportEditPage />,
+  },
 ];

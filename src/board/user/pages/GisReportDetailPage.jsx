@@ -18,7 +18,10 @@ import Fill from "ol/style/Fill";
 import Stroke from "ol/style/Stroke";
 
 import { VWORLD_BASE_MAP_URL } from "../../config/vworldConfig";
-import { getGisReportDetailApi } from "../../api/gisReportApi";
+import {
+  getGisReportDetailApi,
+  deleteMyGisReportApi,
+} from "../../api/gisReportApi";
 
 import "../css/GisReportDetailPage.css";
 
@@ -30,7 +33,9 @@ function GisReportDetailPage() {
   const hasFetchedRef = useRef(false);
 
   const [report, setReport] = useState(null);
+  const [isOwner, setOwner] = useState(false);
   const [isLoading, setLoading] = useState(false);
+  const [isDeleting, setDeleting] = useState(false);
 
   const getGisReportDetail = async () => {
     try {
@@ -39,10 +44,10 @@ function GisReportDetailPage() {
       const data = await getGisReportDetailApi(postId);
 
       console.log("GIS 상세 응답:", data);
-      console.log("GIS 상세 조회수:", data.gisReportDetail?.viewCount);
 
       if (data.result === "success") {
         setReport(data.gisReportDetail);
+        setOwner(data.isOwner === true);
       }
     } catch (error) {
       console.error("GIS 오류제보 상세 조회 실패:", error);
@@ -53,22 +58,16 @@ function GisReportDetailPage() {
   };
 
   useEffect(() => {
-    if (!postId) {
-      return;
-    }
+    if (!postId) return;
 
-    if (hasFetchedRef.current) {
-      return;
-    }
+    if (hasFetchedRef.current) return;
 
     hasFetchedRef.current = true;
     getGisReportDetail();
   }, [postId]);
 
   useEffect(() => {
-    if (!mapRef.current || !report) {
-      return;
-    }
+    if (!mapRef.current || !report) return;
 
     const longitude = Number(report.longitude || 127.0276);
     const latitude = Number(report.latitude || 37.4979);
@@ -158,6 +157,44 @@ function GisReportDetailPage() {
     return dateValue.substring(0, 10);
   };
 
+  const handleMoveEdit = () => {
+    if (!isOwner) {
+      alert("작성자 본인만 수정할 수 있습니다.");
+      return;
+    }
+
+    navigate(`/board/gis-report/edit/${postId}`);
+  };
+
+  const handleDelete = async () => {
+    if (!isOwner) {
+      alert("작성자 본인만 삭제할 수 있습니다.");
+      return;
+    }
+
+    const isConfirm = window.confirm("정말 이 GIS 오류제보를 삭제하시겠습니까?");
+
+    if (!isConfirm) return;
+
+    try {
+      setDeleting(true);
+
+      const data = await deleteMyGisReportApi(postId);
+
+      if (data.result === "success") {
+        alert("삭제되었습니다.");
+        navigate("/board/gis-report");
+      } else {
+        alert("삭제에 실패했습니다.");
+      }
+    } catch (error) {
+      console.error("GIS 오류제보 삭제 실패:", error);
+      alert("삭제 중 오류가 발생했습니다.");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="gis-report-detail-page">
@@ -206,6 +243,27 @@ function GisReportDetailPage() {
 
           <h1>{report.title || "제목 없음"}</h1>
           <p>GIS 데이터 오류 제보 상세 정보를 확인할 수 있습니다.</p>
+
+          {isOwner && (
+            <div className="gis-report-owner-button-area">
+              <button
+                type="button"
+                className="gis-edit-button"
+                onClick={handleMoveEdit}
+              >
+                수정
+              </button>
+
+              <button
+                type="button"
+                className="gis-delete-button"
+                onClick={handleDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? "삭제 중..." : "삭제"}
+              </button>
+            </div>
+          )}
         </section>
 
         <section className="gis-report-detail-meta">
@@ -285,7 +343,6 @@ function GisReportDetailPage() {
 
         <section className="gis-report-file-section">
           <h2>첨부파일</h2>
-
           <div className="gis-file-empty">첨부파일이 없습니다.</div>
         </section>
 
