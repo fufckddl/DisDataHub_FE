@@ -524,6 +524,21 @@ function FileDownloadCard({ availableFormats, downloadFormats, sourceFile, datas
         }));
     })();
 
+    const sortedFileFormatOptions = [...fileFormatOptions].sort((a, b) => {
+        if (a.original !== b.original) {
+            return a.original ? -1 : 1;
+        }
+
+        if (a.available !== b.available) {
+            return a.available ? -1 : 1;
+        }
+
+        return DOWNLOAD_FORMAT_LIST.indexOf(a.format) - DOWNLOAD_FORMAT_LIST.indexOf(b.format);
+    });
+
+    const originalFormatOption = sortedFileFormatOptions.find((option) => option.original);
+    const otherFormatOptions = sortedFileFormatOptions.filter((option) => !option.original);
+
     const formatColorMap = {
         CSV: "success",
         GeoJSON: "warning",
@@ -629,8 +644,6 @@ function FileDownloadCard({ availableFormats, downloadFormats, sourceFile, datas
         return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
     };    
 
-
-
     return(
         <>
             <div className="row mb-3">
@@ -654,20 +667,33 @@ function FileDownloadCard({ availableFormats, downloadFormats, sourceFile, datas
                         {/* 파일 형식 목록 */}
                         <div className="row">
                             <div className="col">
-                                <div className="row g-2 mb-2">
-                                    {fileFormatOptions.map((formatOption) => (
+                                <div className="download-format-grid mb-2">
+                                    {originalFormatOption && (
                                         <FileSelectButton
-                                        key={formatOption.format}
-                                        type={formatOption.format}
-                                        color={formatColorMap[formatOption.format] ?? "secondary"}
-                                        size={formatFileSize(formatOption.fileSize) ?? "-"}
-                                        available={formatOption.available}
-                                        original={formatOption.original}
-                                        reason={formatOption.reason}
-                                        selectFileFormat={selectFileFormat}
-                                        setSelectFileFormat={setSelectFileFormat}
+                                            key={originalFormatOption.format}
+                                            type={originalFormatOption.format}
+                                            color={formatColorMap[originalFormatOption.format] ?? "secondary"}
+                                            size={formatFileSize(originalFormatOption.fileSize) ?? "-"}
+                                            available={originalFormatOption.available}
+                                            original={originalFormatOption.original}
+                                            reason={originalFormatOption.reason}
+                                            selectFileFormat={selectFileFormat}
+                                            setSelectFileFormat={setSelectFileFormat}
                                         />
-                                    ))}                                    
+                                    )}
+                                    {otherFormatOptions.map((formatOption) => (
+                                        <FileSelectButton
+                                            key={formatOption.format}
+                                            type={formatOption.format}
+                                            color={formatColorMap[formatOption.format] ?? "secondary"}
+                                            size={formatFileSize(formatOption.fileSize) ?? "-"}
+                                            available={formatOption.available}
+                                            original={formatOption.original}
+                                            reason={formatOption.reason}
+                                            selectFileFormat={selectFileFormat}
+                                            setSelectFileFormat={setSelectFileFormat}
+                                        />
+                                    ))}
                                 </div>
                             </div>       
                         </div>
@@ -698,8 +724,8 @@ function FileSelectButton({type, color, size, available, original, reason, selec
 
     return(
         <>
-            <div className="col-6 mb-2">
-                <button className={`btn border w-100 p-2 text-start pe-0 download-format-option
+            <div className={`download-format-item ${original ? "download-format-original-item" : ""}`}>
+                <button className={`btn border w-100 p-2 ${original ? "text-center" : "text-start pe-0"} download-format-option
                         ${available ? "" : "download-format-option-disabled"}
                         ${selectFileFormat === type && available ? `border-${color} border-2 bg-${color}-subtle` : ""}
                         `} 
@@ -707,9 +733,11 @@ function FileSelectButton({type, color, size, available, original, reason, selec
                         disabled={!available}
                         title={available ? `${type} 다운로드 가능` : reason}
                         onClick={() => setSelectFileFormat(type)}>
-                    <div>
-                        <span className={`badge ${available ? `bg-${color}-subtle text-${color} border border-${color}-subtle` : "bg-secondary-subtle text-secondary border border-secondary-subtle"} me-1`}>{type}</span>
-                        <span className="fw-bold text-secondary download-format-size">({available ? size : reason})</span>
+                    <div className="download-format-option-content">
+                        <span className="download-format-main">
+                            <span className={`badge ${available ? `bg-${color}-subtle text-${color} border border-${color}-subtle` : "bg-secondary-subtle text-secondary border border-secondary-subtle"} me-1`}>{type}</span>
+                            <span className="fw-bold text-secondary download-format-size">({available ? size : reason})</span>
+                        </span>
                         {original && (
                             <span className="download-format-original-label">원본</span>
                         )}

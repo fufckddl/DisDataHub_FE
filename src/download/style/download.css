@@ -278,6 +278,40 @@
     transition: border-color 0.18s ease, background-color 0.18s ease;
 }
 
+.download-format-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 10px;
+}
+
+.download-format-item {
+    min-width: 0;
+}
+
+.download-format-original-item {
+    grid-column: 1 / -1;
+    width: 100%;
+}
+
+.download-format-original-item .download-format-option-content {
+    justify-content: center;
+}
+
+.download-format-option-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-width: 0;
+    white-space: nowrap;
+}
+
+.download-format-main {
+    display: inline-flex;
+    align-items: center;
+    min-width: 0;
+}
+
 .download-format-option:disabled {
     opacity: 1;
     cursor: not-allowed;
@@ -302,8 +336,8 @@
 .download-format-original-label {
     display: inline-flex;
     align-items: center;
+    flex: 0 0 auto;
     height: 18px;
-    margin-left: 5px;
     padding: 0 6px;
     border-radius: 999px;
     background: #eff6ff;

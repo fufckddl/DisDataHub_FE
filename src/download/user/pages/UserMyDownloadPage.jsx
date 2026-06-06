@@ -96,13 +96,6 @@ function UserMyDownloadPage() {
                 showGuide={false}
             />
 
-            <div className="my-download-header-actions">
-                <button type="button" className="btn btn-light border fw-bold" onClick={() => navigate("/download/user/main")}>
-                    <i className="bi bi-chevron-left me-2"></i>
-                    다운로드 목록
-                </button>
-            </div>
-
             <div className="row g-3 mb-3">
                 {SUMMARY_ITEMS.map((item) => (
                     <div className="col-12 col-md-6 col-xl-3" key={item.label}>
