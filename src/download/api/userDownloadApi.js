@@ -10,6 +10,12 @@ export const getApprovedDownloadDatasetListApi = () => {
   return axiosInstance.get("/api/download/datasets");
 }
 
+export const getDownloadDatasetMainPageApi = (params) => {
+  return axiosInstance.get("/api/download/datasets/search", {
+    params,
+  });
+}
+
 export const getDatasetPreviewGeoJsonApi = (datasetId) => {
   return axiosInstance.get(`/api/download/datasets/${datasetId}/preview-geojson`)
 }
@@ -54,8 +60,18 @@ export const downloadDatasetByFormatApi = (datasetId, format) => {
   });
 };
 
+export const toggleDatasetFavoriteApi = (datasetId) => {
+  return axiosInstance.post(`/api/download/datasets/${datasetId}/favorite`);
+};
+
 export const runPointRadiusSimulationApi = (datasetId, radius) => {
   return axiosInstance.post(`/api/download/simulation/datasets/${datasetId}/point-radius`, {
     radius,
+  });
+};
+
+export const measureSimulationAreaApi = (datasetId, points) => {
+  return axiosInstance.post(`/api/download/simulation/datasets/${datasetId}/measure-area`, {
+    points,
   });
 };

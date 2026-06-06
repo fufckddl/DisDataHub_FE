@@ -3,11 +3,29 @@ import TopTitle from "../../components/TopTitle";
 import "../../style/download.css";
 import mapPreviewImg from "../../../assets/images/map-preview.png";
 import { useEffect, useState } from "react";
-import { datasetDetailDummy } from "../../dummy/datasetDetailDummy";
 import {MapContainer, TileLayer, GeoJSON, useMap} from "react-leaflet"
 import L from "leaflet"
 import { dummyCctvGeoJson } from "../../geojson/dummyCctvGeoJson";
-import { downloadFileApi, getDatasetDownloadPageApi, uploadTempTestFileApi, getDatasetPreviewGeoJsonApi, downloadDatasetByFormatApi } from "../../api/userDownloadApi";
+import { downloadFileApi, getDatasetDownloadPageApi, uploadTempTestFileApi, getDatasetPreviewGeoJsonApi, downloadDatasetByFormatApi, toggleDatasetFavoriteApi } from "../../api/userDownloadApi";
+import useAuthStore from "../../../commons/auth/useAuthStore";
+
+const FAVORITE_DATASET_STORAGE_KEY = "downloadFavoriteDatasetIds";
+
+function syncStoredFavoriteDatasetId(datasetId, favorite) {
+    try {
+        const rawValue = window.localStorage.getItem(FAVORITE_DATASET_STORAGE_KEY);
+        const parsedValue = rawValue ? JSON.parse(rawValue) : [];
+        const favoriteIds = Array.isArray(parsedValue) ? parsedValue.map(String) : [];
+        const currentId = String(datasetId);
+        const nextFavoriteIds = favorite
+            ? Array.from(new Set([...favoriteIds, currentId]))
+            : favoriteIds.filter((id) => id !== currentId);
+
+        window.localStorage.setItem(FAVORITE_DATASET_STORAGE_KEY, JSON.stringify(nextFavoriteIds));
+    } catch {
+        // localStorage 사용이 불가능한 환경에서는 서버 응답 상태만 사용합니다.
+    }
+}
 
 function DatasetSummaryCard({dataset, stats, sourceFile}){
 
@@ -226,7 +244,7 @@ function MapVisualizationCard({previewGeoJson, dataset}){
                         </div>
                     </div>
                     {/* 각기 버튼 표현 */}
-                    <MapOptionButton />
+                    {/* <MapOptionButton /> */}
 
                     {/* 지도 이미지 */}
                     <div className="row mb-2">
@@ -244,7 +262,14 @@ function MapVisualizationCard({previewGeoJson, dataset}){
                                     <MapContainer
                                         center={[36.5, 127.8]}
                                         zoom={7}
-                                        className="w-100 h-100 rounded"
+                                        className="w-100 h-100 rounded map-preview-fixed"
+                                        dragging={false}
+                                        scrollWheelZoom={false}
+                                        doubleClickZoom={false}
+                                        touchZoom={false}
+                                        boxZoom={false}
+                                        keyboard={false}
+                                        zoomControl={false}
                                     >
                                         <TileLayer
                                             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -278,7 +303,7 @@ function MapVisualizationCard({previewGeoJson, dataset}){
                                     <div className="col-auto text-end">
                                         {
                                             isSpatialDataset ? (
-                                                <Link to="simulationTest" className="btn btn-primary btn-sm">
+                                                <Link to="simulationTest3" className="btn btn-primary btn-sm">
                                                     <i className="bi bi-bar-chart me-2"></i>
                                                     시뮬레이션으로 이동                                                                                       
                                                 </Link>
@@ -364,8 +389,24 @@ function MapControlButton(){
     )
 }
 
+const ATTRIBUTE_COLUMN_LABELS = {
+    feature_id: "ID",
+    feature_name: "명칭",
+    spatial_type: "공간타입",
+};
+
+function formatAttributeValue(value) {
+    if (value == null || value === "") return "-";
+    if (typeof value === "object") return JSON.stringify(value);
+    return String(value);
+}
+
 // 속성 데이터
-function AttributePreviewCard(){
+function AttributePreviewCard({ attributePreview }){
+    const columns = attributePreview?.columns ?? [];
+    const rows = attributePreview?.rows ?? [];
+    const displayColumns = columns.length > 0 ? columns : ["feature_id", "feature_name", "spatial_type"];
+
     return(
         <>
             <div className="col-12 ">
@@ -378,26 +419,36 @@ function AttributePreviewCard(){
 
                     <div className="row">
                         <div className="col">
-                            {/* 나중에 API로 파일의 rows, columns를 받아서 map을 통해 출력하는 식으로 구현 */}
-                            <div className="card overflow-hidden">
+                            <div className="attribute-preview-table-wrap">
                                 <table className="table table-hover align-middle">
                                     <thead className="table-light">
                                         <tr>
-                                            <th className="col-1 dataset-text">ID</th>
-                                            <th className="col-3 dataset-text">시설명</th>
-                                            <th className="col-2 text-center dataset-text">자치구</th>
-                                            <th className="col-2 text-center dataset-text">위도</th>
-                                            <th className="col-2 text-center dataset-text">경도</th>
-                                            <th className="col-1 text-center dataset-text">설치유형</th>
-                                            <th className="col-1 text-center dataset-text">상태</th>
+                                            {displayColumns.map((column) => (
+                                                <th key={column} className="dataset-text attribute-preview-cell">
+                                                    {ATTRIBUTE_COLUMN_LABELS[column] ?? column}
+                                                </th>
+                                            ))}
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <AttributePreviewRow />
-                                        <AttributePreviewRow />
-                                        <AttributePreviewRow />
-                                        <AttributePreviewRow />
-                                        <AttributePreviewRow />
+                                        {rows.length > 0 ? (
+                                            rows.map((row, index) => (
+                                                <AttributePreviewRow
+                                                    key={index}
+                                                    columns={displayColumns}
+                                                    row={row}
+                                                />
+                                            ))
+                                        ) : (
+                                            <tr>
+                                                <td
+                                                    colSpan={displayColumns.length}
+                                                    className="text-center text-secondary dataset-text-gray py-4"
+                                                >
+                                                    미리보기로 표시할 속성 데이터가 없습니다.
+                                                </td>
+                                            </tr>
+                                        )}
                                     </tbody>
                                 </table>
                             </div>
@@ -409,28 +460,69 @@ function AttributePreviewCard(){
     )
 }
 
-function AttributePreviewRow(){
+function AttributePreviewRow({ columns, row }){
     return(
         <>
             <tr>
-                <td className="col-1 dataset-text-gray">1</td>
-                <td className="col-3 dataset-text-gray">강남역 사거리</td>
-                <td className="col-2 text-center dataset-text-gray">강남구</td>
-                <td className="col-2 text-center dataset-text-gray">37.123</td>
-                <td className="col-2 text-center dataset-text-gray">127.123</td>
-                <td className="col-1 text-center dataset-text-gray">고정형</td>
-                <td className="col-1 text-center dataset-text-gray">운영중</td>
+                {columns.map((column) => (
+                    <td key={column} className="dataset-text-gray attribute-preview-cell">
+                        {formatAttributeValue(row?.[column])}
+                    </td>
+                ))}
             </tr>
         </>
     )
 }
 
 // 파일 다운로드
-function FileDownloadCard({ availableFormats, sourceFile, dataset }){
+const DOWNLOAD_FORMAT_LIST = ["CSV", "GeoJSON", "SHP", "XLSX", "TIFF"];
+
+function normalizeDownloadFormatName(value) {
+    if (!value) return "";
+    let normalized = String(value).trim().toUpperCase();
+
+    if (normalized.startsWith(".")) {
+        normalized = normalized.substring(1);
+    }
+
+    if (normalized === "JSON" || normalized === "GEOJSON") return "GeoJSON";
+    if (normalized === "ZIP") return "SHP";
+    if (normalized === "TIF") return "TIFF";
+    if (normalized === "XLS") return "XLSX";
+
+    return normalized;
+}
+
+function FileDownloadCard({ availableFormats, downloadFormats, sourceFile, dataset }){
 
     const [selectFileFormat, setSelectFileFormat] = useState("");
 
-  
+    const fileFormatOptions = (() => {
+        if (Array.isArray(downloadFormats) && downloadFormats.length > 0) {
+            return DOWNLOAD_FORMAT_LIST.map((format) => {
+                const option = downloadFormats.find(
+                    (item) => normalizeDownloadFormatName(item?.format) === format
+                );
+
+                return {
+                    format,
+                    available: Boolean(option?.available),
+                    fileSize: option?.fileSize,
+                    original: Boolean(option?.original),
+                    reason: option?.reason ?? "다운로드 불가",
+                };
+            });
+        }
+
+        const availableFormatSet = new Set((availableFormats ?? []).map(normalizeDownloadFormatName));
+        return DOWNLOAD_FORMAT_LIST.map((format) => ({
+            format,
+            available: availableFormatSet.has(format),
+            fileSize: availableFormatSet.has(format) ? sourceFile?.fileSize : null,
+            original: normalizeDownloadFormatName(sourceFile?.fileExtension) === format,
+            reason: availableFormatSet.has(format) ? "다운로드 가능" : "다운로드 불가",
+        }));
+    })();
 
     const formatColorMap = {
         CSV: "success",
@@ -459,16 +551,23 @@ function FileDownloadCard({ availableFormats, sourceFile, dataset }){
 
 
     const downloadButtonClick = async () => {
+        const selectedOption = fileFormatOptions.find((option) => option.format === selectFileFormat);
         // 1. 먼저 형식을 고르기
         if (!selectFileFormat) {
             alert("다운로드 형식을 먼저 선택해주세요.");
             return;
         }
 
+        if (!selectedOption?.available) {
+            alert("선택한 형식은 현재 다운로드할 수 없습니다.");
+            setSelectFileFormat("");
+            return;
+        }
+
         try {
             // 2. 프론트는 파일 형식(원본인지, 변환인지)을 상관하지 않고 항상 같은 API 호출
             // 원본, 변환은 백에서 판단
-            const response = await downloadDatasetByFormatApi(dataset.datasetId, selectFileFormat);
+            const response = await downloadDatasetByFormatApi(dataset.datasetId, selectedOption.format);
 
             const blob = response.data;
             const url = window.URL.createObjectURL(blob);
@@ -478,7 +577,7 @@ function FileDownloadCard({ availableFormats, sourceFile, dataset }){
 
             // 파일명은 응답 헤더에서 받는 게 더 정확하지만,
             // 1차는 형식 기반 기본 파일명으로 내려도 됨
-            const defaultFileName = `${dataset.title}.${selectFileFormat.toLowerCase()}`;
+            const defaultFileName = `${dataset.title}.${selectedOption.format.toLowerCase()}`;
             const serverFileName = extractDownloadFileName(
                 response.headers?.["content-disposition"],
                 defaultFileName
@@ -556,12 +655,15 @@ function FileDownloadCard({ availableFormats, sourceFile, dataset }){
                         <div className="row">
                             <div className="col">
                                 <div className="row g-2 mb-2">
-                                    {availableFormats.map((format) => (
+                                    {fileFormatOptions.map((formatOption) => (
                                         <FileSelectButton
-                                        key={format}
-                                        type={format}
-                                        color={formatColorMap[format] ?? "secondary"}
-                                        size={formatFileSize(sourceFile?.fileSize) ?? "-"}
+                                        key={formatOption.format}
+                                        type={formatOption.format}
+                                        color={formatColorMap[formatOption.format] ?? "secondary"}
+                                        size={formatFileSize(formatOption.fileSize) ?? "-"}
+                                        available={formatOption.available}
+                                        original={formatOption.original}
+                                        reason={formatOption.reason}
                                         selectFileFormat={selectFileFormat}
                                         setSelectFileFormat={setSelectFileFormat}
                                         />
@@ -586,7 +688,7 @@ function FileDownloadCard({ availableFormats, sourceFile, dataset }){
     )
 }
 
-function FileSelectButton({type, color, size, selectFileFormat, setSelectFileFormat}){
+function FileSelectButton({type, color, size, available, original, reason, selectFileFormat, setSelectFileFormat}){
     
 
     // const fileFormatButtonClick = async () => {
@@ -597,13 +699,20 @@ function FileSelectButton({type, color, size, selectFileFormat, setSelectFileFor
     return(
         <>
             <div className="col-6 mb-2">
-                <button className={`btn border w-100 p-2 text-start pe-0 
-                        ${selectFileFormat === type ? `border-${color} border-2 bg-${color}-subtle` : ""}
+                <button className={`btn border w-100 p-2 text-start pe-0 download-format-option
+                        ${available ? "" : "download-format-option-disabled"}
+                        ${selectFileFormat === type && available ? `border-${color} border-2 bg-${color}-subtle` : ""}
                         `} 
+                        type="button"
+                        disabled={!available}
+                        title={available ? `${type} 다운로드 가능` : reason}
                         onClick={() => setSelectFileFormat(type)}>
                     <div>
-                        <span className={`badge bg-${color}-subtle text-${color} border border-${color}-subtle me-1`}>{type}</span>
-                        <span className="fw-bold text-secondary" style={{fontSize: "10px"}}>({size})</span>
+                        <span className={`badge ${available ? `bg-${color}-subtle text-${color} border border-${color}-subtle` : "bg-secondary-subtle text-secondary border border-secondary-subtle"} me-1`}>{type}</span>
+                        <span className="fw-bold text-secondary download-format-size">({available ? size : reason})</span>
+                        {original && (
+                            <span className="download-format-original-label">원본</span>
+                        )}
                     </div>
                 </button>
             </div>        
@@ -647,26 +756,33 @@ function DownloadNoticeCard(){
 
 // 관련데이터
 function RelatedDatasetCard({ relatedDatasets }){
+    const datasets = relatedDatasets ?? [];
 
     return(
         <>
             <div className="row">
                 <div className="col">
-                    <div className="card p-3 pb-1">
+                    <div className="card p-3 pb-1 related-dataset-card">
                         <div className="row mb-3">
                             <div className="col">
                                 <div className="fw-bold">관련 데이터</div>
                             </div>
                         </div>
-                        <div className="row">                            
-                            {relatedDatasets.map((item, index) => (
-                                <RelatedDatasetCardRow 
-                                    key={index}
-                                    id={item.id}
-                                    title={item.title}
-                                    borderShow={index !== relatedDatasets.length - 1}
-                                />
-                            ))}
+                        <div className="row">
+                            {datasets.length > 0 ? (
+                                datasets.map((item, index) => (
+                                    <RelatedDatasetCardRow
+                                        key={item.datasetId ?? index}
+                                        id={item.datasetId}
+                                        title={item.title}
+                                        borderShow={index !== datasets.length - 1}
+                                    />
+                                ))
+                            ) : (
+                                <div className="col-12 related-dataset-empty">
+                                    같은 데이터 유형의 관련 데이터가 없습니다.
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -682,8 +798,10 @@ function RelatedDatasetCardRow({id, title, borderShow = true}){
                 <Link to={`../${id}`} className="text-decoration-none">
                     <div className={`${borderShow ? "border-bottom pb-3" : ""}  `} style={{fontSize: "13px"}}>
                         <div className="row">
-                            <div className="col text-primary fw-bold">
-                                {title}    
+                            <div className="col">
+                                <div className="text-primary fw-bold line-clamp-2">
+                                    {title}
+                                </div>
                             </div>
                             <div className="col-auto">
                                 <span className="text-dark"><i className="bi bi-chevron-right"></i></span>
@@ -697,16 +815,21 @@ function RelatedDatasetCardRow({id, title, borderShow = true}){
 }
 
 // 빠른 기능 버튼
-function QuickActionCard(){
+function QuickActionCard({ isFavorite, onFavoriteClick }){
+    const navigate = useNavigate();
+
     return(
         <>
             <div className="row mt-2">
                 <div className="col">
                     <div className="card p-3 pb-0">
-                        <QuickActionButton content="관심 데이터 담기">
-                            <i className="bi bi-star me-2"></i>
+                        <QuickActionButton
+                            content={isFavorite ? "관심 데이터 해제" : "관심 데이터 담기"}
+                            onClick={onFavoriteClick}
+                        >
+                            <i className={`bi ${isFavorite ? "bi-star-fill text-warning" : "bi-star"} me-2`}></i>
                         </QuickActionButton>
-                        <QuickActionButton content="목록으로">
+                        <QuickActionButton content="목록으로" onClick={() => navigate("../main")}>
                             <i className="bi bi-list-task me-2"></i>
                         </QuickActionButton>                        
                     </div>
@@ -790,12 +913,14 @@ function UserDatasetDetailPage(){
     };
 
     const { datasetId } = useParams();
+    const userInfo = useAuthStore((state) => state.userInfo);
     const [pageData, setPageData] = useState(null);
     const [loading, setLoading] = useState(true);  //로딩중일때를 확인하기 위한 상태
     const [errorMessage, setErrorMessage] = useState("");
     const [accessDenied, setAccessDenied] = useState(false);
     const [notFound, setNotFound] = useState(false);
     const [previewGeoJson, setPreviewGeoJson] = useState(null);
+    const [isFavorite, setIsFavorite] = useState(false);
     
 
     const navigate = useNavigate();
@@ -809,6 +934,9 @@ function UserDatasetDetailPage(){
             // 상세정보 API
             const response = await getDatasetDownloadPageApi(datasetId);
             setPageData(response.data);
+            const favorite = Boolean(response.data?.favorite);
+            setIsFavorite(favorite);
+            syncStoredFavoriteDatasetId(datasetId, favorite);
 
             try{
                 // GeoJson 지도 정보 API
@@ -848,6 +976,28 @@ function UserDatasetDetailPage(){
 
     fetchPageData();
     }, [datasetId, navigate]);
+
+    const handleFavoriteClick = async () => {
+        if (userInfo == null) {
+            alert("로그인을 해야 이용할 수 있습니다.");
+            return;
+        }
+
+        try {
+            const response = await toggleDatasetFavoriteApi(datasetId);
+            const nextFavorite = Boolean(response.data?.favorite);
+            setIsFavorite(nextFavorite);
+            syncStoredFavoriteDatasetId(datasetId, nextFavorite);
+            setPageData((prev) => prev ? { ...prev, favorite: nextFavorite } : prev);
+        } catch (error) {
+            if (error?.response?.status === 401) {
+                alert("로그인을 해야 이용할 수 있습니다.");
+                return;
+            }
+
+            alert("관심 데이터 처리 중 오류가 발생했습니다.");
+        }
+    };
 
 
     // console.log(loading)
@@ -921,7 +1071,7 @@ function UserDatasetDetailPage(){
 
                         <div className="row">
                             {/* 속성 데이터 미리보기 */}
-                            <AttributePreviewCard />
+                            <AttributePreviewCard attributePreview={viewData.attributePreview} />
                         </div>
                     </div>
 
@@ -931,6 +1081,7 @@ function UserDatasetDetailPage(){
                         {/* 파일 형식, 다운로드 */}
                         <FileDownloadCard 
                             availableFormats={viewData.availableFormats}
+                            downloadFormats={viewData.downloadFormats}
                             sourceFile={viewData.sourceFile}                        
                             dataset={viewData.dataset}                        
                         />
@@ -939,10 +1090,13 @@ function UserDatasetDetailPage(){
                         <DownloadNoticeCard />
 
                         {/* 관련 데이터 */}
-                        <RelatedDatasetCard relatedDatasets={datasetDetailDummy.relatedDatasets} />
+                        <RelatedDatasetCard relatedDatasets={viewData.relatedDatasets} />
                         
                         {/* 빠른 기능 버튼 */}
-                        <QuickActionCard />
+                        <QuickActionCard
+                            isFavorite={isFavorite}
+                            onFavoriteClick={handleFavoriteClick}
+                        />
                     </div>
 
 

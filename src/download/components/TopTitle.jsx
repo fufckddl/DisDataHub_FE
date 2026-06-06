@@ -2,7 +2,7 @@ function TopTitle({title, subTitle, showGuide}){
     return(
         <>
             <div className="row align-items-center mb-3">
-                <div className="col "> 
+                <div className="col"> 
                     <div className="row">
                         <div className="col">
                             <h2 className="fw-bold mb-2">{title}</h2>
