@@ -212,6 +212,14 @@
     vertical-align: 1px;
 }
 
+.download-main-table {
+    margin-bottom: 0;
+}
+
+.download-main-table tbody tr:last-child > * {
+    border-bottom-width: 0;
+}
+
 /* ===== Download Pagination ===== */
 .download-pagination-bar {
     display: flex;

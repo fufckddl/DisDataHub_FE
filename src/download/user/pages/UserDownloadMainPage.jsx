@@ -242,7 +242,7 @@ function DatasetList({ datasetList, loading, pagination, sort, onSortChange, onP
                         </div>
                     </div>
 
-                    <table className="table table-hover align-middle">
+                    <table className="table table-hover align-middle download-main-table">
                         <thead className="table-light">
                             <tr>
                                 {/* <th className="col-2 ps-3">데이터셋 명</th> */}
@@ -727,19 +727,6 @@ function UserDownloadMainPage() {
                 onPageChange={handlePageChange}
                 onSizeChange={handleSizeChange}
             />
-
-            <div className="row mt-4 mb-2">
-                <div className="col d-flex justify-content-end">
-                    <button
-                        type="button"
-                        className="btn btn-outline-primary fw-bold px-4"
-                        onClick={() => navigate("/download/user/my-downloads")}
-                    >
-                        <i className="bi bi-folder-check me-2"></i>
-                        나의 다운로드 페이지
-                    </button>
-                </div>
-            </div>
         </div>
     );
 }

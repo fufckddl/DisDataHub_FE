@@ -16,6 +16,12 @@ export const getDownloadDatasetMainPageApi = (params) => {
   });
 }
 
+export const getMyDownloadHistoryApi = (params) => {
+  return axiosInstance.get("/api/download/my-history", {
+    params,
+  });
+}
+
 export const getDatasetPreviewGeoJsonApi = (datasetId) => {
   return axiosInstance.get(`/api/download/datasets/${datasetId}/preview-geojson`)
 }
