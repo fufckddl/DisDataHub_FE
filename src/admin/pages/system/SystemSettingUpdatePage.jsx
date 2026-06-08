@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { registerSystemSettingConfigLogApi } from "../../api/adminUserApi";
+import { updateSystemSettingApi } from "../../api/adminUserApi";
 
 function SettingUpdateTitle({ navigate }) {
     return (
@@ -9,7 +9,7 @@ function SettingUpdateTitle({ navigate }) {
                 <div className="col">
                     <h3 className="fw-bold mb-1">시스템 설정 변경</h3>
                     <div className="text-secondary">
-                        GIS 데이터 플랫폼의 운영 정책 및 시스템 환경을 관리하는 페이지입니다. 시스템의 핵심이 되는 설정은 관리자에 의해 보호되며, 수정이 제한됩니다.
+                        GIS 데이터 플랫폼의 운영 정책 및 시스템 환경을 관리하는 페이지입니다.
                     </div>
                 </div>
 
@@ -38,7 +38,7 @@ function SettingCard({ title, description, children }) {
     )
 }
 
-function UploadPolicyCard({ settingData, changeSettingData }) {
+function UploadPolicyCard({ settingData, changeSettingData, saveSystemSetting }) {
     return (
         <div className="col-6">
             <SettingCard
@@ -56,13 +56,21 @@ function UploadPolicyCard({ settingData, changeSettingData }) {
                             value={settingData.maxUploadFileSize}
                             onChange={changeSettingData}
                         />
-
                         <span className="input-group-text">MB</span>
                     </div>
 
-                    <div className="text-secondary small mt-1">
-                        단일 파일 기준 최대 업로드 가능 크기입니다.
-                    </div>
+                    <button
+                        className="btn btn-outline-primary btn-sm mt-2"
+                        onClick={() => {
+                            saveSystemSetting(
+                                "maxUploadFileSize",
+                                settingData.maxUploadFileSize,
+                                "최대 업로드 파일 크기 변경"
+                            );
+                        }}
+                    >
+                        저장
+                    </button>
                 </div>
 
                 <div>
@@ -76,88 +84,25 @@ function UploadPolicyCard({ settingData, changeSettingData }) {
                         onChange={changeSettingData}
                     />
 
-                    <div className="text-secondary small mt-1">
-                        쉼표(,) 기준으로 파일 확장자를 구분하여 입력합니다.
-                    </div>
+                    <button
+                        className="btn btn-outline-primary btn-sm mt-2"
+                        onClick={() => {
+                            saveSystemSetting(
+                                "allowedFileExtension",
+                                settingData.allowedFileExtension,
+                                "허용 파일 확장자 변경"
+                            );
+                        }}
+                    >
+                        저장
+                    </button>
                 </div>
             </SettingCard>
         </div>
     )
 }
 
-function CoordinatePolicyCard({ settingData }) {
-    return (
-        <div className="col-6">
-            <SettingCard
-                title="좌표계 및 지도 설정"
-                description="시스템 핵심 좌표계 및 지도 기준 정보를 확인합니다."
-            >
-                <div className="mb-3">
-                    <label className="form-label fw-bold">기본 저장 좌표계</label>
-                    <select className="form-select shadow-none" value={settingData.defaultSaveCoordinate} disabled>
-                        <option>EPSG:4326</option>
-                    </select>
-                </div>
-
-                <div className="mb-3">
-                    <label className="form-label fw-bold">기본 분석 좌표계</label>
-                    <select className="form-select shadow-none" value={settingData.defaultAnalysisCoordinate} disabled>
-                        <option>EPSG:5179</option>
-                    </select>
-                </div>
-
-                <div className="mb-3">
-                    <label className="form-label fw-bold">지도 기본 중심 좌표</label>
-                    <input
-                        type="text"
-                        className="form-control shadow-none"
-                        value={settingData.defaultMapCenter}
-                        disabled
-                    />
-                </div>
-
-                <div className="mb-3">
-                    <label className="form-label fw-bold">다운로드 로그인 필수 여부</label>
-
-                    <div className="form-check form-switch">
-                        <input
-                            className="form-check-input shadow-none"
-                            type="checkbox"
-                            checked={settingData.downloadLoginRequired}
-                            disabled
-                        />
-
-                        <label className="form-check-label">
-                            로그인 사용자만 다운로드 허용
-                        </label>
-                    </div>
-                </div>
-
-                <div>
-                    <label className="form-label fw-bold">미리보기 최대 피쳐 수</label>
-
-                    <div className="input-group">
-                        <input
-                            type="number"
-                            className="form-control shadow-none"
-                            value={settingData.maxPreviewFeatureCount}
-                            disabled
-                        />
-
-                        <span className="input-group-text">건</span>
-                    </div>
-                </div>
-
-                <div className="text-secondary small mt-4">
-                    <span style={{color: "#f57d7d"}}>*</span>
-                    시스템의 핵심 설정입니다. 변경할 수 없습니다.
-                </div>
-            </SettingCard>
-        </div>
-    )
-}
-
-function DownloadPolicyCard({ settingData, changeSettingData }) {
+function DownloadPolicyCard({ settingData, changeSettingData, saveSystemSetting }) {
     return (
         <div className="col-6">
             <SettingCard
@@ -177,13 +122,67 @@ function DownloadPolicyCard({ settingData, changeSettingData }) {
                             value={settingData.dailyDownloadLimit}
                             onChange={changeSettingData}
                         />
-
                         <span className="input-group-text">회</span>
                     </div>
 
-                    <div className="text-secondary small mt-1">
-                        일반 사용자의 하루 최대 다운로드 가능 횟수입니다.
-                    </div>
+                    <button
+                        className="btn btn-outline-primary btn-sm mt-2"
+                        onClick={() => {
+                            saveSystemSetting(
+                                "dailyDownloadLimit",
+                                settingData.dailyDownloadLimit,
+                                "일반 사용자 일일 다운로드 제한 변경"
+                            );
+                        }}
+                    >
+                        저장
+                    </button>
+                </div>
+            </SettingCard>
+        </div>
+    )
+}
+
+function CoordinatePolicyCard({ settingData }) {
+    return (
+        <div className="col-6">
+            <SettingCard
+                title="좌표계 및 지도 설정"
+                description="시스템 핵심 좌표계 및 지도 기준 정보를 확인합니다."
+            >
+                <div className="mb-3">
+                    <label className="form-label fw-bold">기본 저장 좌표계</label>
+                    <input
+                        type="text"
+                        className="form-control shadow-none"
+                        value={settingData.defaultSaveCoordinate}
+                        disabled
+                    />
+                </div>
+
+                <div className="mb-3">
+                    <label className="form-label fw-bold">기본 분석 좌표계</label>
+                    <input
+                        type="text"
+                        className="form-control shadow-none"
+                        value={settingData.defaultAnalysisCoordinate}
+                        disabled
+                    />
+                </div>
+
+                <div>
+                    <label className="form-label fw-bold">지도 기본 중심 좌표</label>
+                    <input
+                        type="text"
+                        className="form-control shadow-none"
+                        value={settingData.defaultMapCenter}
+                        disabled
+                    />
+                </div>
+
+                <div className="text-secondary small mt-4">
+                    <span style={{ color: "#f57d7d" }}>*</span>
+                    좌표계 및 지도 기준 설정은 변경할 수 없습니다.
                 </div>
             </SettingCard>
         </div>
@@ -216,20 +215,12 @@ function SettingPreviewCard({ settingData }) {
                             <td>{settingData.defaultAnalysisCoordinate}</td>
                         </tr>
                         <tr>
-                            <th className="table-light text-secondary">다운로드 로그인 필수 여부</th>
-                            <td>{settingData.downloadLoginRequired ? "활성" : "비활성"}</td>
-                        </tr>
-                        <tr>
                             <th className="table-light text-secondary">일반 사용자 일일 다운로드 제한</th>
                             <td>{settingData.dailyDownloadLimit}회</td>
                         </tr>
                         <tr>
                             <th className="table-light text-secondary">지도 기본 중심 좌표</th>
                             <td>{settingData.defaultMapCenter}</td>
-                        </tr>
-                        <tr>
-                            <th className="table-light text-secondary">미리보기 최대 피쳐 수</th>
-                            <td>{settingData.maxPreviewFeatureCount}건</td>
                         </tr>
                     </tbody>
                 </table>
@@ -238,29 +229,7 @@ function SettingPreviewCard({ settingData }) {
     )
 }
 
-function SettingButtonSection({ navigate, settingData }) {
-
-    const saveSystemSettingLog = async () => {
-
-        const logData = {
-            adminUserId: 1,
-            settingKey: "maxUploadFileSize",
-            beforeValue: "300",
-            afterValue: String(settingData.maxUploadFileSize),
-            description: "최대 업로드 파일 크기 변경"
-        };
-
-        const response = await registerSystemSettingConfigLogApi(logData);
-
-        if(response.data.result === true) {
-            alert("시스템 설정이 저장되었습니다.");
-            navigate("/admin/system/settingList");
-            return;
-        }
-
-        alert("설정 저장에 실패했습니다.");
-    };
-
+function SettingButtonSection({ navigate }) {
     return (
         <>
             <div className="row">
@@ -272,24 +241,6 @@ function SettingButtonSection({ navigate, settingData }) {
                         }}
                     >
                         &nbsp;목록으로
-                    </button>
-                </div>
-
-                <div className="col d-flex justify-content-end gap-2">
-                    <button
-                        className="btn btn-outline-danger"
-                        onClick={() => {
-                            navigate("/admin/system/settingList");
-                        }}
-                    >
-                        취소
-                    </button>
-
-                    <button
-                        className="btn btn-outline-primary"
-                        onClick={saveSystemSettingLog}
-                    >
-                        설정 저장
                     </button>
                 </div>
             </div>
@@ -306,10 +257,8 @@ function SystemSettingUpdatePage() {
         allowedFileExtension: "csv, xlsx, geojson, zip",
         defaultSaveCoordinate: "EPSG:4326",
         defaultAnalysisCoordinate: "EPSG:5179",
-        downloadLoginRequired: true,
         dailyDownloadLimit: 20,
-        defaultMapCenter: "서울",
-        maxPreviewFeatureCount: 1000
+        defaultMapCenter: "서울"
     });
 
     const changeSettingData = (event) => {
@@ -324,6 +273,24 @@ function SystemSettingUpdatePage() {
 
     };
 
+    const saveSystemSetting = async (settingKey, afterValue, description) => {
+
+        const requestData = {
+            settingKey: settingKey,
+            afterValue: String(afterValue),
+            description: description
+        };
+
+        const response = await updateSystemSettingApi(requestData);
+
+        if(response.data.result === "success") {
+            alert("시스템 설정이 저장되었습니다.");
+            return;
+        }
+
+        alert("설정 저장에 실패했습니다.");
+    };
+
     return (
         <>
             <div className="row justify-content-center">
@@ -334,17 +301,19 @@ function SystemSettingUpdatePage() {
                         <UploadPolicyCard
                             settingData={settingData}
                             changeSettingData={changeSettingData}
+                            saveSystemSetting={saveSystemSetting}
                         />
 
-                        <CoordinatePolicyCard
+                        <DownloadPolicyCard
                             settingData={settingData}
+                            changeSettingData={changeSettingData}
+                            saveSystemSetting={saveSystemSetting}
                         />
                     </div>
 
                     <div className="row mb-3">
-                        <DownloadPolicyCard
+                        <CoordinatePolicyCard
                             settingData={settingData}
-                            changeSettingData={changeSettingData}
                         />
 
                         <SettingPreviewCard
@@ -354,7 +323,6 @@ function SystemSettingUpdatePage() {
 
                     <SettingButtonSection
                         navigate={navigate}
-                        settingData={settingData}
                     />
                 </div>
             </div>
