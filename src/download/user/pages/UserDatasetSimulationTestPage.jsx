@@ -8,6 +8,7 @@ import "../../style/simulationTest.css";
 import {
   getDatasetDownloadPageApi,
   getDatasetPreviewGeoJsonApi,
+  measureSimulationAreaApi,
   runPointRadiusSimulationApi,
 } from "../../api/userDownloadApi";
 
@@ -112,15 +113,7 @@ function formatArea(areaSquareMeters) {
     return "-";
   }
 
-  if (areaSquareMeters >= 1000000) {
-    return `${(Number(areaSquareMeters) / 1000000).toFixed(2)}km²`;
-  }
-
-  if (areaSquareMeters >= 10000) {
-    return `${(Number(areaSquareMeters) / 10000).toFixed(2)}ha`;
-  }
-
-  return `${Math.round(Number(areaSquareMeters))}㎡`;
+  return `${Math.round(Number(areaSquareMeters)).toLocaleString("ko-KR")}㎡`;
 }
 
 function parseGeoJson(data) {
@@ -258,23 +251,6 @@ function bindFeatureTooltip(feature, layer, layerLabel) {
     mouseover: () => layer.openTooltip(),
     mouseout: () => layer.closeTooltip(),
   });
-}
-
-function calculateProjectedArea(latlngs) {
-  if (!Array.isArray(latlngs) || latlngs.length < 3) {
-    return null;
-  }
-
-  const projectedPoints = latlngs.map((latlng) => L.CRS.EPSG3857.project(latlng));
-  let area = 0;
-
-  for (let index = 0; index < projectedPoints.length; index += 1) {
-    const currentPoint = projectedPoints[index];
-    const nextPoint = projectedPoints[(index + 1) % projectedPoints.length];
-    area += currentPoint.x * nextPoint.y - nextPoint.x * currentPoint.y;
-  }
-
-  return Math.abs(area / 2);
 }
 
 function buildPreviewData(features, geometryType, radius, selectedRegion, showHeatmap, useClustering, showBoundary) {
@@ -837,12 +813,9 @@ function SimulationMeasureEvents({
             setMeasureDistance(null);
           }
           setMeasureArea(null);
-        } else if (nextPoints.length >= 3) {
-          setMeasureArea(calculateProjectedArea(nextPoints));
-          setMeasureDistance(null);
         } else {
-          setMeasureArea(null);
           setMeasureDistance(null);
+          setMeasureArea(null);
         }
 
         return nextPoints;
@@ -874,6 +847,8 @@ function SimulationMapView({
   setMeasureDistance,
   measureArea,
   setMeasureArea,
+  measureAreaLoading,
+  measureAreaError,
 }) {
   const hasPreviewFeatures =
     Array.isArray(previewGeoJson?.features) &&
@@ -955,7 +930,9 @@ function SimulationMapView({
   const hasMeasurement = measurementType !== "none";
   const measurementTitle = measurementType === "area" ? "면적 측정" : "거리 측정";
   const measurementValue =
-    measurementType === "area" ? formatArea(measureArea) : formatDistance(measureDistance);
+    measurementType === "area"
+      ? (measureAreaLoading ? "계산 중..." : formatArea(measureArea))
+      : formatDistance(measureDistance);
   const measurementGuideText =
     measurementType === "area"
       ? "지도를 세 번 이상 클릭하면 면적이 계산됩니다."
@@ -1100,7 +1077,11 @@ function SimulationMapView({
                   <strong>{hasMeasurement ? measurementValue : "-"}</strong>
                   <small>
                     {hasMeasurement
-                      ? measurementGuideText
+                      ? (measurementType === "area"
+                        ? (measureAreaError || (measureAreaLoading
+                          ? "PostGIS 기준으로 더 정확한 면적을 계산하는 중입니다."
+                          : measurementGuideText))
+                        : measurementGuideText)
                       : "거리 또는 면적을 선택한 뒤 지도를 클릭해보세요."}
                   </small>
                 </div>
@@ -1269,6 +1250,8 @@ function UserDatasetSimulationTestPage() {
   const [measurePoints, setMeasurePoints] = useState([]);
   const [measureDistance, setMeasureDistance] = useState(null);
   const [measureArea, setMeasureArea] = useState(null);
+  const [measureAreaLoading, setMeasureAreaLoading] = useState(false);
+  const [measureAreaError, setMeasureAreaError] = useState("");
 
   const currentProfile = SIMULATION_PROFILES[geometryType] ?? SIMULATION_PROFILES.point;
   const features = Array.isArray(previewGeoJson?.features) ? previewGeoJson.features : [];
@@ -1308,6 +1291,8 @@ function UserDatasetSimulationTestPage() {
     setMeasurePoints([]);
     setMeasureDistance(null);
     setMeasureArea(null);
+    setMeasureAreaLoading(false);
+    setMeasureAreaError("");
   };
 
   const handleReset = () => {
@@ -1390,6 +1375,76 @@ function UserDatasetSimulationTestPage() {
   useEffect(() => {
     let cancelled = false;
 
+    const requestMeasureArea = async () => {
+      if (measurementType !== "area") {
+        setMeasureArea(null);
+        setMeasureAreaLoading(false);
+        setMeasureAreaError("");
+        return;
+      }
+
+      if (measurePoints.length < 3) {
+        setMeasureArea(null);
+        setMeasureAreaLoading(false);
+        setMeasureAreaError("");
+        return;
+      }
+
+      if (!datasetId) {
+        setMeasureArea(null);
+        setMeasureAreaLoading(false);
+        setMeasureAreaError("데이터셋 정보를 확인할 수 없습니다.");
+        return;
+      }
+
+      try {
+        setMeasureAreaLoading(true);
+        setMeasureAreaError("");
+
+        const response = await measureSimulationAreaApi(
+          datasetId,
+          measurePoints.map((point) => ({
+            lat: point.lat,
+            lng: point.lng,
+          })),
+        );
+
+        if (!cancelled) {
+          setMeasureArea(response?.data?.areaSquareMeters ?? null);
+        }
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        setMeasureArea(null);
+
+        if (error?.response?.status === 400) {
+          setMeasureAreaError("면적 계산 좌표를 다시 확인해주세요.");
+        } else if (error?.response?.status === 403) {
+          setMeasureAreaError("면적 계산 결과를 확인할 권한이 없습니다.");
+        } else if (error?.response?.status === 404) {
+          setMeasureAreaError("면적 계산 기준 데이터를 찾을 수 없습니다.");
+        } else {
+          setMeasureAreaError("면적 계산 중 오류가 발생했습니다.");
+        }
+      } finally {
+        if (!cancelled) {
+          setMeasureAreaLoading(false);
+        }
+      }
+    };
+
+    requestMeasureArea();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [datasetId, measurementType, measurePoints]);
+
+  useEffect(() => {
+    let cancelled = false;
+
     const fetchPreviewGeoJson = async () => {
       try {
         setPreviewLoading(true);
@@ -1428,6 +1483,8 @@ function UserDatasetSimulationTestPage() {
         setMeasurePoints([]);
         setMeasureDistance(null);
         setMeasureArea(null);
+        setMeasureAreaLoading(false);
+        setMeasureAreaError("");
       } catch (error) {
         if (cancelled) {
           return;
@@ -1437,6 +1494,8 @@ function UserDatasetSimulationTestPage() {
         setSimulationSummary(null);
         setSimulationTableRows([]);
         setSimulationResultGeoJson(null);
+        setMeasureAreaLoading(false);
+        setMeasureAreaError("");
 
         if (error?.response?.status === 403) {
           setPreviewErrorMessage("공간 데이터를 확인할 권한이 없습니다.");
@@ -1542,6 +1601,8 @@ function UserDatasetSimulationTestPage() {
                 setMeasureDistance={setMeasureDistance}
                 measureArea={measureArea}
                 setMeasureArea={setMeasureArea}
+                measureAreaLoading={measureAreaLoading}
+                measureAreaError={measureAreaError}
               />
             </div>
 

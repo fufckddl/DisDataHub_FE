@@ -1,13 +1,22 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../../../commons/api/axiosinstance";
 
 function AdminApprovalListPage() {
     const navigate = useNavigate();
 
+    // 🛑 기존 상태 관리
     const [approvalList, setApprovalList] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+
+    // 검색 및 필터 상태 관리
+    const [searchTerm, setSearchTerm] = useState("");
+    const [searchFormat, setSearchFormat] = useState("");
+
+    // 페이징(Pagination) 상태 관리
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10); 
 
     const fetchApprovalList = async () => {
         setIsLoading(true);
@@ -18,10 +27,9 @@ function AdminApprovalListPage() {
         } catch (err) {
             console.error("승인 대기 목록 조회 실패: ", err);
             
-            // 🚀 [추가된 부분] 401 에러(인증 실패) 처리 로직
             if (err.response && err.response.status === 403) {
-                alert(err.response.data || "로그인이 필요합니다.");
-                navigate("/login"); // 🚨 프로젝트의 실제 로그인 페이지 경로로 맞춰주세요!
+                alert(err.response.data || "관리자 권한이 필요합니다.");
+                navigate("/login"); 
                 return;
             }
 
@@ -43,113 +51,314 @@ function AdminApprovalListPage() {
         if (!dateString) return '-';
         const date = new Date(dateString);
         return date.toLocaleDateString('ko-KR', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit'
+            year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit'
         });
     };
-    
+
+    // =====================================================================
+    // 상단 통계 데이터 계산
+    // =====================================================================
+    const todayStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const totalPending = approvalList.length;
+    const newTodayCount = approvalList.filter(item => item.createdAt && item.createdAt.startsWith(todayStr)).length;
+    const spatialCount = approvalList.filter(item => item.fileFormat === 'SHP' || item.fileFormat === 'TIFF').length;
+    const generalCount = totalPending - spatialCount; // 나머지(CSV, EXCEL, GeoJSON)
+
+    // =====================================================================
+    // 관리자용 다중 필터링 로직
+    // =====================================================================
+    const filteredList = approvalList.filter(item => {
+        const searchLower = searchTerm.toLowerCase();
+        const matchKeyword = 
+            (item.title && item.title.toLowerCase().includes(searchLower)) ||
+            (item.username && item.username.toLowerCase().includes(searchLower)) ||
+            (item.organization && item.organization.toLowerCase().includes(searchLower));
+        
+        const matchFormat = searchFormat === "" || item.fileFormat === searchFormat;
+        
+        return matchKeyword && matchFormat;
+    });
+
+    // 검색/필터 변경 시 무조건 1페이지로 리셋
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, searchFormat, itemsPerPage]);
+
+    // =====================================================================
+    // 페이징 로직 (필터링된 결과 기준)
+    // =====================================================================
+    const totalFilteredCount = filteredList.length;
+    const totalPages = Math.ceil(totalFilteredCount / itemsPerPage);
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = filteredList.slice(indexOfFirstItem, indexOfLastItem);
+
+    const paginate = (pageNumber) => {
+        if (pageNumber > 0 && pageNumber <= totalPages) {
+            setCurrentPage(pageNumber);
+        }
+    };
+
     return (
-        // maxWidth: 1100px -> 68.75rem (1100/16)
-        <div className="container py-5" style={{ maxWidth: '68.75rem' }}>
+        <div className="container-fluid px-4 py-4" style={{ backgroundColor: '#F8F9FA', minHeight: '100vh' }}>
             
             {/* 페이지 상단 타이틀 영역 */}
-            <div className="mb-4 pb-2 border-bottom d-flex justify-content-between align-items-center">
+            <div className="d-flex justify-content-between align-items-end mb-4 pb-3 border-bottom">
                 <div>
-                    <h2 className="fw-bolder text-dark mb-2" style={{ fontSize: '1.75rem' }}>데이터셋 승인 관리</h2>
-                    <p className="text-muted mb-0" style={{ fontSize: '1rem' }}>
-                        연구원들이 업로드한 데이터 중 PostGIS 공간 검증을 통과한 승인 대기 목록입니다.
+                    <h2 className="fw-bolder text-dark mb-2" style={{ letterSpacing: '-0.5px' }}>데이터셋 승인 관리</h2>
+                    <p className="text-muted mb-0" style={{ fontSize: '0.95rem' }}>
+                        연구원들이 업로드한 데이터 중 1차 검증을 통과한 대기 목록을 심사하고 최종 승인합니다.
                     </p>
-                </div>
-                {/* 대기 카운트 배지 - 패딩 rem 적용 */}
-                <div className="bg-light px-4 py-3 rounded-3 border text-center">
-                    <span className="text-muted fw-bold d-block mb-1" style={{ fontSize: '0.875rem' }}>대기 중인 항목</span>
-                    <span className="fw-black text-primary" style={{ fontSize: '1.5rem' }}>{approvalList.length}건</span>
                 </div>
             </div>
 
-            {/* 로딩/에러/빈 데이터 처리는 기존과 동일하게 유지하되 스타일만 rem으로 보정 */}
-            {isLoading && <div className="text-center py-5"><div className="spinner-border text-primary" role="status"></div></div>}
-
-            {!isLoading && error && (
-                <div className="alert alert-danger text-center py-4" role="alert" style={{ fontSize: '1rem' }}>
-                    <i className="bi bi-exclamation-triangle-fill fs-3 d-block mb-2"></i>
-                    {error}
+            {/* 🚀 1. 네이밍을 영리하게 바꾼 대시보드 카드 4개 */}
+            {!isLoading && !error && (
+                <div className="row g-4 mb-4">
+                    <div className="col-xl-3 col-md-6">
+                        <div className="card shadow-sm border-0 rounded-4 h-100 p-3" style={{ borderLeft: '5px solid #0D6EFD !important' }}>
+                            <div className="d-flex align-items-center">
+                                <div className="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-3" style={{ width: '56px', height: '56px' }}>
+                                    <i className="bi bi-inbox-fill fs-3"></i>
+                                </div>
+                                <div>
+                                    <p className="text-muted fw-bold mb-0" style={{ fontSize: '0.85rem' }}>전체 승인 대기</p>
+                                    <h3 className="fw-black text-dark mb-0">{totalPending.toLocaleString()}<span className="fs-6 text-muted ms-1 fw-normal">건</span></h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="col-xl-3 col-md-6">
+                        <div className="card shadow-sm border-0 rounded-4 h-100 p-3">
+                            <div className="d-flex align-items-center">
+                                <div className="bg-danger bg-opacity-10 text-danger rounded-circle d-flex align-items-center justify-content-center me-3" style={{ width: '56px', height: '56px' }}>
+                                    <i className="bi bi-bell-fill fs-3"></i>
+                                </div>
+                                <div>
+                                    <p className="text-muted fw-bold mb-0" style={{ fontSize: '0.85rem' }}>오늘 신규 접수</p>
+                                    <h3 className="fw-black text-danger mb-0">{newTodayCount.toLocaleString()}<span className="fs-6 text-muted ms-1 fw-normal">건</span></h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="col-xl-3 col-md-6">
+                        <div className="card shadow-sm border-0 rounded-4 h-100 p-3">
+                            <div className="d-flex align-items-center">
+                                <div className="bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center me-3" style={{ width: '56px', height: '56px' }}>
+                                    <i className="bi bi-layers-fill fs-3"></i>
+                                </div>
+                                <div>
+                                    <p className="text-muted fw-bold mb-0" style={{ fontSize: '0.85rem' }}>
+                                        대용량 공간 파일 <span className="small fw-normal">(SHP 등)</span>
+                                    </p>
+                                    <h3 className="fw-black text-dark mb-0">{spatialCount.toLocaleString()}<span className="fs-6 text-muted ms-1 fw-normal">건</span></h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="col-xl-3 col-md-6">
+                        <div className="card shadow-sm border-0 rounded-4 h-100 p-3">
+                            <div className="d-flex align-items-center">
+                                <div className="bg-warning bg-opacity-10 text-warning rounded-circle d-flex align-items-center justify-content-center me-3" style={{ width: '56px', height: '56px' }}>
+                                    <i className="bi bi-file-earmark-check-fill fs-3"></i>
+                                </div>
+                                <div>
+                                    <p className="text-muted fw-bold mb-0" style={{ fontSize: '0.85rem' }}>
+                                        정밀 검증 데이터 <span className="small fw-normal">(CSV 등)</span>
+                                    </p>
+                                    <h3 className="fw-black text-dark mb-0">{generalCount.toLocaleString()}<span className="fs-6 text-muted ms-1 fw-normal">건</span></h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
 
+            {/* 관리자용 다중 검색 및 필터바 */}
             {!isLoading && !error && approvalList.length > 0 && (
-                <div className="card shadow-sm border-0 rounded-4 overflow-hidden">
-                    <div className="table-responsive">
-                        {/* minWidth를 rem으로 조정 (약 900px 수준) */}
-                        <table className="table table-hover align-middle mb-0" style={{ minWidth: '56.25rem' }}>
-                            <thead className="table-light text-secondary fw-bold text-center" style={{ fontSize: '0.9rem' }}>
-                                <tr>
-                                    <th className="py-3" style={{ width: '4rem' }}>번호</th>
-                                    {/* 🚀 text-nowrap 추가: 제목이 길어도 헤더가 절대 안 깨지게! */}
-                                    <th className="py-3 text-nowrap">연구자 (소속)</th>
-                                    <th className="py-3" style={{ width: '35%' }}>데이터셋 제목</th>
-                                    <th className="py-3 text-nowrap">건수</th>
-                                    <th className="py-3 text-nowrap">신청일자</th>
-                                    <th className="py-3 text-nowrap">현재 상태</th>
-                                    <th className="py-3 text-nowrap">작업</th>
-                                </tr>
-                            </thead>
-                            <tbody style={{ fontSize: '0.95rem' }}>
-                                {approvalList.map((item, index) => (
-                                    <tr 
-                                        key={item.datasetId} 
-                                        style={{ cursor: 'pointer' }}
-                                        onClick={() => navigate(`/upload/admin/approveList/${item.datasetId}`)}
-                                    >
-                                        <td className="text-center text-muted small">{index + 1}</td>
-                                        
-                                        {/* 🚀 text-nowrap: 이름과 소속이 한 줄에 예쁘게 나오게 함 */}
-                                        <td className="text-nowrap px-3">
-                                            <div className="fw-bold text-dark">{item.username || '알 수 없음'}</div>
-                                            <div className="text-muted small" style={{ fontSize: '0.8rem' }}>
-                                                {item.organization || '소속 미지정'}
-                                            </div>
-                                        </td>
-                                        
-                                        <td className="fw-semibold text-dark text-truncate px-3 text-center" style={{ maxWidth: '20rem' }}>
-                                            {item.title}
-                                        </td>
-                                        
-                                        {/* 🚀 건수 영역 줄바꿈 방지 */}
-                                        <td className="text-center text-nowrap px-3">
-                                            <span className="fw-bold text-primary" style={{ fontSize: '1.1rem' }}>
-                                                {item.successCount ? item.successCount.toLocaleString() : '0'}
-                                            </span>
-                                            <span className="text-muted ms-1" style={{ fontSize: '0.85rem' }}>건</span>
-                                        </td>
-                                        
-                                        <td className="text-center text-muted small text-nowrap px-3">
-                                            {formatDate(item.createdAt)}
-                                        </td>
-                                        
-                                        <td className="text-center text-nowrap">
-                                            <span className="badge rounded-pill px-3 py-2" style={{ backgroundColor: '#FEF3C7', color: '#D97706', fontSize: '0.85rem' }}>
-                                                승인 대기
-                                            </span>
-                                        </td>
-                                        
-                                        <td className="text-center text-nowrap px-3" onClick={(e) => e.stopPropagation()}>
-                                            {/* 🚀 버튼도 text-nowrap을 주어 "자세히 보기"가 절대 안 잘리게 함 */}
-                                            <button 
-                                                className="btn btn-outline-primary btn-sm px-3 fw-bold rounded-2 text-nowrap"
+                <div className="card shadow-sm border-0 rounded-4 mb-4" style={{ backgroundColor: '#ffffff' }}>
+                    <div className="card-body p-3 p-md-4">
+                        <div className="row g-3 align-items-end">
+                            <div className="col-lg-6 col-md-12">
+                                <label className="form-label small fw-bold text-secondary mb-1">통합 검색 (제목, 연구자, 소속기관)</label>
+                                <div className="input-group">
+                                    <span className="input-group-text bg-light border-end-0"><i className="bi bi-search text-muted"></i></span>
+                                    <input 
+                                        type="text" 
+                                        className="form-control border-start-0 ps-0" 
+                                        placeholder="검색어 입력..." 
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                            <div className="col-lg-3 col-md-6">
+                                <label className="form-label small fw-bold text-secondary mb-1">파일 포맷 필터</label>
+                                <select className="form-select text-dark" value={searchFormat} onChange={(e) => setSearchFormat(e.target.value)}>
+                                    <option value="">전체 포맷</option>
+                                    <option value="CSV">CSV</option>
+                                    <option value="EXCEL">EXCEL</option>
+                                    <option value="GEOJSON">GeoJSON</option>
+                                    <option value="SHP">SHP</option>
+                                    <option value="TIFF">TIFF</option>
+                                </select>
+                            </div>
+                            <div className="col-lg-3 col-md-6">
+                                <button 
+                                    className="btn btn-outline-secondary w-100 fw-bold" 
+                                    onClick={() => { setSearchTerm(""); setSearchFormat(""); }}
+                                >
+                                    <i className="bi bi-arrow-repeat me-1"></i>조건 초기화
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 로딩 및 에러 처리 */}
+            {isLoading && <div className="text-center py-5" style={{ minHeight: '300px' }}><div className="spinner-border text-primary" role="status"></div></div>}
+
+            {!isLoading && error && (
+                <div className="alert alert-danger text-center py-5 rounded-4 shadow-sm" role="alert">
+                    <i className="bi bi-exclamation-triangle-fill fs-1 d-block mb-3"></i>
+                    <h5 className="fw-bold">{error}</h5>
+                </div>
+            )}
+
+            {/* 메인 테이블 영역 */}
+            {!isLoading && !error && (
+                <div className="card shadow-sm border-0 rounded-4 overflow-hidden mb-5">
+                    <div className="card-body p-0">
+                        {filteredList.length === 0 ? (
+                            <div className="text-center py-5 text-muted" style={{ minHeight: '300px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                                <i className="bi bi-inbox text-secondary opacity-25 d-block mb-3" style={{ fontSize: '4rem' }}></i>
+                                <h5 className="fw-bold text-dark mb-1">승인 대기 중인 항목이 없습니다.</h5>
+                                {approvalList.length > 0 && <p className="small">검색 조건에 맞는 데이터가 없습니다.</p>}
+                            </div>
+                        ) : (
+                            <div className="table-responsive">
+                                <table className="table table-hover align-middle mb-0" style={{ minWidth: '1000px' }}>
+                                    <thead className="table-light text-secondary fw-bold text-center" style={{ fontSize: '0.9rem' }}>
+                                        <tr>
+                                            <th className="py-3" style={{ width: '5%' }}>No.</th>
+                                            <th className="py-3 text-start" style={{ width: '15%' }}>요청자 (소속)</th>
+                                            <th className="py-3 text-start" style={{ width: '45%' }}>데이터셋 제목</th>
+                                            <th className="py-3" style={{ width: '8%' }}>포맷</th>
+                                            <th className="py-3" style={{ width: '9%' }}>데이터 건수</th>
+                                            <th className="py-3" style={{ width: '10%' }}>신청 일시</th>
+                                            <th className="py-3" style={{ width: '8%' }}>심사</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody style={{ fontSize: '0.95rem' }}>
+                                        {currentItems.map((item, index) => {
+                                            const actualNumber = totalFilteredCount - (indexOfFirstItem + index);
+                                            
+                                            return (
+                                            <tr 
+                                                key={item.datasetId} 
+                                                style={{ cursor: 'pointer', transition: 'background-color 0.2s' }}
                                                 onClick={() => navigate(`/upload/admin/approveList/${item.datasetId}`)}
                                             >
-                                                <i className="bi bi-search me-1"></i> 자세히 보기
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                                <td className="text-center text-muted small">{actualNumber}</td>
+                                                
+                                                <td className="text-start px-3">
+                                                    <div className="fw-bolder text-dark mb-1" style={{ fontSize: '0.95rem' }}>{item.username || '알 수 없음'}</div>
+                                                    <div className="text-secondary opacity-75" style={{ fontSize: '0.8rem' }}>
+                                                        <i className="bi bi-building me-1"></i>{item.organization || '소속 미지정'}
+                                                    </div>
+                                                </td>
+                                                
+                                                <td className="text-start fw-semibold text-dark px-3">
+                                                    {item.title}
+                                                </td>
+                                                
+                                                <td className="text-center">
+                                                    <span className="badge bg-light text-secondary border px-2 py-1 font-monospace">{item.fileFormat}</span>
+                                                </td>
+
+                                                {/* 🚀 2. "0건" 이슈 완벽 해결: SHP/TIFF는 회색 뱃지로 대체 */}
+                                                <td className="text-center px-3">
+                                                    {(item.fileFormat === 'SHP' || item.fileFormat === 'TIFF') ? (
+                                                        <span className="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2 py-1" style={{fontSize: '0.8rem'}}>
+                                                            <i className="bi bi-hdd-fill me-1"></i>원본 유지
+                                                        </span>
+                                                    ) : (
+                                                        <>
+                                                            <span className="fw-bold text-primary" style={{ fontSize: '1.05rem' }}>
+                                                                {item.successCount ? item.successCount.toLocaleString() : '0'}
+                                                            </span>
+                                                            <span className="text-muted ms-1" style={{ fontSize: '0.8rem' }}>건</span>
+                                                        </>
+                                                    )}
+                                                </td>
+                                                
+                                                <td className="text-center text-muted small px-3">
+                                                    {formatDate(item.createdAt)}
+                                                </td>
+                                                
+                                                <td className="text-center px-3" onClick={(e) => e.stopPropagation()}>
+                                                    {/* 🚀 btn-primary를 btn-outline-primary로 변경하고, 투박한 shadow-sm을 제거했습니다. */}
+                                                    <button 
+                                                        className="btn btn-outline-primary btn-sm px-3 fw-bold rounded-pill text-nowrap"
+                                                        onClick={() => navigate(`/upload/admin/approveList/${item.datasetId}`)}
+                                                        style={{ transition: 'all 0.2s' }}
+                                                    >
+                                                        심사 시작 <i className="bi bi-arrow-right-short"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        )})}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
                     </div>
+
+                    {/* 하단 페이징 영역 */}
+                    {!isLoading && filteredList.length > 0 && (
+                        <div className="card-footer bg-white border-top p-3 d-flex justify-content-between align-items-center">
+                            <div className="text-muted small fw-bold">
+                                대기 목록 <span className="text-primary">{totalFilteredCount.toLocaleString()}</span>건
+                            </div>
+
+                            <div className="d-flex align-items-center gap-1">
+                                <button className="btn btn-light btn-sm border text-secondary" onClick={() => paginate(1)} disabled={currentPage === 1}>
+                                    <i className="bi bi-chevron-double-left"></i>
+                                </button>
+                                <button className="btn btn-light btn-sm border text-secondary me-2" onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1}>
+                                    <i className="bi bi-chevron-left"></i>
+                                </button>
+
+                                {[...Array(totalPages)].map((_, i) => (
+                                    <button 
+                                        key={i + 1} 
+                                        className={`btn btn-sm fw-bold ${currentPage === i + 1 ? 'btn-primary' : 'btn-light border text-secondary'}`}
+                                        onClick={() => paginate(i + 1)}
+                                        style={{ width: '32px' }}
+                                    >
+                                        {i + 1}
+                                    </button>
+                                ))}
+
+                                <button className="btn btn-light btn-sm border text-secondary ms-2" onClick={() => paginate(currentPage + 1)} disabled={currentPage === totalPages}>
+                                    <i className="bi bi-chevron-right"></i>
+                                </button>
+                                <button className="btn btn-light btn-sm border text-secondary" onClick={() => paginate(totalPages)} disabled={currentPage === totalPages}>
+                                    <i className="bi bi-chevron-double-right"></i>
+                                </button>
+                            </div>
+
+                            <div>
+                                <select className="form-select form-select-sm text-secondary bg-light" value={itemsPerPage} onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }}>
+                                    <option value="10">10개씩 보기</option>
+                                    <option value="20">20개씩 보기</option>
+                                    <option value="50">50개씩 보기</option>
+                                </select>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

@@ -52,6 +52,15 @@
     
 }
 
+.map-preview-fixed,
+.map-preview-fixed .leaflet-interactive {
+    cursor: default !important;
+}
+
+.map-preview-fixed .leaflet-control-container {
+    display: none;
+}
+
 
 
 
@@ -91,23 +100,134 @@
     overflow-wrap: anywhere;
 }
 
-
-
-/* ===== Download Pagination ===== */
-.download-pagination-bar {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
+.download-date-range {
+    display: flex;
     align-items: center;
+    gap: 8px;
+}
+
+.download-date-range span {
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.download-trend {
+    font-weight: 800;
+}
+
+.download-trend.up {
+    color: #16a34a;
+}
+
+.download-trend.down {
+    color: #dc2626;
+}
+
+.download-trend.flat {
+    color: #64748b;
+}
+
+.download-trend-base {
+    color: #94a3b8;
+    font-weight: 700;
+}
+
+.attribute-preview-table-wrap {
+    min-height: 214px;
+    max-height: 320px;
+    overflow: auto;
+    border: 1px solid #edf2f7;
+    border-radius: 6px;
+}
+
+.attribute-preview-table-wrap .table {
+    min-width: 760px;
+    margin-bottom: 0;
+}
+
+.attribute-preview-cell {
+    min-width: 120px;
+    max-width: 220px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.related-dataset-card {
+    min-height: 178px;
+}
+
+.related-dataset-empty {
+    min-height: 104px;
+    display: flex;
+    align-items: center;
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+
+
+/* ===== Download List Toolbar ===== */
+.download-list-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     gap: 16px;
-    padding: 18px 20px 20px;
-    border-top: 1px solid #edf2f7;
+    padding: 16px 20px;
+    border-bottom: 1px solid #edf2f7;
     background-color: #ffffff;
 }
 
-.download-pagination-total {
+.download-list-total {
     color: #475569;
     font-size: 14px;
+    font-weight: 800;
+}
+
+.download-list-controls {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.download-list-controls .form-select {
+    width: 132px;
+    border-color: #dbe3ee;
+    color: #475569;
+    font-size: 13px;
     font-weight: 700;
+    box-shadow: none;
+}
+
+.download-list-controls .form-select:first-child {
+    width: 150px;
+}
+
+.download-list-favorite-star {
+    margin-left: 6px;
+    font-size: 12px;
+    vertical-align: 1px;
+}
+
+.download-main-table {
+    margin-bottom: 0;
+}
+
+.download-main-table tbody tr:last-child > * {
+    border-bottom-width: 0;
+}
+
+/* ===== Download Pagination ===== */
+.download-pagination-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 18px 20px 20px;
+    border-top: 1px solid #edf2f7;
+    background-color: #ffffff;
 }
 
 .download-pagination-center {
@@ -160,31 +280,94 @@
     font-weight: 700;
 }
 
-.download-pagination-size {
-    display: flex;
-    justify-content: flex-end;
+.download-format-option {
+    min-height: 43px;
+    border-radius: 8px;
+    transition: border-color 0.18s ease, background-color 0.18s ease;
 }
 
-.download-pagination-size .form-select {
-    width: 132px;
-    border-color: #dbe3ee;
-    color: #475569;
-    font-size: 13px;
-    font-weight: 700;
-    box-shadow: none;
+.download-format-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 10px;
+}
+
+.download-format-item {
+    min-width: 0;
+}
+
+.download-format-original-item {
+    grid-column: 1 / -1;
+    width: 100%;
+}
+
+.download-format-original-item .download-format-option-content {
+    justify-content: center;
+}
+
+.download-format-option-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-width: 0;
+    white-space: nowrap;
+}
+
+.download-format-main {
+    display: inline-flex;
+    align-items: center;
+    min-width: 0;
+}
+
+.download-format-option:disabled {
+    opacity: 1;
+    cursor: not-allowed;
+}
+
+.download-format-option-disabled {
+    border-color: #d1d5db !important;
+    background: #f1f5f9 !important;
+    color: #64748b !important;
+}
+
+.download-format-option-disabled .badge {
+    background: #e5e7eb !important;
+    border-color: #d1d5db !important;
+    color: #4b5563 !important;
+}
+
+.download-format-size {
+    font-size: 10px;
+}
+
+.download-format-original-label {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    height: 18px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: #eff6ff;
+    color: #2563eb;
+    font-size: 10px;
+    font-weight: 800;
+    vertical-align: middle;
 }
 
 @media (max-width: 991px) {
-    .download-pagination-bar {
-        grid-template-columns: 1fr;
-        justify-items: center;
+    .download-list-toolbar {
+        align-items: stretch;
+        flex-direction: column;
     }
 
-    .download-pagination-total,
-    .download-pagination-size {
-        width: 100%;
-        justify-content: center;
-        text-align: center;
+    .download-list-controls {
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .download-pagination-bar {
+        justify-items: center;
     }
 
     .download-pagination-center {
