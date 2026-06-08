@@ -11,7 +11,7 @@ function Adminrouters () {
         <>
             <Routes>
                 <Route path="userList" element={<UserListPage />} />
-                <Route path="detail/:userId" element={<UserDetailPage />} />
+                <Route path="detail/:id" element={<UserDetailPage />} />
                 <Route path="settingList" element={<SystemSettingListPage />} />
                 <Route path="settingUpdate" element={<SystemSettingUpdatePage />} />
                 <Route path="systemsetting" element={<SystemSettingConfigLog />} />
