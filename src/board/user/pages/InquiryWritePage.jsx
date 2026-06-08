@@ -60,7 +60,7 @@ function InquiryWritePage() {
   };
 
   return (
-    <div className="inquiry-write-page">
+    <div className="container-fluid px-4 py-3 inquiry-write-page">
       <div className="inquiry-write-container">
         <section className="inquiry-write-header">
           <div className="inquiry-write-icon">?</div>

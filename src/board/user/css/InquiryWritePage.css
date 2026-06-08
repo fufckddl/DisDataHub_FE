@@ -1,14 +1,14 @@
 .inquiry-write-page {
   min-height: 100vh;
-  padding: 40px 56px;
   background: #f4f8fc;
   color: #17202a;
   box-sizing: border-box;
 }
 
 .inquiry-write-container {
-  max-width: 1080px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: none;
+  margin: 0;
 }
 
 /* 상단 제목 */
@@ -229,10 +229,6 @@
 
 /* 반응형 */
 @media (max-width: 768px) {
-  .inquiry-write-page {
-    padding: 28px 20px;
-  }
-
   .inquiry-write-header {
     align-items: flex-start;
   }

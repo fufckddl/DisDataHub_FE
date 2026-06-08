@@ -1,14 +1,14 @@
 .inquiry-detail-page {
   min-height: 100vh;
-  padding: 40px 56px;
   background: #f4f8fc;
   color: #17202a;
   box-sizing: border-box;
 }
 
 .inquiry-detail-container {
-  max-width: 1080px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: none;
+  margin: 0;
 }
 
 /* 상단 제목 섹션 */
@@ -25,14 +25,17 @@
   align-items: center;
   gap: 10px;
   margin-bottom: 18px;
+  flex-wrap: wrap;
 }
 
 .inquiry-category-badge,
-.inquiry-status-badge {
+.inquiry-status-badge,
+.inquiry-visibility-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 7px 12px;
+  min-height: 30px;
+  padding: 0 12px;
   border-radius: 999px;
   font-size: 14px;
   font-weight: 800;
@@ -42,6 +45,11 @@
 .inquiry-category-badge {
   background: #e8f1ff;
   color: #1f6feb;
+}
+
+.inquiry-visibility-badge {
+  background: #f1f5f9;
+  color: #475569;
 }
 
 .inquiry-status-badge.status-received {
@@ -70,6 +78,49 @@
   margin: 14px 0 0;
   color: #64748b;
   font-size: 16px;
+}
+
+/* 작성자 버튼 */
+.inquiry-owner-button-area {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.inquiry-edit-button,
+.inquiry-delete-button {
+  height: 42px;
+  padding: 0 18px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.inquiry-edit-button {
+  border: 1px solid #1f6feb;
+  background: #ffffff;
+  color: #1f6feb;
+}
+
+.inquiry-edit-button:hover {
+  background: #e8f1ff;
+}
+
+.inquiry-delete-button {
+  border: none;
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.inquiry-delete-button:hover {
+  background: #dc2626;
+}
+
+.inquiry-delete-button:disabled {
+  background: #fca5a5;
+  cursor: not-allowed;
 }
 
 /* 메타 정보 */
@@ -197,7 +248,8 @@
   margin-top: 30px;
 }
 
-.inquiry-detail-button-area button {
+.inquiry-detail-button-area button,
+.inquiry-not-found button {
   min-width: 130px;
   height: 48px;
   border-radius: 8px;
@@ -213,33 +265,40 @@
   color: #334155;
 }
 
-.inquiry-detail-button-area button:nth-child(2) {
+.inquiry-detail-button-area button:nth-child(2),
+.inquiry-not-found button {
   border: none;
   background: #1f6feb;
   color: #ffffff;
 }
 
-.inquiry-detail-button-area button:hover {
+.inquiry-detail-button-area button:hover,
+.inquiry-not-found button:hover {
   opacity: 0.9;
 }
 
-/* 게시글 없음 상태 */
-.inquiry-detail-container > p {
-  padding: 40px;
+/* 게시글 없음 / 로딩 */
+.inquiry-not-found {
+  padding: 50px;
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 14px;
+  text-align: center;
+}
+
+.inquiry-not-found p {
+  margin: 0 0 12px;
   color: #64748b;
   font-size: 17px;
-  text-align: center;
+  line-height: 1.6;
+}
+
+.inquiry-not-found button {
+  margin-top: 12px;
 }
 
 /* 반응형 */
 @media (max-width: 768px) {
-  .inquiry-detail-page {
-    padding: 28px 20px;
-  }
-
   .inquiry-detail-header,
   .inquiry-detail-content,
   .inquiry-answer-section {
@@ -268,66 +327,15 @@
     gap: 6px;
   }
 
+  .inquiry-owner-button-area {
+    justify-content: flex-start;
+  }
+
   .inquiry-detail-button-area {
     flex-direction: column;
   }
 
   .inquiry-detail-button-area button {
     width: 100%;
-  }
-
-    .inquiry-owner-button-area {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 22px;
-  }
-
-  .inquiry-edit-button,
-  .inquiry-delete-button {
-    height: 42px;
-    padding: 0 18px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 800;
-    cursor: pointer;
-  }
-
-  .inquiry-edit-button {
-    border: 1px solid #1f6feb;
-    background: #ffffff;
-    color: #1f6feb;
-  }
-
-  .inquiry-edit-button:hover {
-    background: #e8f1ff;
-  }
-
-  .inquiry-delete-button {
-    border: none;
-    background: #ef4444;
-    color: #ffffff;
-  }
-
-  .inquiry-delete-button:hover {
-    background: #dc2626;
-  }
-
-  .inquiry-delete-button:disabled {
-    background: #fca5a5;
-    cursor: not-allowed;
-  }
-
-  .inquiry-visibility-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 30px;
-    padding: 0 12px;
-    border-radius: 999px;
-    background: #f1f5f9;
-    color: #475569;
-    font-size: 13px;
-    font-weight: 800;
   }
 }

@@ -46,12 +46,14 @@ function InquiryListPage() {
 
   const getInquiryStatusName = (statusCode) => {
     if (statusCode === "RECEIVED") return "접수완료";
+    if (statusCode === "CHECKING") return "확인중";
     if (statusCode === "ANSWERED") return "답변완료";
     return statusCode ?? "-";
   };
 
   const getStatusClassName = (statusCode) => {
     if (statusCode === "RECEIVED") return "status-received";
+    if (statusCode === "CHECKING") return "status-checking";
     if (statusCode === "ANSWERED") return "status-answered";
     return "";
   };
@@ -62,8 +64,16 @@ function InquiryListPage() {
     return "-";
   };
 
+  const getInquiryCategoryName = (categoryCode) => {
+    if (categoryCode === "SYSTEM_USE") return "시스템 이용";
+    if (categoryCode === "DATA") return "데이터 문의";
+    if (categoryCode === "ERROR") return "오류 문의";
+    if (categoryCode === "ETC") return "기타 문의";
+    return categoryCode ?? "-";
+  };
+
   return (
-    <div className="inquiry-list-page">
+    <div className="container-fluid px-4 py-3 inquiry-list-page">
       <section className="inquiry-list-header">
         <div>
           <h1>문의 게시판</h1>
@@ -114,8 +124,13 @@ function InquiryListPage() {
                 onClick={() => handleInquiryClick(inquiry.postId)}
               >
                 <td>{inquiry.postId}</td>
-                <td className="inquiry-title-cell">{inquiry.title}</td>
-                <td>{inquiry.inquiryCategoryCode}</td>
+
+                <td className="inquiry-title-cell">
+                  {inquiry.title || "제목 없음"}
+                </td>
+
+                <td>{getInquiryCategoryName(inquiry.inquiryCategoryCode)}</td>
+
                 <td>
                   <span
                     className={`inquiry-status-badge ${getStatusClassName(
@@ -125,9 +140,10 @@ function InquiryListPage() {
                     {getInquiryStatusName(inquiry.inquiryStatusCode)}
                   </span>
                 </td>
+
                 <td>{getVisibilityName(inquiry.visibilityStatus)}</td>
                 <td>{formatDate(inquiry.createdAt)}</td>
-                <td>{inquiry.viewCount}</td>
+                <td>{inquiry.viewCount ?? 0}</td>
               </tr>
             ))}
           </tbody>
@@ -140,9 +156,7 @@ function InquiryListPage() {
         )}
 
         {!isLoading && filteredInquiryList.length === 0 && (
-          <div className="inquiry-empty-message">
-            등록된 문의가 없습니다.
-          </div>
+          <div className="inquiry-empty-message">등록된 문의가 없습니다.</div>
         )}
       </section>
     </div>
