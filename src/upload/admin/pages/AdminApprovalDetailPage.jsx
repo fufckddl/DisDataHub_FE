@@ -197,7 +197,7 @@ function AdminApprovalDetailPage() {
                     <h2 className="fw-bolder text-dark mb-1" style={{ fontSize: '1.5rem', letterSpacing: '-0.5px' }}>
                         {datasetInfo.title}
                     </h2>
-                    <p className="text-muted mb-0" style={{ fontSize: '0.9rem' }}>
+                    <p className="text-muted mb-0" style={{ fontSize: '0.8rem' }}>
                         업로드된 데이터의 공간 정보와 상세 내역을 검토하고 승인/반려를 결정합니다.
                     </p>
                 </div>

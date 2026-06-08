@@ -1,23 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../../commons/api/axiosinstance';
+import '../../../download/style/download.css';
 
 function MyUploadListPage() {
     const navigate = useNavigate();
     
-    // 🛑 기존 상태 관리
+    // 🛑 상태 관리
     const [datasetList, setDatasetList] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [selectedRejection, setSelectedRejection] = useState(null);
 
-    // 🚀 [신규] 검색 및 필터 상태 관리
+    // 🛑 검색 및 필터 상태 관리
     const [searchTerm, setSearchTerm] = useState("");
     const [searchCategory, setSearchCategory] = useState("");
     const [searchFormat, setSearchFormat] = useState("");
     const [searchStatus, setSearchStatus] = useState("");
 
-    // 페이징(Pagination) 상태 관리
+    // 🛑 페이징 상태 관리
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10); 
 
@@ -46,31 +47,25 @@ function MyUploadListPage() {
     }, [navigate]);
 
     // =====================================================================
-    // 🚀 [신규] 다중 필터링 로직 (교집합 검색)
+    // 2. 다중 필터링 로직 (교집합 검색)
     // =====================================================================
     const filteredList = datasetList.filter(item => {
-        // 1. 제목 검색 (대소문자 무시)
         const matchTitle = item.title.toLowerCase().includes(searchTerm.toLowerCase());
-        // 2. 카테고리 필터 ("" 이면 모두 통과)
         const matchCategory = searchCategory === "" || item.category === searchCategory;
-        // 3. 포맷 필터
         const matchFormat = searchFormat === "" || item.fileFormat === searchFormat;
-        // 4. 상태 필터
         const matchStatus = searchStatus === "" || item.status === searchStatus;
 
         return matchTitle && matchCategory && matchFormat && matchStatus;
     });
 
-    // 필터 조건이 바뀔 때마다 무조건 1페이지로 리셋
     useEffect(() => {
         setCurrentPage(1);
     }, [searchTerm, searchCategory, searchFormat, searchStatus, itemsPerPage]);
 
-    // 동적 카테고리 추출 (필터 드롭다운 용)
     const uniqueCategories = [...new Set(datasetList.map(item => item.category).filter(Boolean))];
 
     // =====================================================================
-    // 상단 대시보드용 요약 통계 계산 (전체 데이터 기준 유지)
+    // 3. 상단 대시보드 요약 통계 계산
     // =====================================================================
     const totalUploads = datasetList.length;
     const approvedCount = datasetList.filter(item => item.status === 'APPROVED').length;
@@ -78,7 +73,7 @@ function MyUploadListPage() {
     const rejectedCount = datasetList.filter(item => item.status === 'REJECTED').length;
 
     // =====================================================================
-    // 페이징 로직 (필터링된 결과인 filteredList를 기준으로 10개씩 자르기!)
+    // 4. 페이징 처리 로직
     // =====================================================================
     const totalFilteredCount = filteredList.length;
     const totalPages = Math.ceil(totalFilteredCount / itemsPerPage);
@@ -92,23 +87,39 @@ function MyUploadListPage() {
         }
     };
 
+    // 🚀 [팀원 코드 이식] 생략 표시(...)를 포함한 고급 페이징 번호 계산 로직
+    const getPageNumbers = (currentPage, totalPages) => {
+        if (totalPages <= 0) return [];
+        const maxVisible = 5;
+        let start = Math.max(1, currentPage - 2);
+        let end = Math.min(totalPages, start + maxVisible - 1);
+
+        if (end - start + 1 < maxVisible) {
+            start = Math.max(1, end - maxVisible + 1);
+        }
+        return Array.from({ length: end - start + 1 }, (_, index) => start + index);
+    };
+
+    const pageNumbers = getPageNumbers(currentPage, totalPages);
+    const hasPrevious = currentPage > 1;
+    const hasNext = totalPages > 0 && currentPage < totalPages;
+
     // =====================================================================
-    // 2. 상태별 뱃지(Badge) 색상 및 텍스트 렌더링
+    // 5. 부가 함수 (뱃지 렌더링, 모달 처리)
     // =====================================================================
     const getStatusBadge = (status) => {
         switch (status) {
             case 'REQUEST':
-                return <span className="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold" style={{ backgroundColor: '#FEF3C7', color: '#D97706' }}>심사 대기중</span>;
+                return <span className="badge bg-warning text-dark px-2 py-2 rounded-3 fw-bold" style={{ backgroundColor: '#FEF3C7', color: '#D97706' }}>심사 대기중</span>;
             case 'APPROVED':
-                return <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill fw-bold">승인 완료</span>;
+                return <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-2 rounded-3 fw-bold">승인 완료</span>;
             case 'REJECTED':
-                return <span className="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-3 py-2 rounded-pill fw-bold">반려됨</span>;
+                return <span className="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-2 rounded-3 fw-bold">반려됨</span>;
             default:
                 return <span className="badge bg-secondary px-3 py-2 rounded-pill">{status}</span>;
         }
     };
 
-    // 반려 사유 모달 함수
     const openRejectionModal = (rejectionDetails) => {
         setSelectedRejection(rejectionDetails);
         setShowModal(true);
@@ -119,86 +130,35 @@ function MyUploadListPage() {
         setSelectedRejection(null);
     };
 
+    // =====================================================================
+    // 6. 화면 렌더링 (UI)
+    // =====================================================================
     return (
-        <div className="container-fluid px-4 py-4" style={{ backgroundColor: '#F8F9FA', minHeight: '100vh' }}>
+        <div className="container-fluid px-4 py-3" style={{ backgroundColor: '#F8F9FA', minHeight: '100vh' }}>
             
             {/* 상단 헤더 영역 */}
-            <div className="d-flex justify-content-between align-items-end mb-4 pb-3 border-bottom">
-                <div>
-                    <h2 className="fw-bolder text-dark mb-2" style={{ letterSpacing: '-0.5px' }}>나의 데이터 업로드 내역</h2>
-                    <p className="text-muted mb-0" style={{ fontSize: '0.95rem' }}>
+            <div className="justify-content-between align-items-end pb-3">
+                <div className='row'>
+                    <div className='col'>
+                        <h2 className="fw-bolder text-dark mb-2">나의 데이터 업로드 내역</h2>
+                    </div>
+                    <div className='col-auto'>
+                        <button className="btn btn-outline-primary fw-bold rounded-2 shadow-sm" onClick={() => navigate('/upload/user/write')}>
+                            <i className="bi bi-plus-lg me-2"></i>신규 데이터 업로드
+                        </button>
+                    </div>
+                    <p className="text-muted mb-0" style={{ fontSize: '0.8rem' }}>
                         내가 요청한 데이터셋의 처리 상태를 확인하고, 반려된 경우 사유를 조회할 수 있습니다.
                     </p>
                 </div>
-                <button className="btn btn-primary btn-lg fw-bold px-4 rounded-3 shadow-sm" onClick={() => navigate('/upload/user/write')}>
-                    <i className="bi bi-plus-lg me-2"></i>신규 데이터 업로드
-                </button>
+
             </div>
 
-            {/* 상단 요약 대시보드 카드 4개 */}
-            {!isLoading && (
-                <div className="row g-4 mb-4">
-                    <div className="col-xl-3 col-md-6">
-                        <div className="card shadow-sm border-0 rounded-4 h-100 p-3">
-                            <div className="d-flex align-items-center">
-                                <div className="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-3" style={{ width: '56px', height: '56px' }}>
-                                    <i className="bi bi-cloud-upload-fill fs-3"></i>
-                                </div>
-                                <div>
-                                    <p className="text-muted fw-bold mb-0" style={{ fontSize: '0.85rem' }}>총 업로드 요청</p>
-                                    <h3 className="fw-black text-dark mb-0">{totalUploads.toLocaleString()}<span className="fs-6 text-muted ms-1 fw-normal">건</span></h3>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="col-xl-3 col-md-6">
-                        <div className="card shadow-sm border-0 rounded-4 h-100 p-3">
-                            <div className="d-flex align-items-center">
-                                <div className="bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center me-3" style={{ width: '56px', height: '56px' }}>
-                                    <i className="bi bi-check-circle-fill fs-3"></i>
-                                </div>
-                                <div>
-                                    <p className="text-muted fw-bold mb-0" style={{ fontSize: '0.85rem' }}>승인 완료</p>
-                                    <h3 className="fw-black text-dark mb-0">{approvedCount.toLocaleString()}<span className="fs-6 text-muted ms-1 fw-normal">건</span></h3>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="col-xl-3 col-md-6">
-                        <div className="card shadow-sm border-0 rounded-4 h-100 p-3">
-                            <div className="d-flex align-items-center">
-                                <div className="bg-warning bg-opacity-10 text-warning rounded-circle d-flex align-items-center justify-content-center me-3" style={{ width: '56px', height: '56px' }}>
-                                    <i className="bi bi-hourglass-split fs-3"></i>
-                                </div>
-                                <div>
-                                    <p className="text-muted fw-bold mb-0" style={{ fontSize: '0.85rem' }}>심사 대기중</p>
-                                    <h3 className="fw-black text-dark mb-0">{pendingCount.toLocaleString()}<span className="fs-6 text-muted ms-1 fw-normal">건</span></h3>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="col-xl-3 col-md-6">
-                        <div className="card shadow-sm border-0 rounded-4 h-100 p-3">
-                            <div className="d-flex align-items-center">
-                                <div className="bg-danger bg-opacity-10 text-danger rounded-circle d-flex align-items-center justify-content-center me-3" style={{ width: '56px', height: '56px' }}>
-                                    <i className="bi bi-exclamation-triangle-fill fs-3"></i>
-                                </div>
-                                <div>
-                                    <p className="text-muted fw-bold mb-0" style={{ fontSize: '0.85rem' }}>반려됨</p>
-                                    <h3 className="fw-black text-dark mb-0">{rejectedCount.toLocaleString()}<span className="fs-6 text-muted ms-1 fw-normal">건</span></h3>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* 🚀 [신규] 멀티 필터 검색바 (대시보드와 리스트 사이 황금 위치) */}
+            {/* 멀티 필터 검색바 */}
             {!isLoading && datasetList.length > 0 && (
-                <div className="card shadow-sm border-0 rounded-4 mb-4" style={{ backgroundColor: '#ffffff' }}>
+                <div className="card shadow-sm rounded-2 mb-3" style={{ backgroundColor: '#ffffff' }}>
                     <div className="card-body p-3 p-md-4">
                         <div className="row g-3 align-items-end">
-                            {/* 제목 검색 */}
                             <div className="col-lg-4 col-md-12">
                                 <label className="form-label small fw-bold text-secondary mb-1">데이터셋 검색</label>
                                 <div className="input-group">
@@ -212,7 +172,6 @@ function MyUploadListPage() {
                                     />
                                 </div>
                             </div>
-                            {/* 카테고리 필터 */}
                             <div className="col-lg-2 col-md-4">
                                 <label className="form-label small fw-bold text-secondary mb-1">카테고리</label>
                                 <select className="form-select text-dark" value={searchCategory} onChange={(e) => setSearchCategory(e.target.value)}>
@@ -222,7 +181,6 @@ function MyUploadListPage() {
                                     ))}
                                 </select>
                             </div>
-                            {/* 포맷 필터 */}
                             <div className="col-lg-2 col-md-4">
                                 <label className="form-label small fw-bold text-secondary mb-1">파일 포맷</label>
                                 <select className="form-select text-dark" value={searchFormat} onChange={(e) => setSearchFormat(e.target.value)}>
@@ -234,7 +192,6 @@ function MyUploadListPage() {
                                     <option value="TIFF">TIFF</option>
                                 </select>
                             </div>
-                            {/* 상태 필터 */}
                             <div className="col-lg-2 col-md-4">
                                 <label className="form-label small fw-bold text-secondary mb-1">처리 상태</label>
                                 <select className="form-select text-dark" value={searchStatus} onChange={(e) => setSearchStatus(e.target.value)}>
@@ -244,7 +201,6 @@ function MyUploadListPage() {
                                     <option value="REJECTED">반려됨</option>
                                 </select>
                             </div>
-                            {/* 초기화 버튼 */}
                             <div className="col-lg-2 col-md-12">
                                 <button 
                                     className="btn btn-outline-secondary w-100 fw-bold" 
@@ -263,8 +219,97 @@ function MyUploadListPage() {
                 </div>
             )}
 
+            {/* 상단 요약 대시보드 카드 4개 */}
+            {!isLoading && (
+                <div className="row g-4 mb-3">
+                    <div className="col-xl-3 col-md-6">
+                        <div className="card shadow-sm p-4">
+                            <div className="d-flex align-items-start">
+                                <div className="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center flex-shrink-0 me-3" style={{ width: '56px', height: '56px' }}>
+                                    <i className="bi bi-cloud-upload-fill fs-3"></i>
+                                </div>
+                                <div style={{ minWidth: 0 }}>
+                                    <div className="fw-bold text-dark" style={{ fontSize: '0.875em' }}>총 업로드 요청</div>
+                                    <div className="fw-bold text-dark" style={{ fontSize: '1.08rem' }}>{totalUploads.toLocaleString()}<span className="fs-6 fw-normal ms-1">건</span></div>
+                                    <div className="text-secondary fw-bold" style={{ fontSize: '12px' }}>전체 요청 내역</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="col-xl-3 col-md-6">
+                        <div className="card shadow-sm p-4">
+                            <div className="d-flex align-items-start">
+                                <div className="rounded-circle bg-success bg-opacity-10 text-success d-flex align-items-center justify-content-center flex-shrink-0 me-3" style={{ width: '56px', height: '56px' }}>
+                                    <i className="bi bi-check-circle-fill fs-3"></i>
+                                </div>
+                                <div style={{ minWidth: 0 }}>
+                                    <div className="fw-bold text-dark" style={{ fontSize: '0.875em' }}>승인 완료</div>
+                                    <div className="fw-bold text-dark" style={{ fontSize: '1.08rem' }}>{approvedCount.toLocaleString()}<span className="fs-6 fw-normal ms-1">건</span></div>
+                                    <div className="text-secondary fw-bold" style={{ fontSize: '0.75em' }}>정상 승인된 데이터</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="col-xl-3 col-md-6">
+                        <div className="card shadow-sm p-4">
+                            <div className="d-flex align-items-start">
+                                <div className="rounded-circle bg-warning bg-opacity-10 text-warning d-flex align-items-center justify-content-center flex-shrink-0 me-3" style={{ width: '56px', height: '56px' }}>
+                                    <i className="bi bi-hourglass-split fs-3"></i>
+                                </div>
+                                <div style={{ minWidth: 0 }}>
+                                    <div className="fw-bold text-dark" style={{ fontSize: '0.875em' }}>심사 대기중</div>
+                                    <div className="fw-bold text-dark" style={{ fontSize: '1.08rem' }}>{pendingCount.toLocaleString()}<span className="fs-6 fw-normal ms-1">건</span></div>
+                                    <div className="text-secondary fw-bold" style={{ fontSize: '0.75em' }}>관리자 검토 진행 중</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="col-xl-3 col-md-6">
+                        <div className="card shadow-sm p-4">
+                            <div className="d-flex align-items-start">
+                                <div className="rounded-circle bg-danger bg-opacity-10 text-danger d-flex align-items-center justify-content-center flex-shrink-0 me-3" style={{ width: '56px', height: '56px' }}>
+                                    <i className="bi bi-exclamation-triangle-fill fs-3"></i>
+                                </div>
+                                <div style={{ minWidth: 0 }}>
+                                    <div className="fw-bold text-dark" style={{ fontSize: '0.875em' }}>반려됨</div>
+                                    <div className="fw-bold text-dark" style={{ fontSize: '1.08rem' }}>{rejectedCount.toLocaleString()}<span className="fs-6 fw-normal ms-1">건</span></div>
+                                    <div className="text-secondary fw-bold" style={{ fontSize: '0.75em' }}>반려 사유 확인 필요</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* 메인 리스트 영역 */}
-            <div className="card shadow-sm border-0 rounded-4 overflow-hidden mb-5">
+            <div className="card shadow-sm rounded-2 overflow-hidden">
+                
+                {/* 🚀 팀원 UI와 100% 동일한 커스텀 툴바 (전체 건수 & 보기 개수) */}
+                {!isLoading && filteredList.length > 0 && (
+                    <div className="download-list-toolbar">
+                        <div className="download-list-total">전체 {totalFilteredCount.toLocaleString()}건</div>
+
+                        <div className="download-list-controls">
+                            <select 
+                                className="form-select form-select-sm" 
+                                aria-label="페이지당 목록 수"
+                                value={itemsPerPage}
+                                onChange={(e) => {
+                                    setItemsPerPage(Number(e.target.value));
+                                    setCurrentPage(1); // 보기 개수를 바꾸면 1페이지로 리셋해주는 센스!
+                                }}
+                            >
+                                <option value="10">10개씩 보기</option>
+                                <option value="20">20개씩 보기</option>
+                                <option value="50">50개씩 보기</option>
+                            </select>
+                        </div>
+                    </div>
+                )}
+
                 <div className="card-body p-0">
                     {isLoading ? (
                         <div className="d-flex justify-content-center align-items-center py-5" style={{ minHeight: '300px' }}>
@@ -277,7 +322,6 @@ function MyUploadListPage() {
                             <p className="small">새로운 데이터를 업로드하여 시스템에 기여해 보세요!</p>
                         </div>
                     ) : filteredList.length === 0 ? (
-                        // 검색 결과가 없을 때 보여줄 UI 추가
                         <div className="text-center py-5 text-muted" style={{ minHeight: '300px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                             <i className="bi bi-search text-secondary opacity-25 d-block mb-3" style={{ fontSize: '3rem' }}></i>
                             <h6 className="fw-bold text-dark mb-1">조건에 맞는 검색 결과가 없습니다.</h6>
@@ -298,7 +342,6 @@ function MyUploadListPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {/* 🚀 currentItems로 맵핑 (10개씩만 렌더링) */}
                                     {currentItems.map((item) => (
                                         <tr key={item.datasetId}>
                                             <td className="text-muted small">{item.datasetId}</td>
@@ -314,7 +357,7 @@ function MyUploadListPage() {
                                             <td>
                                                 {item.status === 'REJECTED' ? (
                                                     <button 
-                                                        className="btn btn-sm btn-outline-danger fw-bold rounded-pill px-3"
+                                                        className="btn btn-sm btn-outline-danger fw-bold rounded-3 px-2"
                                                         onClick={() => openRejectionModal(item.rejectionDetails)}
                                                     >
                                                         <i className="bi bi-search me-1"></i>사유 보기
@@ -331,55 +374,78 @@ function MyUploadListPage() {
                     )}
                 </div>
 
-                {/* 하단 페이징 영역 */}
+                {/* 🚀 팀원 UI와 100% 동일한 커스텀 페이징 영역 */}
                 {!isLoading && filteredList.length > 0 && (
-                    <div className="card-footer bg-white border-top p-3 d-flex justify-content-between align-items-center">
-                        {/* 좌측: 현재 필터링된 전체 건수 보여주기 */}
-                        <div className="text-muted small fw-bold">
-                            검색 결과 <span className="text-primary">{totalFilteredCount.toLocaleString()}</span>건
-                        </div>
-
-                        {/* 중앙: 페이지네이션 버튼 */}
-                        <div className="d-flex align-items-center gap-1">
-                            <button className="btn btn-light btn-sm border text-secondary" onClick={() => paginate(1)} disabled={currentPage === 1}>
+                    <div className="download-pagination-bar mb-1">
+                        <div className="download-pagination-center">
+                            <button
+                                type="button"
+                                className={`download-pagination-arrow ${!hasPrevious ? "disabled" : ""}`}
+                                aria-label="첫 페이지"
+                                disabled={!hasPrevious}
+                                onClick={() => paginate(1)}
+                            >
                                 <i className="bi bi-chevron-double-left"></i>
                             </button>
-                            <button className="btn btn-light btn-sm border text-secondary me-2" onClick={() => paginate(currentPage - 1)} disabled={currentPage === 1}>
+                            <button
+                                type="button"
+                                className={`download-pagination-arrow ${!hasPrevious ? "disabled" : ""}`}
+                                aria-label="이전 페이지"
+                                disabled={!hasPrevious}
+                                onClick={() => paginate(currentPage - 1)}
+                            >
                                 <i className="bi bi-chevron-left"></i>
                             </button>
 
-                            {[...Array(totalPages)].map((_, i) => (
-                                <button 
-                                    key={i + 1} 
-                                    className={`btn btn-sm fw-bold ${currentPage === i + 1 ? 'btn-primary' : 'btn-light border text-secondary'}`}
-                                    onClick={() => paginate(i + 1)}
-                                    style={{ width: '32px' }}
+                            {pageNumbers[0] > 1 && (
+                                <>
+                                    <button type="button" className="download-pagination-number" onClick={() => paginate(1)}>1</button>
+                                    <span className="download-pagination-ellipsis">...</span>
+                                </>
+                            )}
+
+                            {pageNumbers.map((pageNumber) => (
+                                <button
+                                    key={pageNumber}
+                                    type="button"
+                                    className={`download-pagination-number ${pageNumber === currentPage ? "active" : ""}`}
+                                    onClick={() => paginate(pageNumber)}
                                 >
-                                    {i + 1}
+                                    {pageNumber}
                                 </button>
                             ))}
 
-                            <button className="btn btn-light btn-sm border text-secondary ms-2" onClick={() => paginate(currentPage + 1)} disabled={currentPage === totalPages}>
+                            {pageNumbers[pageNumbers.length - 1] < totalPages && (
+                                <>
+                                    <span className="download-pagination-ellipsis">...</span>
+                                    <button
+                                        type="button"
+                                        className="download-pagination-number"
+                                        onClick={() => paginate(totalPages)}
+                                    >
+                                        {totalPages}
+                                    </button>
+                                </>
+                            )}
+
+                            <button
+                                type="button"
+                                className={`download-pagination-arrow ${!hasNext ? "disabled" : ""}`}
+                                aria-label="다음 페이지"
+                                disabled={!hasNext}
+                                onClick={() => paginate(currentPage + 1)}
+                            >
                                 <i className="bi bi-chevron-right"></i>
                             </button>
-                            <button className="btn btn-light btn-sm border text-secondary" onClick={() => paginate(totalPages)} disabled={currentPage === totalPages}>
+                            <button
+                                type="button"
+                                className={`download-pagination-arrow ${!hasNext ? "disabled" : ""}`}
+                                aria-label="마지막 페이지"
+                                disabled={!hasNext}
+                                onClick={() => paginate(totalPages)}
+                            >
                                 <i className="bi bi-chevron-double-right"></i>
                             </button>
-                        </div>
-
-                        {/* 우측: 보기 개수 선택 */}
-                        <div>
-                            <select 
-                                className="form-select form-select-sm text-secondary bg-light" 
-                                value={itemsPerPage}
-                                onChange={(e) => {
-                                    setItemsPerPage(Number(e.target.value));
-                                }}
-                            >
-                                <option value="10">10개씩 보기</option>
-                                <option value="20">20개씩 보기</option>
-                                <option value="50">50개씩 보기</option>
-                            </select>
                         </div>
                     </div>
                 )}
@@ -390,7 +456,7 @@ function MyUploadListPage() {
                 <>
                     <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }}>
                         <div className="modal-dialog modal-dialog-centered">
-                            <div className="modal-content border-0 rounded-4 shadow-lg">
+                            <div className="modal-content border-0 rounded-2 shadow-lg">
                                 <div className="modal-header bg-danger bg-opacity-10 border-bottom-0 pt-4 px-4">
                                     <h5 className="modal-title fw-bold text-danger">
                                         <i className="bi bi-exclamation-triangle-fill me-2"></i>승인 반려 사유
