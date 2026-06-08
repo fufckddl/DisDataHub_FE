@@ -106,6 +106,10 @@ function AdminGisReportManagePage() {
     (report) => report.processStatusCode === "COMPLETED"
   ).length;
 
+  const deletedCount = gisReportList.filter(
+    (report) => report.deletedYn === "Y"
+  ).length;
+
   const getErrorTypeClassName = (errorTypeCode) => {
     if (errorTypeCode === "COORDINATE_ERROR") return "error-spatial";
     if (errorTypeCode === "NAME_ERROR") return "error-classify";
@@ -206,6 +210,15 @@ function AdminGisReportManagePage() {
             <span>조치 완료</span>
           </div>
         </div>
+
+        <div className="admin-gis-summary-card">
+          <div className="summary-icon">🗑</div>
+          <div>
+            <p>삭제됨</p>
+            <strong>{deletedCount}건</strong>
+            <span>삭제 처리된 제보</span>
+          </div>
+        </div>
       </section>
 
       <section className="admin-gis-filter-section">
@@ -292,6 +305,7 @@ function AdminGisReportManagePage() {
               <th>작성자</th>
               <th>주소</th>
               <th>처리 상태</th>
+              <th>삭제여부</th>
               <th>작성일</th>
               <th>상세</th>
             </tr>
@@ -301,7 +315,11 @@ function AdminGisReportManagePage() {
             {filteredReportList.map((report) => (
               <tr
                 key={report.postId}
-                className="admin-gis-clickable-row"
+                className={
+                  report.deletedYn === "Y"
+                    ? "admin-gis-clickable-row deleted-row"
+                    : "admin-gis-clickable-row"
+                }
                 onClick={() => handleMoveDetail(report.postId)}
               >
                 <td>{report.postId}</td>
@@ -322,9 +340,7 @@ function AdminGisReportManagePage() {
 
                 <td>{report.writerName || `사용자 ${report.userId ?? "-"}`}</td>
 
-                <td className="gis-address-cell">
-                  {report.address || "-"}
-                </td>
+                <td className="gis-address-cell">{report.address || "-"}</td>
 
                 <td>
                   <span
@@ -333,6 +349,18 @@ function AdminGisReportManagePage() {
                     )}`}
                   >
                     {getProcessStatusName(report.processStatusCode)}
+                  </span>
+                </td>
+
+                <td>
+                  <span
+                    className={
+                      report.deletedYn === "Y"
+                        ? "gis-delete-status deleted"
+                        : "gis-delete-status normal"
+                    }
+                  >
+                    {report.deletedYn === "Y" ? "삭제됨" : "정상"}
                   </span>
                 </td>
 

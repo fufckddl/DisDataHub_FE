@@ -12,9 +12,11 @@ const getAuthHeaders = () => {
     : {};
 };
 
-// 사용자 문의 목록 조회
 export const getInquiryListApi = async () => {
-  const response = await axios.get(`${BASE_URL}/findInquiryList`);
+  const response = await axios.get(`${BASE_URL}/findInquiryList`, {
+    headers: getAuthHeaders(),
+  });
+
   return response.data;
 };
 
@@ -53,6 +55,24 @@ export const getAdminInquiryDetailApi = async (postId) => {
 
 export const saveAdminInquiryAnswerApi = async (postId, answerData) => {
   const response = await axios.post(`${BASE_URL}/${postId}/answer`, answerData, {
+    headers: getAuthHeaders(),
+  });
+
+  return response.data;
+};
+
+// 사용자 본인 문의 수정
+export const updateMyInquiryApi = async (postId, inquiryData) => {
+  const response = await axios.put(`${BASE_URL}/${postId}`, inquiryData, {
+    headers: getAuthHeaders(),
+  });
+
+  return response.data;
+};
+
+// 사용자 본인 문의 삭제
+export const deleteMyInquiryApi = async (postId) => {
+  const response = await axios.delete(`${BASE_URL}/${postId}`, {
     headers: getAuthHeaders(),
   });
 

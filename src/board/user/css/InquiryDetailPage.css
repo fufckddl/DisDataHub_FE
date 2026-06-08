@@ -275,4 +275,59 @@
   .inquiry-detail-button-area button {
     width: 100%;
   }
+
+    .inquiry-owner-button-area {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 22px;
+  }
+
+  .inquiry-edit-button,
+  .inquiry-delete-button {
+    height: 42px;
+    padding: 0 18px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .inquiry-edit-button {
+    border: 1px solid #1f6feb;
+    background: #ffffff;
+    color: #1f6feb;
+  }
+
+  .inquiry-edit-button:hover {
+    background: #e8f1ff;
+  }
+
+  .inquiry-delete-button {
+    border: none;
+    background: #ef4444;
+    color: #ffffff;
+  }
+
+  .inquiry-delete-button:hover {
+    background: #dc2626;
+  }
+
+  .inquiry-delete-button:disabled {
+    background: #fca5a5;
+    cursor: not-allowed;
+  }
+
+  .inquiry-visibility-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 30px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 13px;
+    font-weight: 800;
+  }
 }
