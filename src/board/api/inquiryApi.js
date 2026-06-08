@@ -22,7 +22,10 @@ export const getInquiryListApi = async () => {
 
 // 사용자 문의 상세 조회
 export const getInquiryDetailApi = async (postId) => {
-  const response = await axios.get(`${BASE_URL}/${postId}`);
+  const response = await axios.get(`${BASE_URL}/${postId}`, {
+    headers: getAuthHeaders(),
+  });
+
   return response.data;
 };
 

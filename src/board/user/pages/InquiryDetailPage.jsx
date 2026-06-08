@@ -125,9 +125,11 @@ function InquiryDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="inquiry-detail-page">
+      <div className="container-fluid px-4 py-3 inquiry-detail-page">
         <div className="inquiry-detail-container">
-          <p>문의 상세 정보를 불러오는 중입니다.</p>
+          <section className="inquiry-not-found">
+            <p>문의 상세 정보를 불러오는 중입니다.</p>
+          </section>
         </div>
       </div>
     );
@@ -135,14 +137,16 @@ function InquiryDetailPage() {
 
   if (!inquiry) {
     return (
-      <div className="inquiry-detail-page">
+      <div className="container-fluid px-4 py-3 inquiry-detail-page">
         <div className="inquiry-detail-container">
-          <p>문의 게시글을 찾을 수 없습니다.</p>
-          <p>비공개 글인 경우 작성자 본인만 확인할 수 있습니다.</p>
+          <section className="inquiry-not-found">
+            <p>문의 게시글을 찾을 수 없습니다.</p>
+            <p>비공개 글인 경우 작성자 본인만 확인할 수 있습니다.</p>
 
-          <button type="button" onClick={() => navigate("/board/inquiry")}>
-            목록으로
-          </button>
+            <button type="button" onClick={() => navigate("/board/inquiry")}>
+              목록으로
+            </button>
+          </section>
         </div>
       </div>
     );
@@ -154,7 +158,7 @@ function InquiryDetailPage() {
     inquiry.answerContent.trim() !== "";
 
   return (
-    <div className="inquiry-detail-page">
+    <div className="container-fluid px-4 py-3 inquiry-detail-page">
       <div className="inquiry-detail-container">
         <section className="inquiry-detail-header">
           <div className="inquiry-detail-badge-area">
@@ -175,7 +179,7 @@ function InquiryDetailPage() {
             </span>
           </div>
 
-          <h1>{inquiry.title}</h1>
+          <h1>{inquiry.title || "제목 없음"}</h1>
           <p>등록된 문의 내용과 답변 상태를 확인할 수 있습니다.</p>
 
           {isOwner && (

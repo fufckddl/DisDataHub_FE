@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-// import axiosInstance from "../../../commons/api/axiosInstance";
-import { dummyUserList } from "../../data/dummyUserList";
+import axiosInstance from "../../../commons/api/axiosInstance";
 
 function UserListTitle({ navigate }) {
     return(
@@ -38,8 +37,8 @@ function UserListSearch({ searchType, changeSearchType, searchWord, changeSearch
                     value={searchType}
                     onChange={changeSearchType}
                 >
-                    <option value="userId">사용자 ID</option>
-                    <option value="userName">사용자명</option>
+                    <option value="id">사용자 ID</option>
+                    <option value="username">사용자명</option>
                 </select>
             </div>
 
@@ -139,26 +138,34 @@ function UserListContent({ userList, navigate }) {
                             <th>역할</th>
                             <th>상태</th>
                             <th>가입일</th>
-                            <th>최근 접속일</th>
                         </tr>
                     </thead>
 
                     <tbody>
                         {userList.map((userData) => (
                             <tr
-                                key={userData.userId}
+                                key={userData.id}
                                 onClick={() => {
-                                    navigate(`/admin/users/detail/${userData.userId}`);
+                                    navigate(`/admin/users/detail/${userData.id}`);
                                 }}
                                 style={{ cursor: "pointer" }}
                             >
-                                <td>{userData.userId}</td>
-                                <td>{userData.userName}</td>
+                                <td>{userData.id}</td>
+                                <td>{userData.username}</td>
                                 <td>{userData.email}</td>
                                 <td>{userData.role}</td>
-                                <td>{userData.status}</td>
-                                <td>{userData.createdAt}</td>
-                                <td>{userData.lastLoginAt}</td>
+                                <td>
+                                    <span
+                                        className={
+                                            userData.status === "ACTIVATE"
+                                                ? "badge text-bg-success"
+                                                : "badge text-bg-danger"
+                                        }
+                                    >
+                                        {userData.status === "ACTIVATE" ? "활성" : "비활성"}
+                                    </span>
+                                </td>
+                                <td>{userData.created_at?.substring(0, 10)}</td>
                             </tr>
                         ))}
 
@@ -242,7 +249,7 @@ function UserListPage() {
     const navigate = useNavigate();
 
     const [userList, setUserList] = useState([]);
-    const [searchType, setSearchType] = useState("userId");
+    const [searchType, setSearchType] = useState("id");
     const [searchWord, setSearchWord] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
 
@@ -259,16 +266,11 @@ function UserListPage() {
     }, []);
 
     const loadUserList = async () => {
+        const response = await axiosInstance.get("/api/admin/users/findUserList");
 
-        // 현재는 발표용 더미 데이터 사용
-        setUserList(dummyUserList);
+        console.log(response.data.userList);
 
-
-
-        // 나중에 실제 DB 연동할 때는 아래 코드 사용
-        // const response = await axiosInstance.get("/api/admin/users");
-        // setUserList(response.data.userList);
-
+        setUserList(response.data.userList);
     };
 
     const changeSearchType = (event) => {
@@ -304,12 +306,12 @@ function UserListPage() {
         const isSearchMatched =
             searchWord === "" ||
             (
-                searchType === "userId" &&
-                userData.userId.toString().includes(searchWord)
+                searchType === "id" &&
+                userData.id.toString().includes(searchWord)
             ) ||
             (
-                searchType === "userName" &&
-                userData.userName.includes(searchWord)
+                searchType === "username" &&
+                userData.username.includes(searchWord)
             );
 
         const isRoleMatched =

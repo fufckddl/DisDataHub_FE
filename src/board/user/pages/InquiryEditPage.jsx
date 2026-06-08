@@ -109,7 +109,7 @@ function InquiryEditPage() {
 
   if (isLoading) {
     return (
-      <div className="inquiry-write-page">
+      <div className="container-fluid px-4 py-3 inquiry-write-page">
         <section className="inquiry-write-header">
           <h1>문의 수정 정보를 불러오는 중입니다.</h1>
         </section>
@@ -118,10 +118,14 @@ function InquiryEditPage() {
   }
 
   return (
-    <div className="inquiry-write-page">
+    <div className="container-fluid px-4 py-3 inquiry-write-page">
       <section className="inquiry-write-header">
-        <h1>문의글 수정</h1>
-        <p>등록한 문의 내용을 수정할 수 있습니다.</p>
+        <div className="inquiry-write-icon">?</div>
+
+        <div>
+          <h1>문의글 수정</h1>
+          <p>등록한 문의 내용을 수정할 수 있습니다.</p>
+        </div>
       </section>
 
       <section className="inquiry-write-form-card">

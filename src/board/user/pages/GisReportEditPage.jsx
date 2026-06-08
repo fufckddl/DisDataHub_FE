@@ -236,7 +236,7 @@ function GisReportEditPage() {
 
   if (isLoading) {
     return (
-      <div className="gis-report-write-page">
+      <div className="container-fluid px-4 py-3 gis-report-write-page">
         <section className="gis-report-write-header">
           <div className="gis-report-write-icon">💬</div>
           <h1>GIS 오류제보 수정 정보를 불러오는 중입니다.</h1>
@@ -246,7 +246,7 @@ function GisReportEditPage() {
   }
 
   return (
-    <div className="gis-report-write-page">
+    <div className="container-fluid px-4 py-3 gis-report-write-page">
       <section className="gis-report-write-header">
         <div className="gis-report-write-icon">💬</div>
         <h1>GIS 데이터 오류 제보 수정</h1>

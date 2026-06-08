@@ -1,14 +1,14 @@
 .gis-report-detail-page {
   min-height: 100vh;
-  padding: 40px 56px;
   background: #f4f8fc;
   color: #17202a;
   box-sizing: border-box;
 }
 
 .gis-report-detail-container {
-  max-width: 1120px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: none;
+  margin: 0;
 }
 
 /* 상단 제목 */
@@ -70,6 +70,49 @@
   margin: 14px 0 0;
   color: #64748b;
   font-size: 16px;
+}
+
+/* 작성자 버튼 */
+.gis-report-owner-button-area {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.gis-edit-button,
+.gis-delete-button {
+  height: 42px;
+  padding: 0 18px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.gis-edit-button {
+  border: 1px solid #1f6feb;
+  background: #ffffff;
+  color: #1f6feb;
+}
+
+.gis-edit-button:hover {
+  background: #e8f1ff;
+}
+
+.gis-delete-button {
+  border: none;
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.gis-delete-button:hover {
+  background: #dc2626;
+}
+
+.gis-delete-button:disabled {
+  background: #fca5a5;
+  cursor: not-allowed;
 }
 
 /* 메타 정보 */
@@ -150,6 +193,11 @@
 }
 
 /* 지도 */
+.gis-report-detail-map-wrap {
+  position: relative;
+  width: 100%;
+}
+
 .gis-report-detail-map {
   width: 100%;
   height: 340px;
@@ -157,6 +205,29 @@
   border-radius: 10px;
   overflow: hidden;
   background: #eef5ff;
+}
+
+.gis-marker-center-button {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 5;
+  width: 38px;
+  height: 38px;
+  border: 1px solid #d6dee9;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1f6feb;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.14);
+}
+
+.gis-marker-center-button:hover {
+  background: #e8f1ff;
+  border-color: #1f6feb;
 }
 
 .gis-location-grid {
@@ -297,10 +368,6 @@
 
 /* 반응형 */
 @media (max-width: 768px) {
-  .gis-report-detail-page {
-    padding: 28px 20px;
-  }
-
   .gis-report-detail-header,
   .gis-report-info-section,
   .gis-report-location-section,
@@ -331,6 +398,18 @@
 
   .gis-report-detail-map {
     height: 300px;
+  }
+
+  .gis-marker-center-button {
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    font-size: 20px;
+  }
+
+  .gis-report-owner-button-area {
+    justify-content: flex-start;
   }
 
   .gis-report-detail-button-area {

@@ -133,6 +133,8 @@ function GisReportWritePage() {
       return;
     }
 
+    const addressParts = address.trim().split(/\s+/);
+
     const requestData = {
       userId,
       title,
@@ -145,9 +147,9 @@ function GisReportWritePage() {
       address,
       latitude: Number(latitude),
       longitude: Number(longitude),
-      sido: "",
-      sigungu: "",
-      eupmyeondong: "",
+      sido: addressParts[0] ?? "",
+      sigungu: addressParts[1] ?? "",
+      eupmyeondong: addressParts[2] ?? "",
     };
 
     try {
@@ -170,7 +172,7 @@ function GisReportWritePage() {
   };
 
   return (
-    <div className="gis-report-write-page">
+    <div className="container-fluid px-4 py-3 gis-report-write-page">
       <section className="gis-report-write-header">
         <div className="gis-report-write-icon">💬</div>
         <h1>GIS 데이터 오류 제보 작성</h1>

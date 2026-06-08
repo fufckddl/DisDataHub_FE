@@ -21,10 +21,10 @@ export const registerUserManagementLogApi = (data) => {
     );
 };
 
-// 시스템 설정 변경 로그 등록
-export const registerSystemSettingConfigLogApi = (data) => {
+// 시스템 설정 변경
+export const updateSystemSettingApi = (data) => {
     return axiosInstance.post(
-        "/api/admin/system-setting/log",
+        "/api/admin/systemSetting/update",
         data
     );
 };
