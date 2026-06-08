@@ -49,11 +49,11 @@ function NoticeDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="notice-detail-page">
+      <div className="container-fluid px-4 py-3 notice-detail-page">
         <div className="notice-detail-container">
-          <div className="notice-detail-content">
+          <section className="notice-detail-empty">
             공지사항을 불러오는 중입니다.
-          </div>
+          </section>
         </div>
       </div>
     );
@@ -61,11 +61,11 @@ function NoticeDetailPage() {
 
   if (!noticeDetail) {
     return (
-      <div className="notice-detail-page">
+      <div className="container-fluid px-4 py-3 notice-detail-page">
         <div className="notice-detail-container">
-          <div className="notice-detail-content">
+          <section className="notice-detail-empty">
             공지사항 정보를 찾을 수 없습니다.
-          </div>
+          </section>
 
           <section className="notice-detail-button-area">
             <button type="button" onClick={() => navigate("/board/notice")}>
@@ -78,7 +78,7 @@ function NoticeDetailPage() {
   }
 
   return (
-    <div className="notice-detail-page">
+    <div className="container-fluid px-4 py-3 notice-detail-page">
       <div className="notice-detail-container">
         <section className="notice-detail-header">
           <div>
@@ -90,7 +90,7 @@ function NoticeDetailPage() {
               )}
             </div>
 
-            <h1>{noticeDetail.title}</h1>
+            <h1>{noticeDetail.title || "제목 없음"}</h1>
             <p>서비스 운영 및 데이터 관련 주요 공지사항입니다.</p>
           </div>
         </section>
@@ -108,13 +108,13 @@ function NoticeDetailPage() {
 
           <div>
             <span>조회수</span>
-            <strong>{noticeDetail.viewCount}</strong>
+            <strong>{noticeDetail.viewCount ?? 0}</strong>
           </div>
         </section>
 
         <section className="notice-detail-content">
           <h2>공지 내용</h2>
-          <p>{noticeDetail.content}</p>
+          <p>{noticeDetail.content || "등록된 공지 내용이 없습니다."}</p>
         </section>
 
         <section className="notice-detail-file-section">
