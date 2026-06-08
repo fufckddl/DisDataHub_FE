@@ -84,15 +84,9 @@ function mapDataset(item) {
 
 function SearchForm({ title, children }) {
     return (
-        <div className="col">
-            <div className="row">
-                <div className="col">{title}</div>
-            </div>
-            <div className="row">
-                <div className="col">
-                    {children}
-                </div>
-            </div>
+        <div className="download-main-search-field">
+            <label>{title}</label>
+            {children}
         </div>
     );
 }
@@ -113,16 +107,18 @@ function Search({ filters, setFilters, options, onSearch, onReset }) {
     return (
         <div className="row mb-3">
             <div className="col">
-                <form className="card p-3" onSubmit={handleSubmit}>
-                    <div className="row mb-3">
+                <form className="card download-main-search-card" onSubmit={handleSubmit}>
+                    <div className="download-main-search-grid">
                         <SearchForm title="검색">
-                            <input
-                                type="text"
-                                className="form-control"
-                                placeholder="데이터명 또는 제공기관 검색"
-                                value={filters.keyword}
-                                onChange={(event) => updateFilter("keyword", event.target.value)}
-                            />
+                            <div className="download-main-search-input">
+                                <input
+                                    type="text"
+                                    placeholder="데이터명 또는 제공기관 검색"
+                                    value={filters.keyword}
+                                    onChange={(event) => updateFilter("keyword", event.target.value)}
+                                />
+                                <i className="bi bi-search"></i>
+                            </div>
                         </SearchForm>
 
                         <SearchForm title="제공기관">
@@ -183,25 +179,23 @@ function Search({ filters, setFilters, options, onSearch, onReset }) {
                                 />
                             </div>
                         </SearchForm>
+
                     </div>
 
-                    <div className="row">
-                        <div className="col">
-                            <button
-                                type="button"
-                                className="me-3 border btn btn-light"
-                                style={{ width: "150px" }}
-                                onClick={onReset}
-                            >
-                                <i className="bi bi-arrow-repeat me-2"></i>
-                                초기화
-                            </button>
+                    <div className="download-main-search-actions">
+                        <button className="btn btn-primary fw-bold">
+                            <i className="bi bi-search me-2"></i>
+                            검색
+                        </button>
 
-                            <button className="btn btn-primary" style={{ width: "150px" }}>
-                                <i className="bi bi-search me-2"></i>
-                                검색
-                            </button>
-                        </div>
+                        <button
+                            type="button"
+                            className="btn btn-light border fw-bold"
+                            onClick={onReset}
+                        >
+                            <i className="bi bi-arrow-repeat me-2"></i>
+                            초기화
+                        </button>
                     </div>
                 </form>
             </div>
@@ -325,17 +319,22 @@ function DatasetForm({ dataset }) {
                         event.preventDefault();
                         handleDetailPageClick(dataset.isPublic);
                     }}
-                    className="text-decoration-none"
+                    className="text-decoration-none download-table-title-link"
+                    title={dataset.title}
                 >
-                    {dataset.title}
+                    <span className="download-table-title-text">{dataset.title}</span>
                     {dataset.favorite && (
                         <i className="bi bi-star-fill text-warning download-list-favorite-star" aria-label="관심 데이터"></i>
                     )}
                 </Link>
             </td>
 
-            <td className="col-3 sm-text text-secondary">{dataset.description}</td>
-            <td className="col-1 sm-text text-secondary text-center">{dataset.provider}</td>
+            <td className="col-3 sm-text text-secondary">
+                <span className="download-table-ellipsis" title={dataset.description}>{dataset.description}</span>
+            </td>
+            <td className="col-1 sm-text text-secondary text-center">
+                <span className="download-table-ellipsis" title={dataset.provider}>{dataset.provider}</span>
+            </td>
             <td className="col-1 sm-text text-secondary text-center">{dataset.createAt}</td>
             <td className="col-1 text-center">
                 <span className="badge bg-success-subtle text-success border border-success-subtle me-1">
@@ -360,14 +359,27 @@ function DatasetForm({ dataset }) {
 }
 
 function CardForm({ children, color, title, content, caption, onClick, isCompactContent = false }) {
+    const isClickable = typeof onClick === "function";
+
     return (
         <div className="col">
             <div
-                className="card shadow-sm p-4 h-100"
-                role={onClick ? "button" : undefined}
+                className={`card shadow-sm p-4 h-100 download-summary-card ${isClickable ? "download-summary-card-clickable" : ""}`}
+                role={isClickable ? "button" : undefined}
+                tabIndex={isClickable ? 0 : undefined}
                 onClick={onClick}
-                style={{ cursor: onClick ? "pointer" : "default" }}
+                onKeyDown={(event) => {
+                    if (isClickable && (event.key === "Enter" || event.key === " ")) {
+                        event.preventDefault();
+                        onClick();
+                    }
+                }}
             >
+                {isClickable && (
+                    <span className="download-summary-card-action" aria-hidden="true">
+                        <i className="bi bi-arrow-up-right"></i>
+                    </span>
+                )}
                 <div className="row flex-nowrap align-items-start">
                     <div
                         className={`col-2 rounded-circle bg-${color}-subtle text-${color} d-flex align-items-center justify-content-center`}
@@ -376,19 +388,9 @@ function CardForm({ children, color, title, content, caption, onClick, isCompact
                         {children}
                     </div>
                     <div className="col" style={{ minWidth: 0 }}>
-                        <div className="fw-bold" style={{ fontSize: "14px" }}>{title}</div>
+                        <div className="fw-bold download-summary-card-title">{title}</div>
                         <div
-                            className="fw-bold"
-                            style={isCompactContent ? {
-                                display: "-webkit-box",
-                                WebkitLineClamp: 2,
-                                WebkitBoxOrient: "vertical",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                wordBreak: "break-word",
-                                lineHeight: "1.35",
-                                // minHeight: "2.7em",
-                            } : undefined}
+                            className={`fw-bold download-summary-card-content ${isCompactContent ? "download-summary-card-content-clamp" : ""}`}
                             title={typeof content === "string" ? content : undefined}
                         >
                             {content}
@@ -688,6 +690,7 @@ function UserDownloadMainPage() {
                 showGuide={true}
             />
 
+            {/* 검색 */}
             <Search
                 filters={searchFilters}
                 setFilters={setSearchFilters}
@@ -702,6 +705,7 @@ function UserDownloadMainPage() {
                 </div>
             )}
 
+            {/* 카드 */}
             <div className="row mb-3">
                 {summaryCards.map((card, index) => (
                     <CardForm
@@ -718,6 +722,7 @@ function UserDownloadMainPage() {
                 ))}
             </div>
 
+            {/* 승인 데이터셋 */}
             <DatasetList
                 datasetList={datasetList}
                 loading={loading}
