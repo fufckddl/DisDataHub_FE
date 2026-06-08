@@ -30,6 +30,7 @@ function GisReportDetailPage() {
   const navigate = useNavigate();
 
   const mapRef = useRef(null);
+  const mapInstanceRef = useRef(null);
   const hasFetchedRef = useRef(false);
 
   const [report, setReport] = useState(null);
@@ -114,8 +115,11 @@ function GisReportDetailPage() {
       }),
     });
 
+    mapInstanceRef.current = map;
+
     return () => {
       map.setTarget(null);
+      mapInstanceRef.current = null;
     };
   }, [report]);
 
@@ -157,6 +161,21 @@ function GisReportDetailPage() {
     return dateValue.substring(0, 10);
   };
 
+  const handleMoveMarkerCenter = () => {
+    if (!mapInstanceRef.current || !report) return;
+
+    const longitude = Number(report.longitude || 127.0276);
+    const latitude = Number(report.latitude || 37.4979);
+
+    if (Number.isNaN(longitude) || Number.isNaN(latitude)) return;
+
+    mapInstanceRef.current.getView().animate({
+      center: fromLonLat([longitude, latitude]),
+      zoom: 15,
+      duration: 300,
+    });
+  };
+
   const handleMoveEdit = () => {
     if (!isOwner) {
       alert("작성자 본인만 수정할 수 있습니다.");
@@ -172,7 +191,9 @@ function GisReportDetailPage() {
       return;
     }
 
-    const isConfirm = window.confirm("정말 이 GIS 오류제보를 삭제하시겠습니까?");
+    const isConfirm = window.confirm(
+      "정말 이 GIS 오류제보를 삭제하시겠습니까?"
+    );
 
     if (!isConfirm) return;
 
@@ -197,7 +218,7 @@ function GisReportDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="gis-report-detail-page">
+      <div className="container-fluid px-4 py-3 gis-report-detail-page">
         <div className="gis-report-detail-container">
           <section className="gis-report-not-found">
             <h1>GIS 오류제보 상세 정보를 불러오는 중입니다.</h1>
@@ -209,7 +230,7 @@ function GisReportDetailPage() {
 
   if (!report) {
     return (
-      <div className="gis-report-detail-page">
+      <div className="container-fluid px-4 py-3 gis-report-detail-page">
         <div className="gis-report-detail-container">
           <section className="gis-report-not-found">
             <h1>제보글을 찾을 수 없습니다.</h1>
@@ -224,7 +245,7 @@ function GisReportDetailPage() {
   }
 
   return (
-    <div className="gis-report-detail-page">
+    <div className="container-fluid px-4 py-3 gis-report-detail-page">
       <div className="gis-report-detail-container">
         <section className="gis-report-detail-header">
           <div className="gis-report-detail-badge-area">
@@ -316,7 +337,18 @@ function GisReportDetailPage() {
         <section className="gis-report-location-section">
           <h2>위치 정보</h2>
 
-          <div ref={mapRef} className="gis-report-detail-map"></div>
+          <div className="gis-report-detail-map-wrap">
+            <div ref={mapRef} className="gis-report-detail-map"></div>
+
+            <button
+              type="button"
+              className="gis-marker-center-button"
+              onClick={handleMoveMarkerCenter}
+              title="제보 위치로 이동"
+            >
+              ⌖
+            </button>
+          </div>
 
           <div className="gis-location-grid">
             <div>

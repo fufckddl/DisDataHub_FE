@@ -94,3 +94,10 @@ export const deleteAdminGisReportApi = async (postId) => {
 
   return response.data;
 };
+
+// 사용자 GIS 오류제보 검색 / 필터 / 마커 목록 조회
+export const searchGisReportListApi = async (searchData) => {
+  const response = await axios.post(`${BASE_URL}/search`, searchData);
+
+  return response.data;
+};
