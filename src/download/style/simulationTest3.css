@@ -11,7 +11,14 @@
     --simulation-test3-ui-gap: 24px;
     --simulation-test3-left-anchor: 24px;
     --simulation-test3-right-anchor: 24px;
+    --simulation-test3-z-map: 1;
+    --simulation-test3-z-overlay: 5;
+    --simulation-test3-z-floating: 20;
+    --simulation-test3-z-popup: 30;
+    --simulation-test3-z-panel: 40;
+    --simulation-test3-z-toggle: 50;
     position: relative;
+    isolation: isolate;
     height: calc(100vh - 96px);
     min-height: 680px;
     overflow: hidden;
@@ -50,8 +57,13 @@
 .simulation-test3-leaflet-stage {
     position: absolute;
     inset: 0;
-    z-index: 1;
+    z-index: var(--simulation-test3-z-map);
     background: #edf3fb;
+}
+
+.simulation-test3-leaflet-map {
+    position: relative;
+    z-index: 0;
 }
 
 .simulation-test3-map-canvas .leaflet-container {
@@ -237,9 +249,8 @@
 }
 
 .simulation-test3-top-tools,
-.simulation-test3-map-summary,
-.simulation-test3-setting-toggle {
-    z-index: 1100;
+.simulation-test3-map-summary {
+    z-index: var(--simulation-test3-z-floating);
 }
 
 .simulation-test3-top-tools {
@@ -289,10 +300,24 @@
     box-shadow: 0 8px 18px rgba(37, 99, 235, 0.16);
 }
 
+.simulation-test3-top-tools button:focus-visible,
+.simulation-test3-map-tools button:focus-visible,
+.simulation-test3-zoom-tools button:focus-visible,
+.simulation-test3-icon-button:focus-visible,
+.simulation-test3-setting-toggle:focus-visible,
+.simulation-test3-button:focus-visible,
+.simulation-test3-tabs button:focus-visible,
+.simulation-test3-segmented button:focus-visible,
+.simulation-test3-measure-head button:focus-visible,
+.simulation-test3-measure-reset:focus-visible {
+    outline: 3px solid rgba(37, 99, 235, 0.28);
+    outline-offset: 2px;
+}
+
 .simulation-test3-map-tools {
     top: 132px;
     right: var(--simulation-test3-right-anchor);
-    z-index: 1100;
+    z-index: var(--simulation-test3-z-floating);
     display: grid;
     gap: 8px;
     transition: right 0.24s ease;
@@ -333,7 +358,7 @@
 .simulation-test3-zoom-tools {
     right: var(--simulation-test3-right-anchor);
     bottom: 24px;
-    z-index: 4;
+    z-index: var(--simulation-test3-z-floating);
     display: grid;
     overflow: hidden;
     border: 1px solid #d8e2ef;
@@ -360,7 +385,7 @@
 .simulation-test3-radius {
     top: 50%;
     left: 50%;
-    z-index: 2;
+    z-index: var(--simulation-test3-z-overlay);
     width: var(--radius-size);
     height: var(--radius-size);
     transform: translate(-50%, -50%);
@@ -408,7 +433,7 @@
 }
 
 .simulation-test3-marker {
-    z-index: 3;
+    z-index: var(--simulation-test3-z-overlay);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -474,7 +499,7 @@
     position: absolute;
     top: 50%;
     left: 50%;
-    z-index: 1120;
+    z-index: var(--simulation-test3-z-popup);
     width: min(360px, calc(100% - 40px));
     padding: 16px 18px;
     border: 1px solid #dbe4ef;
@@ -498,7 +523,7 @@
     position: absolute;
     left: var(--simulation-test3-left-anchor);
     bottom: 112px;
-    z-index: 1100;
+    z-index: var(--simulation-test3-z-floating);
     display: grid;
     gap: 7px;
     min-width: 150px;
@@ -543,7 +568,7 @@
     position: absolute;
     top: 348px;
     right: var(--simulation-test3-right-anchor);
-    z-index: 1120;
+    z-index: var(--simulation-test3-z-popup);
     display: grid;
     gap: 14px;
     width: min(250px, calc(100% - 48px));
@@ -721,7 +746,7 @@
 .simulation-test3-result-panel {
     top: 14px;
     bottom: 14px;
-    z-index: 1300;
+    z-index: var(--simulation-test3-z-panel);
     width: var(--simulation-test3-panel-width);
     overflow-y: auto;
     padding: 22px;
@@ -730,7 +755,10 @@
     background: rgba(255, 255, 255, 0.98);
     box-shadow: 0 18px 36px rgba(15, 23, 42, 0.16);
     backdrop-filter: blur(10px);
-    transition: transform 0.24s ease, opacity 0.2s ease;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: transform 0.24s ease, opacity 0.2s ease, visibility 0.2s ease;
 }
 
 .simulation-test3-setting-panel {
@@ -747,6 +775,8 @@
 .simulation-test3-result-panel.open {
     transform: translateX(0);
     opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
 }
 
 .simulation-test3-panel-head,
@@ -1010,7 +1040,7 @@
 .simulation-test3-setting-toggle {
     top: 50%;
     left: 0;
-    z-index: 1400;
+    z-index: var(--simulation-test3-z-toggle);
     display: inline-flex;
     align-items: center;
     justify-content: center;

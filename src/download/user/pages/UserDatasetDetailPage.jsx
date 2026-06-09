@@ -234,6 +234,18 @@ function MapVisualizationCard({previewGeoJson, dataset}){
         Array.isArray(previewGeoJson?.features) &&
         previewGeoJson.features.some((feature) => feature?.geometry);
 
+    const mapEmptyState = !isSpatialDataset
+        ? {
+            icon: "bi-map",
+            title: "지도에 표시할 공간 정보가 없습니다.",
+            description: "이 데이터셋은 좌표나 공간 형상이 포함되지 않아 지도 미리보기를 제공하지 않습니다.",
+        }
+        : {
+            icon: "bi-geo-alt",
+            title: "표시할 좌표 데이터가 없습니다.",
+            description: "공간 데이터셋이지만 미리보기로 표시할 좌표 정보를 찾을 수 없습니다.",
+        };
+
     return(
         <>
             <div className="col-7">
@@ -250,13 +262,13 @@ function MapVisualizationCard({previewGeoJson, dataset}){
                     <div className="row mb-2">
                         <div className="col">
                             <div className="map-preview-box">
-                                {!isSpatialDataset?(
-                                    <div className="d-flex align-items-center h-100 w-100 justify-content-center">
-                                        공간 데이터가 아니므로 지도 시각화를 제공할 수 없습니다
-                                    </div>
-                                ):!hasPreviewFeatures ?(
-                                    <div className="d-flex align-items-center h-100 w-100 justify-content-center">
-                                        표시할 수 있는 공간 좌표 데이터가 없습니다.
+                                {!isSpatialDataset || !hasPreviewFeatures ? (
+                                    <div className="map-preview-empty-state">
+                                        <span>
+                                            <i className={`bi ${mapEmptyState.icon}`}></i>
+                                        </span>
+                                        <strong>{mapEmptyState.title}</strong>
+                                        <p>{mapEmptyState.description}</p>
                                     </div>
                                 ):(
                                     <MapContainer
@@ -294,7 +306,7 @@ function MapVisualizationCard({previewGeoJson, dataset}){
                                             {dataset.isSpatial ?
                                                 "이 데이터를 시뮬레이션 페이지에서 분석을 진행할 수 있습니다."
                                                 :
-                                                "공간 데이터가 아니므로 시뮬레이션을 사용할 수 없습니다."
+                                                "좌표 정보가 없어 지도 기반 시뮬레이션은 사용할 수 없습니다."
                                             }
                                         </span>
 
@@ -405,6 +417,7 @@ function formatAttributeValue(value) {
 function AttributePreviewCard({ attributePreview }){
     const columns = attributePreview?.columns ?? [];
     const rows = attributePreview?.rows ?? [];
+    const hasPreviewRows = rows.length > 0;
     const displayColumns = columns.length > 0 ? columns : ["feature_id", "feature_name", "spatial_type"];
 
     return(
@@ -420,37 +433,35 @@ function AttributePreviewCard({ attributePreview }){
                     <div className="row">
                         <div className="col">
                             <div className="attribute-preview-table-wrap">
-                                <table className="table table-hover align-middle">
-                                    <thead className="table-light">
-                                        <tr>
-                                            {displayColumns.map((column) => (
-                                                <th key={column} className="dataset-text attribute-preview-cell">
-                                                    {ATTRIBUTE_COLUMN_LABELS[column] ?? column}
-                                                </th>
-                                            ))}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {rows.length > 0 ? (
-                                            rows.map((row, index) => (
+                                {hasPreviewRows ? (
+                                    <table className="table table-hover align-middle">
+                                        <thead className="table-light">
+                                            <tr>
+                                                {displayColumns.map((column) => (
+                                                    <th key={column} className="dataset-text attribute-preview-cell">
+                                                        {ATTRIBUTE_COLUMN_LABELS[column] ?? column}
+                                                    </th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {rows.map((row, index) => (
                                                 <AttributePreviewRow
                                                     key={index}
                                                     columns={displayColumns}
                                                     row={row}
                                                 />
-                                            ))
-                                        ) : (
-                                            <tr>
-                                                <td
-                                                    colSpan={displayColumns.length}
-                                                    className="text-center text-secondary dataset-text-gray py-4"
-                                                >
-                                                    미리보기로 표시할 속성 데이터가 없습니다.
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                ) : (
+                                    <div className="attribute-preview-empty">
+                                        <span>
+                                            <i className="bi bi-table"></i>
+                                        </span>
+                                        <strong>미리보기로 표시할 속성 데이터가 없습니다.</strong>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>                                
@@ -491,6 +502,15 @@ function normalizeDownloadFormatName(value) {
     if (normalized === "XLS") return "XLSX";
 
     return normalized;
+}
+
+function buildDownloadFileName(title, format) {
+    const normalizedFormat = normalizeDownloadFormatName(format);
+    const extension = normalizedFormat === "SHP"
+        ? "zip"
+        : normalizedFormat.toLowerCase() || "download";
+
+    return `${title || "dataset"}.${extension}`;
 }
 
 function FileDownloadCard({ availableFormats, downloadFormats, sourceFile, dataset }){
@@ -548,23 +568,6 @@ function FileDownloadCard({ availableFormats, downloadFormats, sourceFile, datas
         // KML: "danger"
     };
 
-    const extractDownloadFileName = (contentDisposition, fallbackName) => {
-        if (!contentDisposition) return fallbackName;
-
-        const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
-        if (utf8Match?.[1]) {
-            return decodeURIComponent(utf8Match[1]);
-        }
-
-        const plainMatch = contentDisposition.match(/filename=\"?([^\";]+)\"?/i);
-        if (plainMatch?.[1]) {
-            return plainMatch[1];
-        }
-
-        return fallbackName;
-    };
-
-
     const downloadButtonClick = async () => {
         const selectedOption = fileFormatOptions.find((option) => option.format === selectFileFormat);
         // 1. 먼저 형식을 고르기
@@ -590,14 +593,7 @@ function FileDownloadCard({ availableFormats, downloadFormats, sourceFile, datas
             const a = document.createElement("a");
             a.href = url;
 
-            // 파일명은 응답 헤더에서 받는 게 더 정확하지만,
-            // 1차는 형식 기반 기본 파일명으로 내려도 됨
-            const defaultFileName = `${dataset.title}.${selectedOption.format.toLowerCase()}`;
-            const serverFileName = extractDownloadFileName(
-                response.headers?.["content-disposition"],
-                defaultFileName
-            );
-            a.download = serverFileName;
+            a.download = buildDownloadFileName(dataset.title, selectedOption.format);
 
             document.body.appendChild(a);
             a.click();
@@ -646,7 +642,7 @@ function FileDownloadCard({ availableFormats, downloadFormats, sourceFile, datas
 
     return(
         <>
-            <div className="row mb-3">
+            <div className="row mb-2">
                 <div className="col">
                     <div className="card px-3 py-2">
                         <div className="row mb-3">
@@ -715,17 +711,13 @@ function FileDownloadCard({ availableFormats, downloadFormats, sourceFile, datas
 }
 
 function FileSelectButton({type, color, size, available, original, reason, selectFileFormat, setSelectFileFormat}){
-    
-
-    // const fileFormatButtonClick = async () => {
-    //     await setSelectFileFormat(type)
-    //     console.log(selectFileFormat, "파일 형식 클릭");
-    // }
+    const disabledLabel = original ? "원본 없음" : "변환 불가";
+    const displaySize = available ? size : disabledLabel;
 
     return(
         <>
             <div className={`download-format-item ${original ? "download-format-original-item" : ""}`}>
-                <button className={`btn border w-100 p-2 ${original ? "text-center" : "text-start pe-0"} download-format-option
+                <button className={`btn border w-100 p-2 ${original ? "text-center" : "text-start"} download-format-option
                         ${available ? "" : "download-format-option-disabled"}
                         ${selectFileFormat === type && available ? `border-${color} border-2 bg-${color}-subtle` : ""}
                         `} 
@@ -736,7 +728,7 @@ function FileSelectButton({type, color, size, available, original, reason, selec
                     <div className="download-format-option-content">
                         <span className="download-format-main">
                             <span className={`badge ${available ? `bg-${color}-subtle text-${color} border border-${color}-subtle` : "bg-secondary-subtle text-secondary border border-secondary-subtle"} me-1`}>{type}</span>
-                            <span className="fw-bold text-secondary download-format-size">({available ? size : reason})</span>
+                            <span className="fw-bold text-secondary download-format-size">({displaySize})</span>
                         </span>
                         {original && (
                             <span className="download-format-original-label">원본</span>
@@ -895,24 +887,12 @@ function UserDatasetDetailPage(){
         subTitle: "서울시 관내에 설치된 CCTV의 위치 및 속성 정보를 제공합니다. 도시 안전, 방범, 교통 관리 등 다양한 정책 및 서비스에 활용할 수 있습니다."
     };
 
-    const handleLoginClick = () =>{
-        console.log("클릭")
-    }
 
-
-
-
-    const uploadFile = async () => {
-        const response = await uploadTempTestFileApi();
-        console.log("업로드 응답:", response.data);
-        window.lastUpload = response.data;
-    };
 
 
 
     const downloadFile = async () => {
         if (!window.lastUpload) {
-            console.log("먼저 업로드를 실행하세요.");
             alert("파일을 업로드 후 다운로드를 진행해 주세요")
             return;
         }
@@ -924,7 +904,6 @@ function UserDatasetDetailPage(){
         });
 
         const text = await response.data.text();
-        console.log("다운로드 내용:", text);
 
         const blob = response.data;
         const url = window.URL.createObjectURL(blob);
@@ -953,7 +932,6 @@ function UserDatasetDetailPage(){
 
     const navigate = useNavigate();
     
-    console.log("pageData : ",pageData);
     useEffect(() => {
     const fetchPageData = async () => {
         try {
@@ -1028,7 +1006,6 @@ function UserDatasetDetailPage(){
     };
 
 
-    // console.log(loading)
     const viewData = pageData;
 
     //  초반 로딩중일 때
@@ -1064,16 +1041,9 @@ function UserDatasetDetailPage(){
                     {/* 죄측 */}
                     <div className="col-9">
                         {/* 상단 제목 */}
-                        <div className="row mb-2">
-                            <div className="col">
-                                {/* <TopTitle title={datasetTitleInfo.title} subTitle={datasetTitleInfo.subTitle} showGuide={false}/> */}
-                                <TopTitle title={viewData.dataset.title} subTitle={viewData.dataset.description} showGuide={false}/>
-                            </div>
-                            <div className="col text-end">
-                                <Link to="../main">목록으로</Link>
-                            </div>
-                        </div>
-
+                        {/* <TopTitle title={datasetTitleInfo.title} subTitle={datasetTitleInfo.subTitle} showGuide={false}/> */}
+                        <TopTitle title={viewData.dataset.title} subTitle={viewData.dataset.description} showGuide={false}/>
+                    
                         {/* 데이터셋 요약 정보 */}
                         <div className="row mb-2">
                             <DatasetSummaryCard 
@@ -1083,7 +1053,7 @@ function UserDatasetDetailPage(){
                             />
                         </div>
                         
-                        <div className="row mb-3">
+                        <div className="row mb-2">
                             {/* 데이터 개요 */}
                             <DatasetInfoCard 
                                 dataset={viewData.dataset}
@@ -1132,14 +1102,14 @@ function UserDatasetDetailPage(){
 
                 </div>
             </div>
+
+
+            {/* 테스트 */}
             <Link to="simulation">초기 시물레이션</Link><br />
             <Link to="simulationTest">시뮬레이션 테스트</Link><br />
             <Link to="simulationTest2">시뮬레이션 테스트2</Link><br />
             <Link to="simulationTest3">시뮬레이션 테스트3</Link><br />
             
-
-            <button onClick={uploadFile}>파일업로드</button>
-            <button onClick={downloadFile}>파일다운로드</button>
 
         </>
     )

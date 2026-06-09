@@ -456,7 +456,6 @@ function GisReportListPage() {
   return (
     <div className="container-fluid px-4 py-3 gis-report-page">
       <section className="gis-report-header">
-        <div className="gis-report-header-icon">💬</div>
         <h1>GIS 데이터 오류 제보 게시판</h1>
       </section>
 

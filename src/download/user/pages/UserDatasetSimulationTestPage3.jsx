@@ -870,6 +870,7 @@ function UserDatasetSimulationTestPage3() {
                 key={filter.id}
                 type="button"
                 className={currentMapFilter === filter.id ? "active" : ""}
+                aria-pressed={currentMapFilter === filter.id}
                 disabled={filter.id === "result" && !hasSimulationResult}
                 onClick={() => setMapFilter(filter.id)}
               >
@@ -879,13 +880,21 @@ function UserDatasetSimulationTestPage3() {
           </div>
 
           <div className="simulation-test3-map-tools" aria-label="지도 도구">
-            <button type="button" className={isResultOpen ? "active" : ""} onClick={() => setIsResultOpen(true)}>
+            <button
+              type="button"
+              className={isResultOpen ? "active" : ""}
+              aria-controls="simulation-test3-result-panel"
+              aria-expanded={isResultOpen}
+              aria-pressed={isResultOpen}
+              onClick={() => setIsResultOpen(true)}
+            >
               <i className="bi bi-bar-chart" />
               <span>결과</span>
             </button>
             <button
               type="button"
               className={measurementType === "distance" ? "active" : ""}
+              aria-pressed={measurementType === "distance"}
               onClick={() => handleMeasurementTypeChange("distance")}
             >
               <i className="bi bi-rulers" />
@@ -894,6 +903,7 @@ function UserDatasetSimulationTestPage3() {
             <button
               type="button"
               className={measurementType === "area" ? "active" : ""}
+              aria-pressed={measurementType === "area"}
               onClick={() => handleMeasurementTypeChange("area")}
             >
               <i className="bi bi-bounding-box" />
@@ -917,7 +927,12 @@ function UserDatasetSimulationTestPage3() {
           </div>
         </main>
 
-        <aside className={`simulation-test3-setting-panel ${isSettingOpen ? "open" : ""}`} aria-label="시뮬레이션 실행 설정">
+        <aside
+          id="simulation-test3-setting-panel"
+          className={`simulation-test3-setting-panel ${isSettingOpen ? "open" : ""}`}
+          aria-label="시뮬레이션 실행 설정"
+          aria-hidden={!isSettingOpen}
+        >
           <div className="simulation-test3-panel-head">
             <div className="simulation-test3-title-wrap">
               <TopTitle
@@ -926,9 +941,7 @@ function UserDatasetSimulationTestPage3() {
                 showGuide={false}
               />
             </div>
-            <button type="button" className="simulation-test3-icon-button" onClick={() => setIsSettingOpen(false)} aria-label="설정 패널 닫기">
-              <i className="bi bi-chevron-left" />
-            </button>
+
           </div>
 
           <div className="simulation-test3-dataset-box">
@@ -948,6 +961,7 @@ function UserDatasetSimulationTestPage3() {
                   key={filter.id}
                   type="button"
                   className={currentMapFilter === filter.id ? "active" : ""}
+                  aria-pressed={currentMapFilter === filter.id}
                   disabled={filter.id === "result" && !hasSimulationResult}
                   onClick={() => setMapFilter(filter.id)}
                 >
@@ -1034,13 +1048,20 @@ function UserDatasetSimulationTestPage3() {
         <button
           type="button"
           className={`simulation-test3-setting-toggle ${isSettingOpen ? "open" : ""}`}
+          aria-controls="simulation-test3-setting-panel"
+          aria-expanded={isSettingOpen}
           onClick={() => setIsSettingOpen((prev) => !prev)}
           aria-label={isSettingOpen ? "설정 패널 닫기" : "설정 패널 열기"}
         >
           <i className={`bi ${isSettingOpen ? "bi-chevron-left" : "bi-chevron-right"}`} />
         </button>
 
-        <section className={`simulation-test3-result-panel ${isResultOpen ? "open" : ""}`} aria-label="시뮬레이션 분석 결과">
+        <section
+          id="simulation-test3-result-panel"
+          className={`simulation-test3-result-panel ${isResultOpen ? "open" : ""}`}
+          aria-label="시뮬레이션 분석 결과"
+          aria-hidden={!isResultOpen}
+        >
           <div className="simulation-test3-panel-head">
             <div>
               <span className="simulation-test3-kicker">Result</span>
@@ -1057,6 +1078,7 @@ function UserDatasetSimulationTestPage3() {
                 key={tab.id}
                 type="button"
                 className={activeTab === tab.id ? "active" : ""}
+                aria-pressed={activeTab === tab.id}
                 onClick={() => setActiveTab(tab.id)}
               >
                 {tab.label}
