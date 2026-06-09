@@ -79,6 +79,15 @@ function formatFileFormatLabel(value) {
     return normalized || "-";
 }
 
+function resolveDownloadExtension(format) {
+    const normalizedFormat = formatFileFormatLabel(format);
+    if (normalizedFormat === "SHP") {
+        return "zip";
+    }
+
+    return normalizedFormat === "-" ? "download" : normalizedFormat.toLowerCase();
+}
+
 function removeStoredFavoriteDatasetId(datasetId) {
     try {
         const rawValue = window.localStorage.getItem(FAVORITE_DATASET_STORAGE_KEY);
@@ -94,19 +103,8 @@ function removeStoredFavoriteDatasetId(datasetId) {
     }
 }
 
-function resolveDownloadFileName(response, item) {
-    const contentDisposition = response?.headers?.["content-disposition"];
-    const encodedFileNameMatch = contentDisposition?.match(/filename\*=UTF-8''([^;]+)/i);
-    if (encodedFileNameMatch?.[1]) {
-        return decodeURIComponent(encodedFileNameMatch[1].replaceAll("\"", ""));
-    }
-
-    const fileNameMatch = contentDisposition?.match(/filename="?([^";]+)"?/i);
-    if (fileNameMatch?.[1]) {
-        return fileNameMatch[1];
-    }
-
-    const extension = String(item.format ?? "").toLowerCase() || "download";
+function resolveDownloadFileName(_response, item) {
+    const extension = resolveDownloadExtension(item.format);
     return `${item.title || "dataset"}.${extension}`;
 }
 
@@ -155,6 +153,18 @@ function mapFormatStats(items) {
             color: FORMAT_COLORS[index % FORMAT_COLORS.length],
         };
     });
+}
+
+function applyColorOpacity(hexColor, opacity) {
+    const normalized = String(hexColor ?? "").replace("#", "");
+    if (!/^[0-9a-fA-F]{6}$/.test(normalized)) {
+        return hexColor;
+    }
+
+    const red = parseInt(normalized.slice(0, 2), 16);
+    const green = parseInt(normalized.slice(2, 4), 16);
+    const blue = parseInt(normalized.slice(4, 6), 16);
+    return `rgba(${red}, ${green}, ${blue}, ${opacity})`;
 }
 
 function buildPaginationItems(currentPage, totalPages) {
@@ -513,16 +523,45 @@ function SideCard({ title, caption, actionLabel, className = "", children }) {
 
 function DownloadFormatChart({ stats }) {
     const [hoveredIndex, setHoveredIndex] = useState(null);
+    const chartRef = useRef(null);
     const totalCount = stats.reduce((sum, item) => sum + item.count, 0);
+    const activeStat = hoveredIndex === null ? null : stats[hoveredIndex];
+
+    useEffect(() => {
+        const chart = chartRef.current;
+        if (!chart) {
+            return;
+        }
+
+        if (hoveredIndex === null) {
+            chart.setActiveElements([]);
+            chart.update();
+            return;
+        }
+
+        chart.setActiveElements([{ datasetIndex: 0, index: hoveredIndex }]);
+        chart.update();
+    }, [hoveredIndex]);
+
     const chartData = {
         labels: stats.map((item) => item.label),
         datasets: [
             {
                 data: stats.map((item) => item.count),
-                backgroundColor: stats.map((item) => item.color),
-                borderColor: "#ffffff",
-                borderWidth: 2,
-                hoverOffset: 4,
+                backgroundColor: stats.map((item, index) => (
+                    activeStat && hoveredIndex !== index ? applyColorOpacity(item.color, 0.32) : item.color
+                )),
+                borderColor: stats.map((_, index) => (
+                    activeStat && hoveredIndex === index ? "#f8fafc" : "#ffffff"
+                )),
+                borderWidth: stats.map((_, index) => (
+                    activeStat && hoveredIndex === index ? 4 : 2
+                )),
+                offset: stats.map((_, index) => (
+                    activeStat && hoveredIndex === index ? 5 : 0
+                )),
+                hoverOffset: 10,
+                hoverBorderWidth: 4,
             },
         ],
     };
@@ -551,10 +590,10 @@ function DownloadFormatChart({ stats }) {
     return (
         <div className="my-download-chart-wrap">
             <div className="my-download-doughnut-box" onMouseLeave={() => setHoveredIndex(null)}>
-                <Doughnut data={chartData} options={chartOptions} />
-                <div className="my-download-chart-center">
-                    <span>총</span>
-                    <strong>{formatNumber(totalCount)}건</strong>
+                <Doughnut ref={chartRef} data={chartData} options={chartOptions} />
+                <div className={`my-download-chart-center ${activeStat ? "selected" : ""}`}>
+                    <span>{activeStat?.label ?? "총"}</span>
+                    <strong>{formatNumber(activeStat?.count ?? totalCount)}건</strong>
                 </div>
             </div>
             <div className="my-download-chart-legend">

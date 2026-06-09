@@ -546,9 +546,11 @@
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 58px;
+    width: 70px;
     transform: translate(-50%, -50%);
     pointer-events: none;
+    text-align: center;
+    transition: color 0.16s ease, transform 0.16s ease;
 }
 
 .my-download-chart-center span,
@@ -558,12 +560,24 @@
 }
 
 .my-download-chart-center span {
+    max-width: 100%;
+    overflow: hidden;
     font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .my-download-chart-center strong {
     color: #0f172a;
     font-size: 1rem;
+}
+
+.my-download-chart-center.selected span {
+    color: #1e3a8a;
+}
+
+.my-download-chart-center.selected strong {
+    color: #111827;
 }
 
 .my-download-chart-legend {

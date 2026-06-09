@@ -504,6 +504,15 @@ function normalizeDownloadFormatName(value) {
     return normalized;
 }
 
+function buildDownloadFileName(title, format) {
+    const normalizedFormat = normalizeDownloadFormatName(format);
+    const extension = normalizedFormat === "SHP"
+        ? "zip"
+        : normalizedFormat.toLowerCase() || "download";
+
+    return `${title || "dataset"}.${extension}`;
+}
+
 function FileDownloadCard({ availableFormats, downloadFormats, sourceFile, dataset }){
 
     const [selectFileFormat, setSelectFileFormat] = useState("");
@@ -559,23 +568,6 @@ function FileDownloadCard({ availableFormats, downloadFormats, sourceFile, datas
         // KML: "danger"
     };
 
-    const extractDownloadFileName = (contentDisposition, fallbackName) => {
-        if (!contentDisposition) return fallbackName;
-
-        const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
-        if (utf8Match?.[1]) {
-            return decodeURIComponent(utf8Match[1]);
-        }
-
-        const plainMatch = contentDisposition.match(/filename=\"?([^\";]+)\"?/i);
-        if (plainMatch?.[1]) {
-            return plainMatch[1];
-        }
-
-        return fallbackName;
-    };
-
-
     const downloadButtonClick = async () => {
         const selectedOption = fileFormatOptions.find((option) => option.format === selectFileFormat);
         // 1. 먼저 형식을 고르기
@@ -601,14 +593,7 @@ function FileDownloadCard({ availableFormats, downloadFormats, sourceFile, datas
             const a = document.createElement("a");
             a.href = url;
 
-            // 파일명은 응답 헤더에서 받는 게 더 정확하지만,
-            // 1차는 형식 기반 기본 파일명으로 내려도 됨
-            const defaultFileName = `${dataset.title}.${selectedOption.format.toLowerCase()}`;
-            const serverFileName = extractDownloadFileName(
-                response.headers?.["content-disposition"],
-                defaultFileName
-            );
-            a.download = serverFileName;
+            a.download = buildDownloadFileName(dataset.title, selectedOption.format);
 
             document.body.appendChild(a);
             a.click();
@@ -728,11 +713,6 @@ function FileDownloadCard({ availableFormats, downloadFormats, sourceFile, datas
 function FileSelectButton({type, color, size, available, original, reason, selectFileFormat, setSelectFileFormat}){
     const disabledLabel = original ? "원본 없음" : "변환 불가";
     const displaySize = available ? size : disabledLabel;
-
-    // const fileFormatButtonClick = async () => {
-    //     await setSelectFileFormat(type)
-    //     console.log(selectFileFormat, "파일 형식 클릭");
-    // }
 
     return(
         <>
@@ -907,24 +887,12 @@ function UserDatasetDetailPage(){
         subTitle: "서울시 관내에 설치된 CCTV의 위치 및 속성 정보를 제공합니다. 도시 안전, 방범, 교통 관리 등 다양한 정책 및 서비스에 활용할 수 있습니다."
     };
 
-    const handleLoginClick = () =>{
-        console.log("클릭")
-    }
 
-
-
-
-    const uploadFile = async () => {
-        const response = await uploadTempTestFileApi();
-        console.log("업로드 응답:", response.data);
-        window.lastUpload = response.data;
-    };
 
 
 
     const downloadFile = async () => {
         if (!window.lastUpload) {
-            console.log("먼저 업로드를 실행하세요.");
             alert("파일을 업로드 후 다운로드를 진행해 주세요")
             return;
         }
@@ -936,7 +904,6 @@ function UserDatasetDetailPage(){
         });
 
         const text = await response.data.text();
-        console.log("다운로드 내용:", text);
 
         const blob = response.data;
         const url = window.URL.createObjectURL(blob);
@@ -965,7 +932,6 @@ function UserDatasetDetailPage(){
 
     const navigate = useNavigate();
     
-    console.log("pageData : ",pageData);
     useEffect(() => {
     const fetchPageData = async () => {
         try {
@@ -1040,7 +1006,6 @@ function UserDatasetDetailPage(){
     };
 
 
-    // console.log(loading)
     const viewData = pageData;
 
     //  초반 로딩중일 때
@@ -1145,9 +1110,6 @@ function UserDatasetDetailPage(){
             <Link to="simulationTest2">시뮬레이션 테스트2</Link><br />
             <Link to="simulationTest3">시뮬레이션 테스트3</Link><br />
             
-
-            <button onClick={uploadFile}>파일업로드</button>
-            <button onClick={downloadFile}>파일다운로드</button>
 
         </>
     )
