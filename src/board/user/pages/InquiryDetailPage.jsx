@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   getInquiryDetailApi,
@@ -10,9 +10,9 @@ function InquiryDetailPage() {
   const { postId } = useParams();
   const navigate = useNavigate();
 
-  const hasFetchedRef = useRef(false);
-
   const [inquiry, setInquiry] = useState(null);
+  const [previousPostId, setPreviousPostId] = useState(null);
+  const [nextPostId, setNextPostId] = useState(null);
   const [isOwner, setOwner] = useState(false);
   const [isLoading, setLoading] = useState(false);
   const [isDeleting, setDeleting] = useState(false);
@@ -27,6 +27,8 @@ function InquiryDetailPage() {
 
       if (data.result === "success") {
         setInquiry(data.inquiryDetail);
+        setPreviousPostId(data.previousPostId ?? null);
+        setNextPostId(data.nextPostId ?? null);
         setOwner(data.isOwner === true);
       }
     } catch (error) {
@@ -50,11 +52,10 @@ function InquiryDetailPage() {
       return;
     }
 
-    if (hasFetchedRef.current) {
-      return;
-    }
+    setInquiry(null);
+    setPreviousPostId(null);
+    setNextPostId(null);
 
-    hasFetchedRef.current = true;
     getInquiryDetail();
   }, [postId]);
 
@@ -141,6 +142,24 @@ function InquiryDetailPage() {
     } finally {
       setDeleting(false);
     }
+  };
+
+  const handleMovePrevious = () => {
+    if (!previousPostId) {
+      alert("이전 글이 없습니다.");
+      return;
+    }
+
+    navigate(`/board/inquiry/${previousPostId}`);
+  };
+
+  const handleMoveNext = () => {
+    if (!nextPostId) {
+      alert("다음 글이 없습니다.");
+      return;
+    }
+
+    navigate(`/board/inquiry/${nextPostId}`);
   };
 
   if (isLoading && !inquiry) {
@@ -285,11 +304,19 @@ function InquiryDetailPage() {
             </button>
 
             <div className="inquiry-move-button-group">
-              <button type="button" className="inquiry-move-button">
+              <button
+                type="button"
+                className="inquiry-move-button"
+                onClick={handleMovePrevious}
+              >
                 이전글
               </button>
 
-              <button type="button" className="inquiry-move-button">
+              <button
+                type="button"
+                className="inquiry-move-button"
+                onClick={handleMoveNext}
+              >
                 다음글
               </button>
             </div>

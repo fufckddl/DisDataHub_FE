@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import "ol/ol.css";
 import Map from "ol/Map";
@@ -23,6 +23,7 @@ import {
   getGisReportListApi,
   searchGisReportListApi,
 } from "../../api/gisReportApi";
+import { getSidoListApi, getSigunguListApi } from "../../api/regionApi";
 
 import "../css/GisReportListPage.css";
 
@@ -40,70 +41,48 @@ function GisReportListPage() {
   const [gisReportList, setGisReportList] = useState([]);
 
   const [searchWord, setSearchWord] = useState("");
-  const [reportCategoryCode, setReportCategoryCode] = useState("");
-  const [errorTypeCode, setErrorTypeCode] = useState("");
-  const [processStatusCode, setProcessStatusCode] = useState("");
-  const [sido, setSido] = useState("");
-  const [sigungu, setSigungu] = useState("");
-  const [eupmyeondong, setEupmyeondong] = useState("");
 
+  const [sidoList, setSidoList] = useState([]);
+  const [sigunguList, setSigunguList] = useState([]);
+
+  const [sidoCode, setSidoCode] = useState("");
+  const [sigunguCode, setSigunguCode] = useState("");
+
+  const [isMarkerVisible, setMarkerVisible] = useState(true);
+  const [isCompletedVisible, setCompletedVisible] = useState(true);
   const [isLoading, setLoading] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 5;
 
-  const gisProcessStatusList = [
-    { code: "", name: "전체 상태" },
-    { code: "RECEIVED", name: "제보완료" },
-    { code: "REVIEWING", name: "검토중" },
-    { code: "PROCESSING", name: "조치중" },
-    { code: "COMPLETED", name: "처리완료" },
-  ];
+  const visibleGisReportList = useMemo(() => {
+    if (isCompletedVisible) {
+      return gisReportList;
+    }
 
-  const gisReportCategoryList = [
-    { code: "", name: "전체 제보 유형" },
-    { code: "LOCATION_ERROR", name: "위치 오류" },
-    { code: "MISSING_DATA", name: "데이터 누락" },
-    { code: "ATTRIBUTE_ERROR", name: "속성 오류" },
-    { code: "ETC", name: "기타" },
-  ];
+    return gisReportList.filter(
+      (report) => report.processStatusCode !== "COMPLETED"
+    );
+  }, [gisReportList, isCompletedVisible]);
 
-  const gisErrorTypeList = [
-    { code: "", name: "전체 오류 유형" },
-    { code: "COORDINATE_ERROR", name: "좌표 오류" },
-    { code: "NAME_ERROR", name: "명칭 오류" },
-    { code: "VALUE_ERROR", name: "속성값 오류" },
-  ];
-
-  const sidoList = [
-    { code: "", name: "전체 시도" },
-    { code: "서울특별시", name: "서울특별시" },
-    { code: "부산광역시", name: "부산광역시" },
-    { code: "대구광역시", name: "대구광역시" },
-    { code: "인천광역시", name: "인천광역시" },
-    { code: "광주광역시", name: "광주광역시" },
-    { code: "대전광역시", name: "대전광역시" },
-    { code: "울산광역시", name: "울산광역시" },
-    { code: "세종특별자치시", name: "세종특별자치시" },
-    { code: "경기도", name: "경기도" },
-    { code: "강원특별자치도", name: "강원특별자치도" },
-    { code: "충청북도", name: "충청북도" },
-    { code: "충청남도", name: "충청남도" },
-    { code: "전북특별자치도", name: "전북특별자치도" },
-    { code: "전라남도", name: "전라남도" },
-    { code: "경상북도", name: "경상북도" },
-    { code: "경상남도", name: "경상남도" },
-    { code: "제주특별자치도", name: "제주특별자치도" },
-  ];
-
-  const totalPage = Math.ceil(gisReportList.length / pageSize);
+  const totalPage = Math.ceil(visibleGisReportList.length / pageSize);
 
   const pageList = Array.from({ length: totalPage }, (_, index) => index + 1);
 
-  const currentPageReportList = gisReportList.slice(
+  const currentPageReportList = visibleGisReportList.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   );
+
+  const getSelectedName = (list, code) => {
+    if (!Array.isArray(list)) return "";
+
+    const item = list.find((item) => String(item.code) === String(code));
+    return item?.name ?? "";
+  };
+
+  const sidoName = getSelectedName(sidoList, sidoCode);
+  const sigunguName = getSelectedName(sigunguList, sigunguCode);
 
   const hidePopup = () => {
     setPopupReport(null);
@@ -125,7 +104,6 @@ function GisReportListPage() {
       }
     } catch (error) {
       console.error("GIS 오류제보 목록 조회 실패:", error);
-      alert("GIS 오류제보 목록을 불러오는 중 오류가 발생했습니다.");
     } finally {
       setLoading(false);
     }
@@ -137,12 +115,8 @@ function GisReportListPage() {
 
       const searchData = {
         searchWord,
-        reportCategoryCode,
-        errorTypeCode,
-        processStatusCode,
-        sido,
-        sigungu,
-        eupmyeondong,
+        sido: sidoName,
+        sigungu: sigunguName,
       };
 
       const data = await searchGisReportListApi(searchData);
@@ -154,53 +128,86 @@ function GisReportListPage() {
       }
     } catch (error) {
       console.error("GIS 오류제보 검색 실패:", error);
-      alert("GIS 오류제보 검색 중 오류가 발생했습니다.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleResetSearch = async () => {
+  const handleResetSearch = () => {
     setSearchWord("");
-    setReportCategoryCode("");
-    setErrorTypeCode("");
-    setProcessStatusCode("");
-    setSido("");
-    setSigungu("");
-    setEupmyeondong("");
+    setSidoCode("");
+    setSigunguCode("");
+    setSigunguList([]);
     setCurrentPage(1);
     hidePopup();
+  };
 
-    try {
-      setLoading(true);
-
-      const data = await getGisReportListApi();
-
-      if (data.result === "success") {
-        setGisReportList(data.gisReportList ?? []);
-      }
-    } catch (error) {
-      console.error("GIS 오류제보 목록 초기화 실패:", error);
-      alert("GIS 오류제보 목록을 다시 불러오는 중 오류가 발생했습니다.");
-    } finally {
-      setLoading(false);
-    }
+  const handleToggleCompletedVisible = () => {
+    setCompletedVisible((prev) => !prev);
+    setCurrentPage(1);
+    hidePopup();
   };
 
   useEffect(() => {
-    getGisReportList();
+    const getSidoList = async () => {
+      try {
+        const data = await getSidoListApi();
+        setSidoList(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("시/도 목록 조회 실패:", error);
+        setSidoList([]);
+      }
+    };
+
+    getSidoList();
   }, []);
+
+  useEffect(() => {
+    if (!sidoCode) {
+      setSigunguCode("");
+      setSigunguList([]);
+      return;
+    }
+
+    const getSigunguList = async () => {
+      try {
+        const data = await getSigunguListApi(sidoCode);
+        setSigunguList(Array.isArray(data) ? data : []);
+        setSigunguCode("");
+      } catch (error) {
+        console.error("시/군/구 목록 조회 실패:", error);
+        setSigunguList([]);
+      }
+    };
+
+    getSigunguList();
+  }, [sidoCode]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const hasSearchCondition =
+        searchWord.trim() !== "" || sidoName !== "" || sigunguName !== "";
+
+      if (hasSearchCondition) {
+        searchGisReportList();
+      } else {
+        getGisReportList();
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchWord, sidoName, sigunguName]);
 
   useEffect(() => {
     if (totalPage > 0 && currentPage > totalPage) {
       setCurrentPage(totalPage);
     }
-  }, [gisReportList, currentPage, totalPage]);
+  }, [visibleGisReportList, currentPage, totalPage]);
 
   const getMarkerColor = (statusCode) => {
     if (statusCode === "RECEIVED") return "#1f6feb";
-    if (statusCode === "REVIEWING") return "#2563eb";
-    if (statusCode === "CHECKING") return "#2563eb";
+    if (statusCode === "REVIEWING") return "#f97316";
+    if (statusCode === "CHECKING") return "#f97316";
     if (statusCode === "PROCESSING") return "#f97316";
     if (statusCode === "COMPLETED") return "#16a34a";
     return "#64748b";
@@ -259,7 +266,6 @@ function GisReportListPage() {
       popupOverlayRef.current = popupOverlay;
     }
 
-    // 마커 클릭 시 상세 페이지 이동
     map.on("singleclick", (event) => {
       const feature = map.forEachFeatureAtPixel(
         event.pixel,
@@ -275,7 +281,6 @@ function GisReportListPage() {
       }
     });
 
-    // 마커 hover 시 지도 이동 없이 팝업만 표시
     map.on("pointermove", (event) => {
       const feature = map.forEachFeatureAtPixel(
         event.pixel,
@@ -335,7 +340,12 @@ function GisReportListPage() {
 
     markerSource.clear();
 
-    gisReportList.forEach((report) => {
+    if (!isMarkerVisible) {
+      hidePopup();
+      return;
+    }
+
+    visibleGisReportList.forEach((report) => {
       if (report.latitude == null || report.longitude == null) return;
 
       const longitude = Number(report.longitude);
@@ -370,7 +380,7 @@ function GisReportListPage() {
     } else {
       hidePopup();
     }
-  }, [gisReportList]);
+  }, [visibleGisReportList, isMarkerVisible]);
 
   const handleMoveMapCenter = (report) => {
     if (!mapInstanceRef.current) return;
@@ -388,6 +398,11 @@ function GisReportListPage() {
       zoom: 15,
       duration: 300,
     });
+
+    if (!isMarkerVisible) {
+      hidePopup();
+      return;
+    }
 
     setPopupReport(report);
 
@@ -460,47 +475,20 @@ function GisReportListPage() {
       </section>
 
       <section className="gis-report-filter-section">
-        <input
-          type="text"
-          placeholder="제목, 내용, 주소, 데이터명을 검색하세요."
-          value={searchWord}
-          onChange={(e) => setSearchWord(e.target.value)}
-        />
+        <div className="filter-title-search">
+          <input
+            type="text"
+            placeholder="게시글 제목을 검색하세요."
+            value={searchWord}
+            onChange={(e) => setSearchWord(e.target.value)}
+          />
+        </div>
 
         <select
-          value={reportCategoryCode}
-          onChange={(e) => setReportCategoryCode(e.target.value)}
+          value={sidoCode}
+          onChange={(e) => setSidoCode(e.target.value)}
         >
-          {gisReportCategoryList.map((category) => (
-            <option key={category.code} value={category.code}>
-              {category.name}
-            </option>
-          ))}
-        </select>
-
-        <select
-          value={errorTypeCode}
-          onChange={(e) => setErrorTypeCode(e.target.value)}
-        >
-          {gisErrorTypeList.map((errorType) => (
-            <option key={errorType.code} value={errorType.code}>
-              {errorType.name}
-            </option>
-          ))}
-        </select>
-
-        <select
-          value={processStatusCode}
-          onChange={(e) => setProcessStatusCode(e.target.value)}
-        >
-          {gisProcessStatusList.map((status) => (
-            <option key={status.code} value={status.code}>
-              {status.name}
-            </option>
-          ))}
-        </select>
-
-        <select value={sido} onChange={(e) => setSido(e.target.value)}>
+          <option value="">전체 시/도</option>
           {sidoList.map((region) => (
             <option key={region.code} value={region.code}>
               {region.name}
@@ -508,45 +496,126 @@ function GisReportListPage() {
           ))}
         </select>
 
-        <input
-          type="text"
-          placeholder="시군구 입력"
-          value={sigungu}
-          onChange={(e) => setSigungu(e.target.value)}
-        />
+        <select
+          value={sigunguCode}
+          onChange={(e) => setSigunguCode(e.target.value)}
+          disabled={!sidoCode}
+        >
+          <option value="">전체 시/군/구</option>
+          {sigunguList.map((region) => (
+            <option key={region.code} value={region.code}>
+              {region.name}
+            </option>
+          ))}
+        </select>
 
-        <input
-          type="text"
-          placeholder="읍면동 입력"
-          value={eupmyeondong}
-          onChange={(e) => setEupmyeondong(e.target.value)}
-        />
-
-        <button type="button" onClick={searchGisReportList}>
-          🔍 검색
-        </button>
-
-        <button type="button" onClick={handleResetSearch}>
+        <button
+          type="button"
+          className="reset-button"
+          onClick={handleResetSearch}
+        >
           초기화
         </button>
 
-        <button type="button" className="radius-search-button">
-          반경 검색
-        </button>
-
         <Link to="/board/gis-report/write" className="write-button">
-          ✎ 글쓰기
+          글쓰기
         </Link>
       </section>
 
       <section className="gis-report-content-layout">
+        <section className="gis-report-map-section">
+          <div className="gis-report-map-header">
+            <h2>지도 영역</h2>
+            <span>현재 조회된 제보 위치만 표시됩니다.</span>
+          </div>
+
+          <div className="vworld-map-wrap">
+            <div className="map-legend-panel">
+              <div className="map-legend-items">
+                <span className="legend-item">
+                  <span className="legend-dot legend-received"></span>
+                  제보완료
+                </span>
+
+                <span className="legend-item">
+                  <span className="legend-dot legend-checking"></span>
+                  검토중
+                </span>
+
+                <span className="legend-item">
+                  <span className="legend-dot legend-completed"></span>
+                  처리완료
+                </span>
+              </div>
+
+              <button
+                type="button"
+                className={`marker-toggle ${isMarkerVisible ? "on" : ""}`}
+                onClick={() => setMarkerVisible((prev) => !prev)}
+                aria-label="마커 표시 전환"
+              >
+                <span className="marker-toggle-label">마커 표시</span>
+                <span className="marker-toggle-track">
+                  <span className="marker-toggle-thumb"></span>
+                </span>
+              </button>
+            </div>
+
+            <div ref={mapRef} className="vworld-map"></div>
+
+            <div
+              ref={popupRef}
+              className={`gis-marker-popup ${popupReport ? "show" : ""}`}
+            >
+              {popupReport && (
+                <>
+                  <strong>{popupReport.title || "제목 없음"}</strong>
+
+                  <p>
+                    {getReportCategoryName(popupReport.reportCategoryCode)}
+                    <span>/</span>
+                    {getErrorTypeName(popupReport.errorTypeCode)}
+                  </p>
+
+                  <p>{popupReport.address || "주소 정보 없음"}</p>
+
+                  <div className="popup-status-row">
+                    <span
+                      className={`popup-status-badge ${getStatusClassName(
+                        popupReport.processStatusCode
+                      )}`}
+                    >
+                      {getProcessStatusName(popupReport.processStatusCode)}
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </section>
+
         <section className="gis-report-list-section">
           <div className="gis-report-list-header">
-            <h2>제보 목록</h2>
-            <span>
-              총 {gisReportList.length}건 / {currentPage}
-              {totalPage > 0 ? ` / ${totalPage}페이지` : " / 0페이지"}
-            </span>
+            <div className="gis-report-list-title-area">
+              <h2>제보 목록</h2>
+
+              <span className="gis-report-list-count">
+                총 {visibleGisReportList.length}건 / {currentPage}
+                {totalPage > 0 ? ` / ${totalPage}페이지` : " / 0페이지"}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              className={`completed-toggle ${isCompletedVisible ? "on" : ""}`}
+              onClick={handleToggleCompletedVisible}
+              aria-label="처리완료 게시글 표시 전환"
+            >
+              <span className="completed-toggle-label">처리완료 보기</span>
+              <span className="completed-toggle-track">
+                <span className="completed-toggle-thumb"></span>
+              </span>
+            </button>
           </div>
 
           <div className="gis-report-list">
@@ -594,9 +663,9 @@ function GisReportListPage() {
               </div>
             )}
 
-            {!isLoading && gisReportList.length === 0 && (
+            {!isLoading && visibleGisReportList.length === 0 && (
               <div className="gis-report-empty-message">
-                등록된 GIS 오류제보가 없습니다.
+                표시할 GIS 오류제보가 없습니다.
               </div>
             )}
           </div>
@@ -628,45 +697,6 @@ function GisReportListPage() {
             >
               ›
             </button>
-          </div>
-        </section>
-
-        <section className="gis-report-map-section">
-          <div className="gis-report-map-header">
-            <h2>지도 영역</h2>
-          </div>
-
-          <div className="vworld-map-wrap">
-            <div ref={mapRef} className="vworld-map"></div>
-
-            <div
-              ref={popupRef}
-              className={`gis-marker-popup ${popupReport ? "show" : ""}`}
-            >
-              {popupReport && (
-                <>
-                  <strong>{popupReport.title || "제목 없음"}</strong>
-
-                  <p>
-                    {getReportCategoryName(popupReport.reportCategoryCode)}
-                    <span>/</span>
-                    {getErrorTypeName(popupReport.errorTypeCode)}
-                  </p>
-
-                  <p>{popupReport.address || "주소 정보 없음"}</p>
-
-                  <div className="popup-status-row">
-                    <span
-                      className={`popup-status-badge ${getStatusClassName(
-                        popupReport.processStatusCode
-                      )}`}
-                    >
-                      {getProcessStatusName(popupReport.processStatusCode)}
-                    </span>
-                  </div>
-                </>
-              )}
-            </div>
           </div>
         </section>
       </section>

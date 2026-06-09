@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getNoticeDetailApi } from "../../api/noticeApi";
 import "../css/NoticeDetailPage.css";
@@ -7,9 +7,9 @@ function NoticeDetailPage() {
   const { postId } = useParams();
   const navigate = useNavigate();
 
-  const hasFetchedRef = useRef(false);
-
   const [noticeDetail, setNoticeDetail] = useState(null);
+  const [previousPostId, setPreviousPostId] = useState(null);
+  const [nextPostId, setNextPostId] = useState(null);
   const [isLoading, setLoading] = useState(false);
 
   const getNoticeDetail = async () => {
@@ -20,6 +20,8 @@ function NoticeDetailPage() {
 
       if (data.result === "success") {
         setNoticeDetail(data.noticeDetail);
+        setPreviousPostId(data.previousPostId ?? null);
+        setNextPostId(data.nextPostId ?? null);
       }
     } catch (error) {
       console.error("공지사항 상세 조회 실패:", error);
@@ -37,17 +39,15 @@ function NoticeDetailPage() {
     });
   }, [postId]);
 
-  
   useEffect(() => {
     if (!postId) {
       return;
     }
 
-    if (hasFetchedRef.current) {
-      return;
-    }
+    setNoticeDetail(null);
+    setPreviousPostId(null);
+    setNextPostId(null);
 
-    hasFetchedRef.current = true;
     getNoticeDetail();
   }, [postId]);
 
@@ -56,7 +56,25 @@ function NoticeDetailPage() {
     return dateValue.substring(0, 10);
   };
 
-  if (isLoading) {
+  const handleMovePrevious = () => {
+    if (!previousPostId) {
+      alert("이전 글이 없습니다.");
+      return;
+    }
+
+    navigate(`/board/notice/${previousPostId}`);
+  };
+
+  const handleMoveNext = () => {
+    if (!nextPostId) {
+      alert("다음 글이 없습니다.");
+      return;
+    }
+
+    navigate(`/board/notice/${nextPostId}`);
+  };
+
+  if (isLoading && !noticeDetail) {
     return (
       <div className="container-fluid px-4 py-3 notice-detail-page">
         <div className="notice-detail-container">
@@ -145,11 +163,19 @@ function NoticeDetailPage() {
             </button>
 
             <div className="notice-move-button-group">
-              <button type="button" className="notice-move-button">
+              <button
+                type="button"
+                className="notice-move-button"
+                onClick={handleMovePrevious}
+              >
                 이전글
               </button>
 
-              <button type="button" className="notice-move-button">
+              <button
+                type="button"
+                className="notice-move-button"
+                onClick={handleMoveNext}
+              >
                 다음글
               </button>
             </div>

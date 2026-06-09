@@ -215,14 +215,15 @@
   cursor: pointer;
 }
 
+/* 목록으로 버튼 */
 .notice-list-button {
   border: none;
-  background: #1f6feb;
+  background: #334155;
   color: #ffffff;
 }
 
 .notice-list-button:hover {
-  background: #155dcc;
+  background: #1f2937;
 }
 
 .notice-move-button-group {
@@ -231,6 +232,7 @@
   gap: 8px;
 }
 
+/* 이전글 버튼 */
 .notice-move-button {
   border: 1px solid #d6dee9;
   background: #ffffff;
@@ -239,6 +241,27 @@
 
 .notice-move-button:hover {
   background: #f8fafc;
+}
+
+/* 다음글 버튼 */
+.notice-move-button-group .notice-move-button:nth-child(2) {
+  border: none;
+  background: #334155;
+  color: #ffffff;
+}
+
+.notice-move-button-group .notice-move-button:nth-child(2):hover {
+  background: #1f2937;
+}
+
+/* 이전글 / 다음글 비활성화 */
+.notice-move-button:disabled,
+.notice-move-button:disabled:hover {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: #f8fafc;
+  color: #94a3b8;
+  border: 1px solid #d6dee9;
 }
 
 /* 로딩 / 없음 */

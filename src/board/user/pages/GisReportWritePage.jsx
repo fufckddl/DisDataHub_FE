@@ -19,12 +19,7 @@ import Stroke from "ol/style/Stroke";
 
 import { VWORLD_BASE_MAP_URL } from "../../config/vworldConfig";
 import { createGisReportApi } from "../../api/gisReportApi";
-import {
-  getSidoListApi,
-  getSigunguListApi,
-  getEupmyeondongListApi,
-} from "../../api/regionApi";
-import { geocodeApi } from "../../api/locationApi";
+import { searchLocationApi } from "../../api/locationApi";
 
 import useAuthStore from "../../../commons/auth/useAuthStore";
 import "../css/GisReportWritePage.css";
@@ -36,7 +31,6 @@ function GisReportWritePage() {
   const mapInstanceRef = useRef(null);
   const markerSourceRef = useRef(null);
   const markerStyleRef = useRef(null);
-  const fullAddressRef = useRef("");
 
   const userInfo = useAuthStore((state) => state.userInfo);
 
@@ -46,71 +40,21 @@ function GisReportWritePage() {
   const [errorTypeCode, setErrorTypeCode] = useState("COORDINATE_ERROR");
   const [content, setContent] = useState("");
 
-  const [sidoList, setSidoList] = useState([]);
-  const [sigunguList, setSigunguList] = useState([]);
-  const [eupmyeondongList, setEupmyeondongList] = useState([]);
-
-  const [sidoCode, setSidoCode] = useState("");
-  const [sigunguCode, setSigunguCode] = useState("");
-  const [eupmyeondongCode, setEupmyeondongCode] = useState("");
-
-  const [detailAddress, setDetailAddress] = useState("");
+  const [locationKeyword, setLocationKeyword] = useState("");
+  const [locationResultList, setLocationResultList] = useState([]);
+  const [selectedLocation, setSelectedLocation] = useState(null);
+  const [hasSearchedLocation, setHasSearchedLocation] = useState(false);
 
   const [address, setAddress] = useState("");
   const [latitude, setLatitude] = useState("37.5007000");
   const [longitude, setLongitude] = useState("127.0365000");
 
+  const [sido, setSido] = useState("");
+  const [sigungu, setSigungu] = useState("");
+  const [eupmyeondong, setEupmyeondong] = useState("");
+
   const [isSearchingLocation, setSearchingLocation] = useState(false);
   const [isSubmitting, setSubmitting] = useState(false);
-
-  const normalizeList = (data) => {
-    console.log("normalizeList로 들어온 원본 data:", data);
-
-    if (Array.isArray(data)) {
-      return data;
-    }
-
-    if (Array.isArray(data?.data)) {
-      return data.data;
-    }
-
-    if (Array.isArray(data?.list)) {
-      return data.list;
-    }
-
-    if (Array.isArray(data?.result)) {
-      return data.result;
-    }
-
-    return [];
-  };
-
-  const getSelectedName = (list, code) => {
-    if (!Array.isArray(list)) {
-      console.log("getSelectedName list가 배열이 아님:", list);
-      return "";
-    }
-
-    const item = list.find((item) => String(item.code) === String(code));
-    return item?.name ?? "";
-  };
-
-  const sidoName = getSelectedName(sidoList, sidoCode);
-  const sigunguName = getSelectedName(sigunguList, sigunguCode);
-  const eupmyeondongName = getSelectedName(eupmyeondongList, eupmyeondongCode);
-
-  const fullAddress = [
-    sidoName,
-    sigunguName,
-    eupmyeondongName,
-    detailAddress,
-  ]
-    .filter(Boolean)
-    .join(" ");
-
-  useEffect(() => {
-    fullAddressRef.current = fullAddress;
-  }, [fullAddress]);
 
   const addMarker = (lon, lat) => {
     if (!markerSourceRef.current || !markerStyleRef.current) return;
@@ -137,99 +81,6 @@ function GisReportWritePage() {
       });
     }
   };
-
-  useEffect(() => {
-    const getSidoList = async () => {
-      try {
-        const data = await getSidoListApi();
-
-        console.log("시/도 목록 API 응답:", data);
-        console.log("시/도 목록 응답 타입:", typeof data);
-        console.log("시/도 목록 배열 여부:", Array.isArray(data));
-
-        const list = normalizeList(data);
-
-        console.log("화면에 저장할 시/도 목록:", list);
-
-        setSidoList(list);
-      } catch (error) {
-        console.error("시/도 목록 조회 실패:", error);
-        setSidoList([]);
-      }
-    };
-
-    getSidoList();
-  }, []);
-
-  useEffect(() => {
-    if (!sidoCode) {
-      setSigunguList([]);
-      setEupmyeondongList([]);
-      setSigunguCode("");
-      setEupmyeondongCode("");
-      setAddress("");
-      return;
-    }
-
-    const getSigunguList = async () => {
-      try {
-        const data = await getSigunguListApi(sidoCode);
-
-        console.log("선택한 시/도 코드:", sidoCode);
-        console.log("시/군/구 목록 API 응답:", data);
-        console.log("시/군/구 목록 응답 타입:", typeof data);
-        console.log("시/군/구 목록 배열 여부:", Array.isArray(data));
-
-        const list = normalizeList(data);
-
-        console.log("화면에 저장할 시/군/구 목록:", list);
-
-        setSigunguList(list);
-        setEupmyeondongList([]);
-        setSigunguCode("");
-        setEupmyeondongCode("");
-        setAddress("");
-      } catch (error) {
-        console.error("시/군/구 목록 조회 실패:", error);
-        setSigunguList([]);
-      }
-    };
-
-    getSigunguList();
-  }, [sidoCode]);
-
-  useEffect(() => {
-    if (!sigunguCode) {
-      setEupmyeondongList([]);
-      setEupmyeondongCode("");
-      setAddress("");
-      return;
-    }
-
-    const getEupmyeondongList = async () => {
-      try {
-        const data = await getEupmyeondongListApi(sigunguCode);
-
-        console.log("선택한 시/군/구 코드:", sigunguCode);
-        console.log("읍/면/동 목록 API 응답:", data);
-        console.log("읍/면/동 목록 응답 타입:", typeof data);
-        console.log("읍/면/동 목록 배열 여부:", Array.isArray(data));
-
-        const list = normalizeList(data);
-
-        console.log("화면에 저장할 읍/면/동 목록:", list);
-
-        setEupmyeondongList(list);
-        setEupmyeondongCode("");
-        setAddress("");
-      } catch (error) {
-        console.error("읍/면/동 목록 조회 실패:", error);
-        setEupmyeondongList([]);
-      }
-    };
-
-    getEupmyeondongList();
-  }, [sigunguCode]);
 
   useEffect(() => {
     if (!mapElementRef.current) return;
@@ -278,14 +129,12 @@ function GisReportWritePage() {
     const handleMapClick = (event) => {
       const [lon, lat] = toLonLat(event.coordinate);
 
-      console.log("지도 클릭 좌표:", {
-        longitude: lon,
-        latitude: lat,
-      });
-
       setLongitude(lon.toFixed(7));
       setLatitude(lat.toFixed(7));
-      setAddress(fullAddressRef.current || "지도에서 직접 선택한 위치");
+
+      if (!address.trim()) {
+        setAddress("지도에서 직접 선택한 위치");
+      }
 
       moveMarker(lon, lat, false);
     };
@@ -296,56 +145,48 @@ function GisReportWritePage() {
       map.un("singleclick", handleMapClick);
       map.setTarget(null);
     };
-  }, []);
+  }, [address]);
 
   const handleSearchLocation = async () => {
-    if (!sidoCode) {
-      alert("시/도를 선택해주세요.");
+    if (!locationKeyword.trim()) {
+      alert("검색할 주소나 장소명을 입력해주세요.");
       return;
     }
-
-    if (!sigunguCode) {
-      alert("시/군/구를 선택해주세요.");
-      return;
-    }
-
-    if (!eupmyeondongCode) {
-      alert("읍/면/동을 선택해주세요.");
-      return;
-    }
-
-    if (!detailAddress.trim()) {
-      alert("상세 위치를 입력해주세요.");
-      return;
-    }
-
-    const searchAddress = fullAddress.trim();
-
-    console.log("위치 검색 요청 주소:", searchAddress);
 
     try {
       setSearchingLocation(true);
+      setHasSearchedLocation(true);
+      setLocationResultList([]);
+      setSelectedLocation(null);
 
-      const data = await geocodeApi(searchAddress);
+      const data = await searchLocationApi(locationKeyword.trim());
 
-      console.log("위치 검색 API 응답:", data);
-
-      if (data.result !== "success") {
-        alert(data.message || "위치 검색에 실패했습니다.");
+      if (!Array.isArray(data)) {
+        setLocationResultList([]);
         return;
       }
 
-      setAddress(searchAddress);
-      setLatitude(String(data.latitude));
-      setLongitude(String(data.longitude));
-
-      moveMarker(data.longitude, data.latitude, true);
+      setLocationResultList(data);
     } catch (error) {
       console.error("위치 검색 실패:", error);
       alert("위치 검색 중 오류가 발생했습니다.");
     } finally {
       setSearchingLocation(false);
     }
+  };
+
+  const handleSelectLocation = (location) => {
+    setSelectedLocation(location);
+
+    setAddress(location.address ?? "");
+    setLatitude(String(location.latitude ?? ""));
+    setLongitude(String(location.longitude ?? ""));
+
+    setSido(location.sido ?? "");
+    setSigungu(location.sigungu ?? "");
+    setEupmyeondong(location.eupmyeondong ?? "");
+
+    moveMarker(location.longitude, location.latitude, true);
   };
 
   const handleSubmit = async () => {
@@ -359,33 +200,13 @@ function GisReportWritePage() {
       return;
     }
 
-    if (!sidoCode) {
-      alert("시/도를 선택해주세요.");
-      return;
-    }
-
-    if (!sigunguCode) {
-      alert("시/군/구를 선택해주세요.");
-      return;
-    }
-
-    if (!eupmyeondongCode) {
-      alert("읍/면/동을 선택해주세요.");
-      return;
-    }
-
-    if (!detailAddress.trim()) {
-      alert("상세 위치를 입력해주세요.");
-      return;
-    }
-
     if (!address.trim()) {
-      alert("위치 검색을 통해 주소를 확정해주세요.");
+      alert("주소 검색 결과를 선택하거나 지도에서 위치를 선택해주세요.");
       return;
     }
 
     if (!latitude || !longitude) {
-      alert("위도와 경도를 찾을 수 없습니다. 위치 검색을 먼저 진행해주세요.");
+      alert("위도와 경도를 찾을 수 없습니다. 위치를 먼저 선택해주세요.");
       return;
     }
 
@@ -404,26 +225,23 @@ function GisReportWritePage() {
 
       reportCategoryCode,
       errorTypeCode,
-      targetDataName: "",
+      targetDataName: selectedLocation?.title ?? "",
 
-      sido: sidoName,
-      sigungu: sigunguName,
-      eupmyeondong: eupmyeondongName,
-      detailAddress,
       address,
+      detailAddress: address,
 
       latitude: Number(latitude),
       longitude: Number(longitude),
-    };
 
-    console.log("GIS 오류 제보 등록 요청 데이터:", requestData);
+      sido,
+      sigungu,
+      eupmyeondong,
+    };
 
     try {
       setSubmitting(true);
 
       const data = await createGisReportApi(requestData);
-
-      console.log("GIS 오류 제보 등록 API 응답:", data);
 
       if (data.result === "success") {
         alert("GIS 오류 제보가 등록되었습니다.");
@@ -442,7 +260,6 @@ function GisReportWritePage() {
   return (
     <div className="container-fluid px-4 py-3 gis-report-write-page">
       <section className="gis-report-write-header">
-        <div className="gis-report-write-icon">💬</div>
         <h1>GIS 데이터 오류 제보 작성</h1>
       </section>
 
@@ -497,68 +314,19 @@ function GisReportWritePage() {
         <section className="gis-report-location-info">
           <h2>위치 검색</h2>
 
-          <div className="gis-report-location-select-row">
-            <select
-              value={sidoCode}
-              onChange={(e) => {
-                setSidoCode(e.target.value);
-                setAddress("");
-              }}
-            >
-              <option value="">시/도 선택</option>
-              {Array.isArray(sidoList) &&
-                sidoList.map((sido) => (
-                  <option key={sido.code} value={sido.code}>
-                    {sido.name}
-                  </option>
-                ))}
-            </select>
-
-            <select
-              value={sigunguCode}
-              onChange={(e) => {
-                setSigunguCode(e.target.value);
-                setAddress("");
-              }}
-              disabled={!sidoCode}
-            >
-              <option value="">시/군/구 선택</option>
-              {Array.isArray(sigunguList) &&
-                sigunguList.map((sigungu) => (
-                  <option key={sigungu.code} value={sigungu.code}>
-                    {sigungu.name}
-                  </option>
-                ))}
-            </select>
-
-            <select
-              value={eupmyeondongCode}
-              onChange={(e) => {
-                setEupmyeondongCode(e.target.value);
-                setAddress("");
-              }}
-              disabled={!sigunguCode}
-            >
-              <option value="">읍/면/동 선택</option>
-              {Array.isArray(eupmyeondongList) &&
-                eupmyeondongList.map((dong) => (
-                  <option key={dong.code} value={dong.code}>
-                    {dong.name}
-                  </option>
-                ))}
-            </select>
-          </div>
-
           <div className="gis-report-form-row">
-            <label>상세 위치</label>
+            <label>주소 검색</label>
             <div className="gis-report-address-search-row">
               <input
                 type="text"
-                placeholder="도로명, 지번, 건물명 등을 입력해주세요"
-                value={detailAddress}
-                onChange={(e) => {
-                  setDetailAddress(e.target.value);
-                  setAddress("");
+                placeholder="예: 봉은사로 524, 테헤란로 152, 서울특별시 강남구 봉은사로 524"
+                value={locationKeyword}
+                onChange={(e) => setLocationKeyword(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleSearchLocation();
+                  }
                 }}
               />
 
@@ -568,17 +336,61 @@ function GisReportWritePage() {
                 onClick={handleSearchLocation}
                 disabled={isSearchingLocation}
               >
-                {isSearchingLocation ? "검색 중..." : "위치 검색"}
+                {isSearchingLocation ? "검색 중..." : "검색"}
               </button>
             </div>
           </div>
+
+          <p className="location-search-help">
+            도로명과 건물번호를 입력하면 검색됩니다. 검색 결과가 없으면 지도에서
+            직접 위치를 클릭해 좌표를 지정할 수 있습니다.
+          </p>
+
+          {hasSearchedLocation && locationResultList.length === 0 && (
+            <div className="location-result-empty">
+              검색 결과가 없습니다. 주소를 더 자세히 입력하거나 지도에서 직접
+              위치를 선택해주세요.
+            </div>
+          )}
+
+          {locationResultList.length > 0 && (
+            <div className="location-result-list">
+              {locationResultList.map((location, index) => {
+                const isSelected =
+                  selectedLocation &&
+                  selectedLocation.address === location.address &&
+                  selectedLocation.latitude === location.latitude &&
+                  selectedLocation.longitude === location.longitude;
+
+                return (
+                  <button
+                    type="button"
+                    key={`${location.address}-${location.latitude}-${location.longitude}-${index}`}
+                    className={
+                      isSelected
+                        ? "location-result-item selected"
+                        : "location-result-item"
+                    }
+                    onClick={() => handleSelectLocation(location)}
+                  >
+                    <strong>{location.title || location.address}</strong>
+                    <span>{location.address}</span>
+                    <em>
+                      {location.sido} {location.sigungu}{" "}
+                      {location.eupmyeondong}
+                    </em>
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
           <div className="gis-report-form-row">
             <label>확정 주소</label>
             <input
               type="text"
               value={address}
-              placeholder="위치 검색 후 자동으로 입력됩니다"
+              placeholder="검색 결과를 선택하면 자동으로 입력됩니다"
               readOnly
             />
           </div>
@@ -592,6 +404,21 @@ function GisReportWritePage() {
             <label>경도</label>
             <input type="text" value={longitude} readOnly />
           </div>
+
+          <div className="gis-report-form-row">
+            <label>시/도</label>
+            <input type="text" value={sido} readOnly />
+          </div>
+
+          <div className="gis-report-form-row">
+            <label>시/군/구</label>
+            <input type="text" value={sigungu} readOnly />
+          </div>
+
+          <div className="gis-report-form-row">
+            <label>읍/면/동</label>
+            <input type="text" value={eupmyeondong} readOnly />
+          </div>
         </section>
 
         <section className="gis-report-write-map-section">
@@ -600,8 +427,8 @@ function GisReportWritePage() {
           <div ref={mapElementRef} className="gis-report-write-map"></div>
 
           <p className="map-help-text">
-            위치 검색 후 지도에 마커가 표시됩니다. 실제 오류 위치가 다르면
-            지도를 클릭해 좌표를 조정할 수 있습니다.
+            검색 결과를 선택하면 지도에 마커가 표시됩니다. 실제 오류 위치가
+            다르면 지도를 클릭해 좌표를 조정할 수 있습니다.
           </p>
         </section>
 

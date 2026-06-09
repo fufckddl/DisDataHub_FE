@@ -110,91 +110,111 @@ function InquiryEditPage() {
   if (isLoading) {
     return (
       <div className="container-fluid px-4 py-3 inquiry-write-page">
-        <section className="inquiry-write-header">
-          <h1>문의 수정 정보를 불러오는 중입니다.</h1>
-        </section>
+        <div className="inquiry-write-container">
+          <section className="inquiry-write-header">
+            <div className="inquiry-write-icon">?</div>
+
+            <div>
+              <h1>문의 수정 정보를 불러오는 중입니다.</h1>
+              <p>잠시만 기다려주세요.</p>
+            </div>
+          </section>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="container-fluid px-4 py-3 inquiry-write-page">
-      <section className="inquiry-write-header">
-        <div className="inquiry-write-icon">?</div>
+      <div className="inquiry-write-container">
+        <section className="inquiry-write-header">
 
-        <div>
-          <h1>문의글 수정</h1>
-          <p>등록한 문의 내용을 수정할 수 있습니다.</p>
-        </div>
-      </section>
+          <div>
+            <h1>문의글 수정</h1>
+            <p>등록한 문의 내용을 수정할 수 있습니다.</p>
+          </div>
+        </section>
 
-      <section className="inquiry-write-form-card">
-        <div className="inquiry-form-row">
-          <label>문의 유형</label>
+        <section className="inquiry-write-form-card">
+          <section className="inquiry-form-section">
+            <div className="inquiry-form-row">
+              <label>문의 분류</label>
 
-          <select
-            value={inquiryCategoryCode}
-            onChange={(e) => setInquiryCategoryCode(e.target.value)}
-          >
-            <option value="SYSTEM_USE">시스템 이용</option>
-            <option value="DATA">데이터 문의</option>
-            <option value="ERROR">오류 문의</option>
-            <option value="ETC">기타 문의</option>
-          </select>
-        </div>
+              <select
+                value={inquiryCategoryCode}
+                onChange={(e) => setInquiryCategoryCode(e.target.value)}
+              >
+                <option value="SYSTEM_USE">시스템 이용</option>
+                <option value="DATA">데이터 문의</option>
+                <option value="ERROR">오류 문의</option>
+                <option value="ETC">기타 문의</option>
+              </select>
+            </div>
 
-        <div className="inquiry-form-row">
-          <label>공개 여부</label>
+            <div className="inquiry-form-row">
+              <label>공개 여부</label>
 
-          <select
-            value={visibilityStatus}
-            onChange={(e) => setVisibilityStatus(e.target.value)}
-          >
-            <option value="PUBLIC">공개</option>
-            <option value="PRIVATE">비공개</option>
-          </select>
-        </div>
+              <select
+                value={visibilityStatus}
+                onChange={(e) => setVisibilityStatus(e.target.value)}
+              >
+                <option value="PUBLIC">공개</option>
+                <option value="PRIVATE">비공개</option>
+              </select>
+            </div>
 
-        <div className="inquiry-form-row">
-          <label>제목</label>
+            <div className="inquiry-form-row">
+              <label>제목</label>
 
-          <input
-            type="text"
-            placeholder="제목을 입력해주세요."
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-          />
-        </div>
+              <input
+                type="text"
+                placeholder="제목을 입력해주세요."
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+              />
+            </div>
 
-        <div className="inquiry-form-row textarea-row">
-          <label>문의 내용</label>
+            <div className="inquiry-form-row textarea-row">
+              <label>내용</label>
 
-          <textarea
-            placeholder="문의 내용을 입력해주세요."
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-          />
-        </div>
+              <textarea
+                placeholder="문의 내용을 입력해주세요."
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+              />
+            </div>
+          </section>
 
-        <div className="inquiry-write-button-area">
-          <button
-            type="button"
-            className="cancel-button"
-            onClick={() => navigate(`/board/inquiry/${postId}`)}
-          >
-            취소
-          </button>
+          <section className="inquiry-write-guide">
+            <h2>문의 수정 안내</h2>
 
-          <button
-            type="button"
-            className="submit-button"
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "수정 중..." : "수정 완료"}
-          </button>
-        </div>
-      </section>
+            <ul>
+              <li>수정한 내용은 저장 후 상세 페이지에서 다시 확인할 수 있습니다.</li>
+              <li>답변이 완료된 문의는 수정이 제한될 수 있습니다.</li>
+              <li>공개 여부를 변경하면 목록에서 보이는 범위가 달라집니다.</li>
+            </ul>
+          </section>
+
+          <div className="inquiry-write-button-area">
+            <button
+              type="button"
+              className="cancel-button"
+              onClick={() => navigate(`/board/inquiry/${postId}`)}
+            >
+              취소
+            </button>
+
+            <button
+              type="button"
+              className="submit-button"
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "수정 중..." : "수정 완료"}
+            </button>
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

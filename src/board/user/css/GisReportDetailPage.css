@@ -1,40 +1,50 @@
-.gis-report-detail-page {
+.gis-detail-page {
   min-height: 100vh;
   background: #f4f8fc;
   color: #17202a;
   box-sizing: border-box;
 }
 
-.gis-report-detail-container {
+.gis-detail-container {
   width: 100%;
   max-width: none;
   margin: 0;
 }
 
-/* 상단 제목 */
-.gis-report-detail-header {
-  padding: 34px 40px;
+.gis-detail-board {
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  border: 1px solid #d9e1ec;
+  border-radius: 0;
+  box-shadow: none;
 }
 
-.gis-report-detail-badge-area {
+.gis-detail-top {
+  padding: 30px 36px 26px;
+  background: #ffffff;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.gis-detail-badge-area {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 18px;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
 }
 
 .gis-category-badge,
-.gis-status-badge {
+.gis-error-type-badge,
+.gis-status-badge,
+.gis-visibility-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 7px 12px;
+  min-height: 28px;
+  padding: 0 11px;
   border-radius: 999px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 800;
   white-space: nowrap;
 }
@@ -44,36 +54,85 @@
   color: #1f6feb;
 }
 
+.gis-error-type-badge {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.gis-visibility-badge {
+  background: #f1f5f9;
+  color: #475569;
+}
+
 .gis-status-badge.status-received {
   background: #e8f1ff;
   color: #1f6feb;
 }
 
 .gis-status-badge.status-checking {
-  background: #fff4e5;
-  color: #f97316;
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+.gis-status-badge.status-processing {
+  background: #fff7ed;
+  color: #ea580c;
 }
 
 .gis-status-badge.status-completed {
-  background: #e8f8ef;
-  color: #16a34a;
+  background: #ecfdf5;
+  color: #059669;
 }
 
-.gis-report-detail-header h1 {
+.gis-detail-top h1 {
   margin: 0;
-  font-size: 34px;
-  font-weight: 800;
+  padding-left: 16px;
+  border-left: 5px solid #1f6feb;
   color: #0f172a;
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.4;
 }
 
-.gis-report-detail-header p {
-  margin: 14px 0 0;
+.gis-detail-info-row {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  margin-top: 24px;
+  padding: 14px 18px;
+  background: #f8fafc;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  flex-wrap: wrap;
+}
+
+.gis-detail-info-row span {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  min-height: auto;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.gis-detail-info-row em {
+  margin-right: 8px;
   color: #64748b;
-  font-size: 16px;
+  font-size: 14px;
+  font-weight: 700;
+  font-style: normal;
 }
 
-/* 작성자 버튼 */
-.gis-report-owner-button-area {
+.gis-detail-info-row strong {
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.gis-owner-button-area {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
@@ -82,9 +141,9 @@
 
 .gis-edit-button,
 .gis-delete-button {
-  height: 42px;
+  height: 40px;
   padding: 0 18px;
-  border-radius: 8px;
+  border-radius: 0;
   font-size: 14px;
   font-weight: 800;
   cursor: pointer;
@@ -115,308 +174,371 @@
   cursor: not-allowed;
 }
 
-/* 메타 정보 */
-.gis-report-detail-meta {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  margin-top: 22px;
+.gis-detail-body {
+  min-height: 260px;
+  padding: 34px 36px;
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  overflow: hidden;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
-.gis-report-detail-meta div {
-  padding: 22px 26px;
-  border-right: 1px solid #e2e8f0;
-}
-
-.gis-report-detail-meta div:last-child {
-  border-right: none;
-}
-
-.gis-report-detail-meta span,
-.gis-info-grid span,
-.gis-location-grid span {
-  display: block;
-  margin-bottom: 8px;
-  color: #64748b;
-  font-size: 14px;
-}
-
-.gis-report-detail-meta strong,
-.gis-info-grid strong,
-.gis-location-grid strong {
+.gis-detail-body-title,
+.gis-location-title,
+.gis-process-title {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
   color: #0f172a;
-  font-size: 17px;
-}
-
-/* 공통 카드 */
-.gis-report-info-section,
-.gis-report-location-section,
-.gis-report-content-section,
-.gis-report-file-section,
-.gis-report-process-section {
-  margin-top: 22px;
-  padding: 34px 40px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
-}
-
-.gis-report-info-section h2,
-.gis-report-location-section h2,
-.gis-report-content-section h2,
-.gis-report-file-section h2,
-.gis-report-process-section h2 {
-  margin: 0 0 22px;
-  font-size: 22px;
+  font-size: 21px;
   font-weight: 800;
-  color: #0f172a;
 }
 
-/* 제보 정보 */
-.gis-info-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 22px;
+.gis-detail-body-title::before,
+.gis-location-title::before,
+.gis-process-title::before {
+  content: "";
+  width: 5px;
+  height: 20px;
+  margin-right: 10px;
+  background: #1f6feb;
 }
 
-.gis-info-grid div,
-.gis-location-grid div {
-  padding: 20px 22px;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  background: #f8fbff;
-}
-
-/* 지도 */
-.gis-report-detail-map-wrap {
-  position: relative;
-  width: 100%;
-}
-
-.gis-report-detail-map {
-  width: 100%;
-  height: 340px;
-  border: 1px solid #d6dee9;
-  border-radius: 10px;
-  overflow: hidden;
-  background: #eef5ff;
-}
-
-.gis-marker-center-button {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  z-index: 5;
-  width: 38px;
-  height: 38px;
-  border: 1px solid #d6dee9;
-  border-radius: 8px;
-  background: #ffffff;
-  color: #1f6feb;
-  font-size: 22px;
-  font-weight: 800;
-  line-height: 1;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.14);
-}
-
-.gis-marker-center-button:hover {
-  background: #e8f1ff;
-  border-color: #1f6feb;
-}
-
-.gis-location-grid {
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
-  gap: 18px;
-  margin-top: 20px;
-}
-
-/* OpenLayers 컨트롤 */
-.gis-report-detail-map .ol-zoom {
-  top: 14px;
-  left: 14px;
-}
-
-.gis-report-detail-map .ol-zoom button {
-  width: 34px;
-  height: 34px;
-  border-radius: 6px;
-  background: #ffffff;
-  color: #0f172a;
-  border: 1px solid #d6dee9;
-  font-size: 18px;
-  cursor: pointer;
-}
-
-/* 본문 */
-.gis-report-content-section p {
+.gis-detail-body p {
   margin: 0;
-  color: #374151;
-  font-size: 17px;
-  line-height: 1.8;
+  color: #334155;
+  font-size: 16px;
+  line-height: 1.9;
+  white-space: pre-line;
 }
 
-/* 첨부파일 */
-.gis-file-item,
-.gis-file-empty {
-  padding: 16px 18px;
-  border-radius: 10px;
-  font-weight: 700;
+.gis-location-section {
+  padding: 34px 36px;
+  background: #ffffff;
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
-.gis-file-item {
-  border: 1px solid #d6dee9;
-  background: #f8fbff;
-  color: #1f6feb;
+.gis-location-content {
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr);
+  gap: 18px;
+  align-items: stretch;
 }
 
-.gis-file-empty {
-  border: 1px dashed #cbd5e1;
+.gis-location-info-box {
   background: #f8fafc;
-  color: #64748b;
-}
-
-/* 처리 내역 */
-.process-timeline {
+  padding: 22px 24px;
+  border: none;
+  border-radius: 0;
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-.process-item {
-  padding: 20px 22px;
-  border-left: 5px solid #cbd5e1;
-  border-radius: 10px;
+.gis-location-info-box div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gis-location-info-box em {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+  font-style: normal;
+}
+
+.gis-location-info-box strong {
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.45;
+  word-break: keep-all;
+}
+
+.gis-detail-map-wrap {
+  min-height: 320px;
+  background: #eef5ff;
+  border: 1px solid #d6dee9;
+  border-radius: 0;
+  overflow: hidden;
+}
+
+.gis-detail-map {
+  width: 100%;
+  height: 320px;
+}
+
+.gis-detail-map-empty {
+  height: 320px;
+  color: #64748b;
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gis-process-section {
+  padding: 34px 36px;
+  background: #ffffff;
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.gis-process-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.gis-process-item {
+  padding: 22px 24px;
   background: #f8fafc;
+  border: none;
+  border-radius: 0;
 }
 
-.process-item.active {
-  border-left-color: #1f6feb;
-  background: #f8fbff;
+.gis-process-meta {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
 }
 
-.process-item strong {
+.gis-process-writer-name {
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.gis-process-right-area {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.gis-answer-completed-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: #ecfdf5;
+  color: #059669;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.gis-process-date {
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.gis-process-item p {
+  margin: 0;
+  color: #334155;
+  font-size: 16px;
+  line-height: 1.8;
+  white-space: pre-line;
+}
+
+.gis-process-waiting-box {
+  padding: 22px 24px;
+  background: #f8fafc;
+  border: none;
+  border-radius: 0;
+}
+
+.gis-process-waiting-box strong {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   color: #0f172a;
   font-size: 17px;
+  font-weight: 800;
 }
 
-.process-item p {
+.gis-process-waiting-box p {
   margin: 0;
-  color: #64748b;
-  line-height: 1.6;
-}
-
-/* 버튼 */
-.gis-report-detail-button-area {
-  display: flex;
-  justify-content: center;
-  gap: 14px;
-  margin-top: 30px;
-}
-
-.gis-report-detail-button-area button,
-.gis-report-not-found button {
-  min-width: 130px;
-  height: 48px;
-  border-radius: 8px;
+  color: #334155;
   font-size: 16px;
+  line-height: 1.8;
+}
+
+.gis-detail-button-area {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  padding: 24px 36px 30px;
+  background: #ffffff;
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.gis-detail-button-area button {
+  height: 42px;
+  padding: 0 20px;
+  border-radius: 0;
+  font-size: 14px;
   font-weight: 800;
   cursor: pointer;
 }
 
-.gis-report-detail-button-area button:nth-child(1),
-.gis-report-detail-button-area button:nth-child(3) {
+.gis-list-button {
+  border: none;
+  background: #334155;
+  color: #ffffff;
+}
+
+.gis-list-button:hover {
+  background: #1f2937;
+}
+
+.gis-move-button-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gis-move-button {
   border: 1px solid #d6dee9;
   background: #ffffff;
   color: #334155;
 }
 
-.gis-report-detail-button-area button:nth-child(2),
-.gis-report-not-found button {
+.gis-move-button:hover {
+  background: #f8fafc;
+}
+
+.gis-move-button-group .gis-move-button:nth-child(2) {
   border: none;
-  background: #1f6feb;
+  background: #334155;
   color: #ffffff;
 }
 
-.gis-report-detail-button-area button:hover,
-.gis-report-not-found button:hover {
-  opacity: 0.9;
+.gis-move-button-group .gis-move-button:nth-child(2):hover {
+  background: #1f2937;
 }
 
-/* 없는 게시글 */
-.gis-report-not-found {
+.gis-move-button:disabled,
+.gis-move-button:disabled:hover {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: #f8fafc;
+  color: #94a3b8;
+  border: 1px solid #d6dee9;
+}
+
+.gis-not-found {
   padding: 50px;
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
+  border: 1px solid #d9e1ec;
+  border-radius: 0;
+  color: #64748b;
+  font-size: 16px;
+  font-weight: 700;
   text-align: center;
 }
 
-.gis-report-not-found h1 {
-  margin: 0 0 24px;
-  font-size: 28px;
-  color: #0f172a;
+.gis-not-found p {
+  margin: 0 0 12px;
+  color: #64748b;
+  font-size: 16px;
+  line-height: 1.6;
 }
 
-/* 반응형 */
-@media (max-width: 768px) {
-  .gis-report-detail-header,
-  .gis-report-info-section,
-  .gis-report-location-section,
-  .gis-report-content-section,
-  .gis-report-file-section,
-  .gis-report-process-section {
-    padding: 28px 24px;
-  }
+.gis-not-found button {
+  height: 42px;
+  margin-top: 12px;
+  padding: 0 20px;
+  border: none;
+  border-radius: 0;
+  background: #334155;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
 
-  .gis-report-detail-header h1 {
-    font-size: 28px;
-  }
+.gis-not-found button:hover {
+  background: #1f2937;
+}
 
-  .gis-report-detail-meta,
-  .gis-info-grid,
-  .gis-location-grid {
+@media (max-width: 1100px) {
+  .gis-location-content {
     grid-template-columns: 1fr;
   }
 
-  .gis-report-detail-meta div {
-    border-right: none;
-    border-bottom: 1px solid #e2e8f0;
-  }
-
-  .gis-report-detail-meta div:last-child {
-    border-bottom: none;
-  }
-
-  .gis-report-detail-map {
+  .gis-detail-map,
+  .gis-detail-map-empty {
     height: 300px;
   }
+}
 
-  .gis-marker-center-button {
-    top: 12px;
-    right: 12px;
-    width: 36px;
-    height: 36px;
-    font-size: 20px;
+@media (max-width: 768px) {
+  .gis-detail-top,
+  .gis-detail-body,
+  .gis-location-section,
+  .gis-process-section {
+    padding: 26px 22px;
   }
 
-  .gis-report-owner-button-area {
+  .gis-detail-top h1 {
+    font-size: 25px;
+  }
+
+  .gis-detail-info-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .gis-owner-button-area {
     justify-content: flex-start;
   }
 
-  .gis-report-detail-button-area {
+  .gis-process-meta {
+    align-items: flex-start;
     flex-direction: column;
+    gap: 8px;
   }
 
-  .gis-report-detail-button-area button {
+  .gis-process-right-area {
+    margin-left: 0;
+    justify-content: flex-start;
+  }
+
+  .gis-detail-button-area {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 22px;
+  }
+
+  .gis-move-button-group {
     width: 100%;
+  }
+
+  .gis-move-button-group button {
+    flex: 1;
   }
 }
