@@ -207,13 +207,13 @@ function UploadWritePage() {
                         {/* 1. 퀵 네비게이션 (목차) */}
                         <h6 className="fw-bolder text-secondary mb-3 ps-1">바로가기</h6>
                         <div className="list-group mb-5 shadow-sm border-0 rounded-4 overflow-hidden">
-                            <a href="#section-1" className="list-group-item list-group-item-action border-0 py-3 fw-bold text-dark" style={{ backgroundColor: '#ffffff' }}>
+                            <a href="#section-1" className="list-group-item list-group-item-action border-0 py-3 fw-bold text-dark custom-hover-item">
                                 <i className="bi bi-1-circle-fill text-primary me-2 fs-5 align-middle"></i>기본 정보
                             </a>
-                            <a href="#section-2" className="list-group-item list-group-item-action border-0 py-3 fw-bold text-dark" style={{ backgroundColor: '#ffffff' }}>
+                            <a href="#section-2" className="list-group-item list-group-item-action border-0 py-3 fw-bold text-dark custom-hover-item">
                                 <i className="bi bi-2-circle-fill text-primary me-2 fs-5 align-middle"></i>메타데이터
                             </a>
-                            <a href="#section-3" className="list-group-item list-group-item-action border-0 py-3 fw-bold text-dark" style={{ backgroundColor: '#ffffff' }}>
+                            <a href="#section-3" className="list-group-item list-group-item-action border-0 py-3 fw-bold text-dark custom-hover-item">
                                 <i className="bi bi-3-circle-fill text-primary me-2 fs-5 align-middle"></i>파일 첨부
                             </a>
                         </div>
@@ -687,7 +687,7 @@ function UploadWritePage() {
                                 </h6>
                                 <ul className="mb-0 ps-3 text-dark" style={{ fontSize: '0.9rem', lineHeight: '1.7' }}>
                                     <li className="mb-2">파일은 백엔드 서버를 거쳐 <strong>AWS S3 클라우드로 직접 스트리밍</strong>되어 안전하게 보관됩니다.</li>
-                                    <li className="mb-2">일반 파일(CSV, EXCEL)은 최대 <strong>30MB</strong>까지 지원됩니다.</li>
+                                    <li className="mb-2">일반 파일(CSV, EXCEL, GEOJSON)은 최대 <strong>30MB</strong>까지 지원됩니다. 또한 CSV, GEOJSON은 행의 개수가 1000개 이하까지만 업로드 하실 수 있습니다.</li>
                                     <li>공간 데이터(SHP ZIP, TIFF)는 최대 <strong>2GB</strong>의 대용량 업로드를 지원합니다.</li>
                                 </ul>
                             </div>
@@ -714,6 +714,10 @@ function UploadWritePage() {
                     </div>
                 </div>
             </div>
+            <style>{`
+                .custom-hover-item { transition: background-color 0.2s ease-in-out; }
+                .custom-hover-item:hover { background-color: #E2E8F0 !important; } 
+            `}</style>
         </div>
     );
 }

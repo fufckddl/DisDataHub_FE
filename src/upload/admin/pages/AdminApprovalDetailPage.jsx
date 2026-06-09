@@ -5,7 +5,6 @@ import 'leaflet/dist/leaflet.css';
 import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
 import L from 'leaflet';
 
-// 지도 카메라를 데이터 바운더리에 딱 맞게 줌인/이동시켜주는 전담 카메라맨
 function FitBoundsToData({ data }) {
     const map = useMap();
 
@@ -26,7 +25,6 @@ function AdminApprovalDetailPage() {
     const navigate = useNavigate();
     const { datasetId } = useParams();
 
-    // 🛑 기존 상태 관리 유지
     const [datasetInfo, setDatasetInfo] = useState(null);
     const [isLoading, setIsLoading] = useState(true); 
     const [error, setError] = useState(null);    
@@ -37,21 +35,19 @@ function AdminApprovalDetailPage() {
     const [rejectReason, setRejectReason] = useState("");
     const [rejectError, setRejectError] = useState("");
     const [isRejecting, setIsRejecting] = useState(false);
+    
+    // 🚀 다운로드 로딩 상태 추가
+    const [isDownloading, setIsDownloading] = useState(false);
 
-    // =====================================================================
-    // 데이터 가져오기
-    // =====================================================================
     useEffect(() => {
         const fetchData = async () => {
             setIsLoading(true);
             setIsMapLoading(true);
             
             try {
-                // 1. 기존 데이터셋 상세 정보 가져오기
                 const detailResponse = await axiosInstance.get(`/api/admin/approvals/${datasetId}`);
                 setDatasetInfo(detailResponse.data);
 
-                // 2. 지도 시각화 데이터 가져오기 (CSV, EXCEL, GEOJSON일 때만)
                 const fileFormat = detailResponse.data.fileFormat;
                 if (fileFormat !== 'SHP' && fileFormat !== 'TIFF') {
                     const mapResponse = await axiosInstance.get(`/api/admin/approvals/${datasetId}/map-data`);
@@ -74,7 +70,6 @@ function AdminApprovalDetailPage() {
                         setMapData(geoJsonCollection);
                     }
                 } else {
-                    // SHP, TIFF는 맵 데이터 요청 자체를 스킵
                     setMapData(null);
                 }
                 
@@ -100,8 +95,43 @@ function AdminApprovalDetailPage() {
     }, [datasetId, navigate]);
 
     // =====================================================================
-    // 승인 / 반려 로직 (기존 100% 동일)
+    // 🚀 [신규 추가] 원본 파일 다운로드 핸들러
     // =====================================================================
+    const handleDownloadOriginal = async () => {
+        setIsDownloading(true);
+        try {
+            // blob 타입으로 받아와야 파일이 깨지지 않습니다.
+            const response = await axiosInstance.get(`/api/admin/approvals/${datasetId}/download`, {
+                responseType: 'blob'
+            });
+            
+            // 파일명 추출 (백엔드에서 넘겨준 이름)
+            const contentDisposition = response.headers['content-disposition'];
+            let fileName = `${datasetInfo.title}_원본데이터`; 
+            
+            if (contentDisposition && contentDisposition.includes('filename=')) {
+                fileName = decodeURIComponent(contentDisposition.split('filename=')[1].replace(/['"]/g, ''));
+            } else {
+                fileName += datasetInfo.fileFormat ? `.${datasetInfo.fileFormat.toLowerCase()}` : '.zip';
+            }
+
+            // 가상의 다운로드 링크를 만들어 클릭 이벤트를 발생시킴
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', fileName);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error("다운로드 실패:", err);
+            alert("파일 다운로드에 실패했습니다. 관리자에게 문의하세요.");
+        } finally {
+            setIsDownloading(false);
+        }
+    };
+
     const handleApprove = async () => {
         if (window.confirm("정말 이 데이터셋을 최종 승인하시겠습니까?")) {
             setIsApproving(true); 
@@ -156,9 +186,6 @@ function AdminApprovalDetailPage() {
         }
     };
 
-    // =====================================================================
-    // 🎨 화면 UI: 팀원 다운로드 페이지(2단 레이아웃) 100% 반영
-    // =====================================================================
     if (isLoading) {
         return (
             <div className="d-flex justify-content-center align-items-center py-5" style={{ minHeight: '50vh' }}>
@@ -184,28 +211,45 @@ function AdminApprovalDetailPage() {
     return (
         <div className="container-fluid px-4 py-3" style={{ backgroundColor: '#F8F9FA', minHeight: '100vh' }}>
             
-            {/* 상단 타이틀 영역 (팀원 페이지 스타일) */}
-            <div className="d-flex align-items-center mb-4 pb-3 border-bottom">
-                <button 
-                    className="btn btn-light border me-3 d-flex align-items-center justify-content-center"
-                    onClick={() => navigate(-1)}
-                    style={{ width: '40px', height: '40px', borderRadius: '50%' }}
-                >
-                    <i className="bi bi-arrow-left fs-5"></i>
-                </button>
+            {/* 🚀 상단 타이틀 영역 (우측 끝에 다운로드 버튼 배치) */}
+            <div className="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+                <div className="d-flex align-items-center">
+                    <button 
+                        className="btn btn-light border me-3 d-flex align-items-center justify-content-center"
+                        onClick={() => navigate(-1)}
+                        style={{ width: '40px', height: '40px', borderRadius: '50%' }}
+                    >
+                        <i className="bi bi-arrow-left fs-5"></i>
+                    </button>
+                    <div>
+                        <h2 className="fw-bolder text-dark mb-1" style={{ fontSize: '1.5rem', letterSpacing: '-0.5px' }}>
+                            {datasetInfo.title}
+                        </h2>
+                        <p className="text-muted mb-0" style={{ fontSize: '0.8rem' }}>
+                            업로드된 데이터의 공간 정보와 상세 내역을 검토하고 승인/반려를 결정합니다.
+                        </p>
+                    </div>
+                </div>
+                
+                {/* 🚀 원본 다운로드 버튼 */}
                 <div>
-                    <h2 className="fw-bolder text-dark mb-1" style={{ fontSize: '1.5rem', letterSpacing: '-0.5px' }}>
-                        {datasetInfo.title}
-                    </h2>
-                    <p className="text-muted mb-0" style={{ fontSize: '0.8rem' }}>
-                        업로드된 데이터의 공간 정보와 상세 내역을 검토하고 승인/반려를 결정합니다.
-                    </p>
+                    <button 
+                        className="btn btn-dark fw-bold rounded-3 shadow-sm px-4 py-2 d-flex align-items-center"
+                        onClick={handleDownloadOriginal}
+                        disabled={isDownloading}
+                        style={{ transition: 'all 0.2s' }}
+                    >
+                        {isDownloading ? (
+                            <><span className="spinner-border spinner-border-sm me-2 text-warning" role="status" aria-hidden="true"></span>가져오는 중...</>
+                        ) : (
+                            <><i className="bi bi-cloud-arrow-down-fill text-warning me-2 fs-5"></i>원본 데이터 다운로드</>
+                        )}
+                    </button>
                 </div>
             </div>
 
             {/* 메인 2단 레이아웃 */}
             <div className="row g-4">
-                
                 {/* 좌측: 데이터 개요 (col-lg-4) */}
                 <div className="col-xl-4 col-lg-5">
                     <div className="card shadow-sm border-0 h-100">
@@ -269,7 +313,6 @@ function AdminApprovalDetailPage() {
                                         <span className="text-muted fw-bold">데이터를 불러오는 중입니다...</span>
                                     </div>
                                 ) : datasetInfo.fileFormat === 'TIFF' ? (
-                                    // 🚀 [신규] TIFF 전용 뷰어 UI (이미지)
                                     <div className="d-flex flex-column align-items-center justify-content-center h-100 bg-dark text-white text-center p-5">
                                         <i className="bi bi-image text-secondary opacity-50 mb-3" style={{ fontSize: '5rem' }}></i>
                                         <h4 className="fw-bold mb-2">TIFF 이미지 데이터</h4>
@@ -281,12 +324,11 @@ function AdminApprovalDetailPage() {
                                         </span>
                                     </div>
                                 ) : datasetInfo.fileFormat === 'SHP' ? (
-                                    // 🚀 [신규] SHP 전용 안내 UI
                                     <div className="d-flex flex-column align-items-center justify-content-center h-100 text-center p-5" style={{ backgroundColor: '#F8FAFC' }}>
                                         <i className="bi bi-layers-fill text-primary opacity-25 mb-3" style={{ fontSize: '5rem' }}></i>
                                         <h4 className="fw-bold text-dark mb-2">벡터 데이터 (SHP)</h4>
                                         <p className="text-muted small mb-4" style={{ maxWidth: '400px' }}>
-                                            다중 파일(zip)로 구성된 Shapefile은 별도의 데스크톱 GIS 프로그램을 통해 공간 속성을 확인할 수 있습니다.
+                                            다중 파일(zip)로 구성된 Shapefile은 상단의 <strong className="text-primary">원본 다운로드</strong> 버튼을 통해 내려받은 후 외부 GIS 프로그램에서 검수해 주세요.
                                         </p>
                                         <span className="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-2 rounded-pill">
                                             <i className="bi bi-check-circle-fill me-2"></i>필수 파일 무결성 검증 완료
@@ -298,7 +340,6 @@ function AdminApprovalDetailPage() {
                                         <h6 className="fw-bold text-secondary mb-1">시각화 데이터를 찾을 수 없습니다.</h6>
                                     </div>
                                 ) : (
-                                    // 기존 Leaflet 지도 (CSV, GeoJSON, EXCEL)
                                     <MapContainer center={[37.5665, 126.9780]} zoom={8} style={{ height: '100%', width: '100%' }}>
                                         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                                         <FitBoundsToData data={mapData} />
@@ -320,11 +361,10 @@ function AdminApprovalDetailPage() {
                 </div>
             </div>
 
-            {/* 🚀 하단 승인/반려 액션 영역 */}
+            {/* 하단 승인/반려 액션 영역 */}
             <div className="card shadow-sm border-0 mt-4">
                 <div className="card-body p-4 d-flex justify-content-between align-items-start">
                     <div className="flex-grow-1 me-4">
-                        {/* 반려 폼 (토글 시 부드럽게 나타남) */}
                         {showRejectForm ? (
                             <div className="bg-danger bg-opacity-10 border border-danger border-opacity-25 rounded-3 p-3 w-100" style={{ animation: 'fadeIn 0.3s' }}>
                                 <h6 className="fw-bold text-danger mb-2"><i className="bi bi-exclamation-triangle-fill me-1"></i>반려 사유 작성</h6>
@@ -349,7 +389,6 @@ function AdminApprovalDetailPage() {
                         )}
                     </div>
 
-                    {/* 승인 / 반려 버튼 */}
                     {!showRejectForm && (
                         <div className="d-flex gap-2">
                             <button className="btn btn-outline-danger fw-bold px-4 py-2" onClick={toggleRejectForm} disabled={isApproving}>
