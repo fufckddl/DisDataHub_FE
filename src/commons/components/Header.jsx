@@ -56,6 +56,11 @@ const UPLOAD_MENU = [
     { label: "나의 데이터 업로드 내역", to: "/upload/user/uploadList" },
 ];
 
+const DOWNLOAD_MENU = [
+    { label: "데이터셋 검색", to: "/download/user/main" },
+    { label: "나의 다운로드", to: "/download/user/my-downloads" },
+];
+
 const ADMIN_BOARD_MENU = [
     { label: "공지사항", to: "/board/notice" },
     { label: "문의", to: "/board/inquiry" },
@@ -69,21 +74,21 @@ const ROLE_MENUS = {
     USER: [
         { label: "시스템 소개", to: "/system/intro" },
         { label: "게시판", children: BOARD_MENU },
-        { label: "데이터 다운로드", to: "/download/user/main" },
+        { label: "데이터 다운로드", children: DOWNLOAD_MENU },
         { label: "대시보드", to: "/dashboard" },
     ],
     RESEARCHER: [
         { label: "시스템 소개", to: "/system/intro" },
         { label: "데이터 업로드", children: UPLOAD_MENU },
         { label: "게시판", children: BOARD_MENU },
-        { label: "데이터 다운로드", to: "/download/user/main" },
+        { label: "데이터 다운로드", children: DOWNLOAD_MENU },
         { label: "대시보드", to: "/dashboard" },
     ],
     ADMIN: [
         { label: "시스템 소개", to: "/system/intro" },
         { label: "데이터 업로드", children: UPLOAD_MENU },
         { label: "게시판", children: ADMIN_BOARD_MENU },
-        { label: "데이터 다운로드", to: "/download/user/main" },
+        { label: "데이터 다운로드", children: DOWNLOAD_MENU },
         { label: "시스템 설정", to: "/admin/mainPage" },
         { label: "대시보드", to: "/dashboard" },
     ],

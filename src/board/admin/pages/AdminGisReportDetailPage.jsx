@@ -18,7 +18,11 @@ import Fill from "ol/style/Fill";
 import Stroke from "ol/style/Stroke";
 
 import { VWORLD_BASE_MAP_URL } from "../../config/vworldConfig";
-import { getAdminGisReportDetailApi } from "../../api/gisReportApi";
+import {
+  getAdminGisReportDetailApi,
+  deleteAdminGisReportApi,
+  saveAdminGisReportProcessApi,
+} from "../../api/gisReportApi";
 
 import "../css/AdminGisReportDetailPage.css";
 
@@ -28,7 +32,11 @@ function AdminGisReportDetailPage() {
   const mapRef = useRef(null);
 
   const [report, setReport] = useState(null);
+  const [processHistoryList, setProcessHistoryList] = useState([]);
+
   const [isLoading, setLoading] = useState(false);
+  const [isDeleting, setDeleting] = useState(false);
+  const [isSaving, setSaving] = useState(false);
 
   const [processStatusCode, setProcessStatusCode] = useState("RECEIVED");
   const [adminProcessContent, setAdminProcessContent] = useState("");
@@ -53,7 +61,8 @@ function AdminGisReportDetailPage() {
 
         setReport(detail);
         setProcessStatusCode(detail?.processStatusCode ?? "RECEIVED");
-        setAdminProcessContent(detail?.adminProcessContent ?? "");
+        setAdminProcessContent("");
+        setProcessHistoryList(data.processHistoryList ?? []);
       }
     } catch (error) {
       console.error("관리자 GIS 오류제보 상세 조회 실패:", error);
@@ -169,20 +178,69 @@ function AdminGisReportDetailPage() {
     return dateValue.substring(0, 10);
   };
 
-  const handleSave = () => {
-    const selectedStatus = adminGisProcessStatusList.find(
-      (status) => status.code === processStatusCode
-    );
+  const handleSave = async () => {
+    if (!processStatusCode) {
+      alert("처리 상태를 선택해주세요.");
+      return;
+    }
+
+    if (!adminProcessContent.trim()) {
+      alert("관리자 처리 내용을 입력해주세요.");
+      return;
+    }
 
     const requestData = {
-      postId: report.postId,
       processStatusCode,
-      processStatusName: selectedStatus?.name,
-      adminProcessContent,
+      processContent: adminProcessContent,
     };
 
-    console.log("GIS 제보 처리 저장 데이터:", requestData);
-    alert("처리 상태 저장 API는 다음 단계에서 연결합니다.");
+    try {
+      setSaving(true);
+
+      const data = await saveAdminGisReportProcessApi(postId, requestData);
+
+      if (data.result === "success") {
+        alert("처리 상태와 처리 내용이 저장되었습니다.");
+
+        setAdminProcessContent("");
+        getAdminGisReportDetail();
+      } else {
+        alert("저장에 실패했습니다.");
+      }
+    } catch (error) {
+      console.error("GIS 제보 처리 저장 실패:", error);
+      alert("처리 상태 저장 중 오류가 발생했습니다.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    const isConfirm = window.confirm(
+      "정말 이 GIS 오류제보 게시글을 삭제하시겠습니까?"
+    );
+
+    if (!isConfirm) {
+      return;
+    }
+
+    try {
+      setDeleting(true);
+
+      const data = await deleteAdminGisReportApi(postId);
+
+      if (data.result === "success") {
+        alert("GIS 오류제보 게시글이 삭제되었습니다.");
+        navigate("/admin/board/gis-report");
+      } else {
+        alert("삭제에 실패했습니다.");
+      }
+    } catch (error) {
+      console.error("GIS 오류제보 삭제 실패:", error);
+      alert("삭제 중 오류가 발생했습니다.");
+    } finally {
+      setDeleting(false);
+    }
   };
 
   if (isLoading) {
@@ -212,14 +270,22 @@ function AdminGisReportDetailPage() {
     );
   }
 
-  const processHistory = report.processHistory ?? [
-    {
-      historyId: 1,
-      statusName: getProcessStatusName(report.processStatusCode),
-      processedAt: report.createdAt,
-      content: "GIS 오류 제보가 등록되었습니다.",
-    },
-  ];
+  const processHistory =
+    processHistoryList.length > 0
+      ? processHistoryList.map((history) => ({
+          historyId: history.historyId,
+          statusName: getProcessStatusName(history.processStatusCode),
+          processedAt: history.createdAt,
+          content: history.processContent,
+        }))
+      : [
+          {
+            historyId: 1,
+            statusName: getProcessStatusName(report.processStatusCode),
+            processedAt: report.createdAt,
+            content: "GIS 오류 제보가 등록되었습니다.",
+          },
+        ];
 
   return (
     <div className="admin-gis-detail-page">
@@ -227,13 +293,24 @@ function AdminGisReportDetailPage() {
         <div className="admin-gis-detail-top">
           <h1>GIS 오류 제보 상세 관리</h1>
 
-          <button
-            type="button"
-            className="top-list-button"
-            onClick={() => navigate("/admin/board/gis-report")}
-          >
-            ← 목록으로
-          </button>
+          <div className="admin-gis-top-button-area">
+            <button
+              type="button"
+              className="top-list-button"
+              onClick={() => navigate("/admin/board/gis-report")}
+            >
+              ← 목록으로
+            </button>
+
+            <button
+              type="button"
+              className="delete-button"
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "삭제 중..." : "삭제"}
+            </button>
+          </div>
         </div>
 
         <section className="admin-gis-detail-header-card">
@@ -349,9 +426,7 @@ function AdminGisReportDetailPage() {
             <div className="admin-gis-file-area">
               <h4>첨부 파일</h4>
 
-              <div className="admin-gis-file-empty">
-                첨부파일이 없습니다.
-              </div>
+              <div className="admin-gis-file-empty">첨부파일이 없습니다.</div>
             </div>
           </section>
 
@@ -392,8 +467,9 @@ function AdminGisReportDetailPage() {
               type="button"
               className="process-save-button"
               onClick={handleSave}
+              disabled={isSaving}
             >
-              ✓ 저장
+              {isSaving ? "저장 중..." : "✓ 저장"}
             </button>
           </section>
         </div>

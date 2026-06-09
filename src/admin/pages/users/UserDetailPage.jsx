@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-// import axiosInstance from "../../../commons/api/axiosInstance";
-import { dummyUserList } from "../../data/dummyUserList";
+import axiosInstance from "../../../commons/api/axiosInstance";
 
 function UserDetailTitle({ navigate }) {
     return (
@@ -40,7 +39,7 @@ function UserSummaryCard({ userDetail, getRoleText, getStatusClassName }) {
                     <div className="d-flex align-items-center justify-content-between">
                         <div>
                             <div className="fs-4 fw-bold">
-                                {userDetail.userName}
+                                {userDetail.username}
                             </div>
 
                             <div className="text-secondary">
@@ -76,12 +75,12 @@ function BasicInfoCard({ userDetail, getRoleText }) {
                     <tbody>
                         <tr>
                             <th className="table-light text-secondary w-25">사용자 ID</th>
-                            <td>{userDetail.userId}</td>
+                            <td>{userDetail.id}</td>
                         </tr>
 
                         <tr>
                             <th className="table-light text-secondary">사용자명</th>
-                            <td>{userDetail.userName}</td>
+                            <td>{userDetail.username}</td>
                         </tr>
 
                         <tr>
@@ -106,12 +105,7 @@ function BasicInfoCard({ userDetail, getRoleText }) {
 
                         <tr>
                             <th className="table-light text-secondary">가입일</th>
-                            <td>{userDetail.createdAt}</td>
-                        </tr>
-
-                        <tr>
-                            <th className="table-light text-secondary">최근 접속일</th>
-                            <td>{userDetail.lastLoginAt}</td>
+                            <td>{userDetail.created_at?.substring(0, 10)}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -148,31 +142,6 @@ function getRoleActivityList(userDetail) {
         { title: "접근 요청", value: userDetail.requestCount, unit: "건" },
         { title: "데이터 조회", value: userDetail.viewCount ?? 31, unit: "회" },
         { title: "문의 등록", value: userDetail.qnaCount ?? 3, unit: "건" }
-    ];
-}
-
-function getManagementOptionList(role) {
-
-    if(role === "ADMIN") {
-        return [
-            "사용자 관리 7일 금지",
-            "업로드 승인 7일 금지",
-            "데이터 접근 승인 7일 금지",
-            "역할 변경 승인 7일 금지"
-        ];
-    }
-
-    if(role === "RESEARCHER") {
-        return [
-            "데이터 업로드 요청 7일 금지",
-            "연구원 자격 박탈"
-        ];
-    }
-
-    return [
-        "게시글 이용 7일 금지",
-        "데이터 다운로드 7일 금지",
-        "사용자 계정 정지"
     ];
 }
 
@@ -245,7 +214,7 @@ function DetailButtonSection({ navigate }) {
                 <button
                     className="btn btn-outline-secondary border-2 text-black bi bi-chevron-left"
                     onClick={() => {
-                        navigate("/admin/system/userList");
+                        navigate("/admin/users/userList");
                     }}
                 >
                     &nbsp;목록으로
@@ -274,9 +243,10 @@ function DetailButtonSection({ navigate }) {
     )
 }
 
-function UserManageModal({ userDetail }) {
+function UserManageModal({ userDetail, loadUserDetail }) {
 
-    const managementOptionList = getManagementOptionList(userDetail.role);
+    const [selectedStatus, setSelectedStatus] = useState("ACTIVATE");
+    const [description, setDescription] = useState("");
 
     return (
         <div
@@ -290,7 +260,7 @@ function UserManageModal({ userDetail }) {
 
                     <div className="modal-header">
                         <h5 className="modal-title fw-bold">
-                            사용자 관리 적용
+                            사용자 상태 변경
                         </h5>
 
                         <button
@@ -304,7 +274,7 @@ function UserManageModal({ userDetail }) {
                     <div className="modal-body">
                         <div className="border rounded p-3 mb-3 bg-light">
                             <div className="fw-bold">
-                                {userDetail.userName}
+                                {userDetail.username}
                             </div>
 
                             <div className="text-secondary small">
@@ -316,13 +286,13 @@ function UserManageModal({ userDetail }) {
                             <label className="form-label fw-bold">
                                 적용할 관리
                             </label>
-
-                            <select className="form-select shadow-none">
-                                {managementOptionList.map((managementName) => (
-                                    <option key={managementName}>
-                                        {managementName}
-                                    </option>
-                                ))}
+                            <select
+                                className="form-select shadow-none"
+                                value={selectedStatus}
+                                onChange={(e) => {setSelectedStatus(e.target.value)}}
+                            >
+                                <option value="ACTIVATE">활성</option>
+                                <option value="INACTIVATE">비활성</option>
                             </select>
                         </div>
 
@@ -332,6 +302,8 @@ function UserManageModal({ userDetail }) {
                             </label>
 
                             <textarea
+                                value={description}
+                                onChange={(e) => {setDescription(e.target.value)}}
                                 style={{resize: "none"}}
                                 className="form-control shadow-none"
                                 rows="5"
@@ -348,13 +320,31 @@ function UserManageModal({ userDetail }) {
                         >
                             취소
                         </button>
-
                         <button
                             type="button"
                             className="btn btn-primary"
                             data-bs-dismiss="modal"
-                            onClick={() => {
-                                alert("사용자 관리가 적용되었습니다.");
+                            onClick={async () => {
+                                const statusTypeIdMap = {
+                                    ACTIVATE: 1,
+                                    INACTIVATE: 2
+                                };
+
+                                const requestData = {
+                                    targetUserId: userDetail.id,
+                                    typeId: statusTypeIdMap[selectedStatus],
+                                    description: description
+                                };
+
+                                const response = await axiosInstance.post(
+                                    `/api/admin/users/applyUserManagement?status=${selectedStatus}`,
+                                    requestData
+                                );
+
+                                if(response.data.result === "success") {
+                                    alert("사용자 관리가 적용되었습니다.");
+                                    loadUserDetail();
+                                }
                             }}
                         >
                             적용
@@ -391,7 +381,7 @@ function UserDetailPage () {
     const params = useParams();
     const navigate = useNavigate();
 
-    const userId = params.userId;
+    const id = params.id;
 
     const [userDetail, setUserDetail] = useState(null);
 
@@ -400,19 +390,8 @@ function UserDetailPage () {
     }, []);
 
     const loadUserDetail = async () => {
-
-        // 현재는 발표용 더미 데이터 사용
-        const selectedUser = dummyUserList.find((userData) => {
-            return userData.userId === Number(userId);
-        });
-
-        setUserDetail(selectedUser);
-
-
-
-        // 나중에 실제 DB 연동할 때는 아래 코드 사용
-        // const response = await axiosInstance.get(`/api/admin/users/${userId}`);
-        // setUserDetail(response.data.userDetail);
+        const response = await axiosInstance.get(`/api/admin/users/userDetail/${id}`);
+        setUserDetail(response.data.user);
 
     };
 
@@ -423,9 +402,9 @@ function UserDetailPage () {
     };
 
     const getStatusClassName = (status) => {
-        if(status === "활성") return "badge text-bg-success";
-        if(status === "승인대기") return "badge text-bg-warning";
-        if(status === "정지") return "badge text-bg-danger";
+        if(status === "ACTIVATE") return "badge text-bg-success";
+        if(status === "INACTIVATE") return "badge text-bg-danger";
+
         return "badge text-bg-secondary";
     };
 
@@ -443,7 +422,7 @@ function UserDetailPage () {
                 <UserSummaryCard userDetail={userDetail} getRoleText={getRoleText} getStatusClassName={getStatusClassName} />
                 <DetailInfoSection userDetail={userDetail} getRoleText={getRoleText} />
                 <DetailButtonSection navigate={navigate} />
-                <UserManageModal userDetail={userDetail} />
+                <UserManageModal userDetail={userDetail} loadUserDetail={loadUserDetail} />
             </div>
         </div>
         </>

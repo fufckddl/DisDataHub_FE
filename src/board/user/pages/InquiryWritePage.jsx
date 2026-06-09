@@ -60,67 +60,69 @@ function InquiryWritePage() {
   };
 
   return (
-    <div className="inquiry-write-page">
+    <div className="container-fluid px-4 py-3 inquiry-write-page">
       <div className="inquiry-write-container">
         <section className="inquiry-write-header">
-          <div className="inquiry-write-icon">?</div>
 
           <div>
-            <h1>질문 / 문의 작성</h1>
+            <h1>문의 작성</h1>
             <p>
-              시스템 이용, 데이터 조회, 오류 관련 문의 내용을 작성할 수 있습니다.
+              시스템 이용, 데이터 조회, 오류 관련 문의 내용을 작성할 수
+              있습니다.
             </p>
           </div>
         </section>
 
         <section className="inquiry-write-form-card">
-          <div className="inquiry-form-row">
-            <label>문의 분류</label>
+          <section className="inquiry-form-section">
+            <div className="inquiry-form-row">
+              <label>문의 분류</label>
 
-            <select
-              value={inquiryCategoryCode}
-              onChange={(e) => setInquiryCategoryCode(e.target.value)}
-            >
-              {inquiryCategoryList.map((category) => (
-                <option key={category.code} value={category.code}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-          </div>
+              <select
+                value={inquiryCategoryCode}
+                onChange={(e) => setInquiryCategoryCode(e.target.value)}
+              >
+                {inquiryCategoryList.map((category) => (
+                  <option key={category.code} value={category.code}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          <div className="inquiry-form-row">
-            <label>공개 여부</label>
+            <div className="inquiry-form-row">
+              <label>공개 여부</label>
 
-            <select
-              value={visibilityStatus}
-              onChange={(e) => setVisibilityStatus(e.target.value)}
-            >
-              <option value="PUBLIC">공개</option>
-              <option value="PRIVATE">비공개</option>
-            </select>
-          </div>
+              <select
+                value={visibilityStatus}
+                onChange={(e) => setVisibilityStatus(e.target.value)}
+              >
+                <option value="PUBLIC">공개</option>
+                <option value="PRIVATE">비공개</option>
+              </select>
+            </div>
 
-          <div className="inquiry-form-row">
-            <label>제목</label>
+            <div className="inquiry-form-row">
+              <label>제목</label>
 
-            <input
-              type="text"
-              placeholder="문의 제목을 입력해주세요."
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-          </div>
+              <input
+                type="text"
+                placeholder="문의 제목을 입력해주세요."
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+              />
+            </div>
 
-          <div className="inquiry-form-row textarea-row">
-            <label>내용</label>
+            <div className="inquiry-form-row textarea-row">
+              <label>내용</label>
 
-            <textarea
-              placeholder="문의 내용을 자세히 입력해주세요."
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-            />
-          </div>
+              <textarea
+                placeholder="문의 내용을 자세히 입력해주세요."
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+              />
+            </div>
+          </section>
 
           <section className="inquiry-write-guide">
             <h2>문의 작성 안내</h2>
@@ -128,7 +130,8 @@ function InquiryWritePage() {
             <ul>
               <li>문의 분류를 정확히 선택하면 답변이 더 빨라질 수 있습니다.</li>
               <li>
-                오류 문의는 발생 화면, 오류 메시지, 사용 환경을 함께 적어주세요.
+                오류 문의는 발생 화면, 오류 메시지, 사용 환경을 함께
+                적어주세요.
               </li>
               <li>
                 답변 완료 시 문의 상세 페이지에서 관리자 답변을 확인할 수

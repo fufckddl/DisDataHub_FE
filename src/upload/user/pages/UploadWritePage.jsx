@@ -179,43 +179,41 @@ function UploadWritePage() {
         }
     };
 
-    // =====================================================================
-    // 🎨 UI 영역: 3단 완벽 밸런스 레이아웃 (좌측 추가, 중앙, 우측)
-    // =====================================================================
     return (
-        <div className="container-fluid px-4 py-4" style={{ backgroundColor: '#F8F9FA', minHeight: '100vh' }}>
+        <div className="container-fluid px-4 py-3" style={{ backgroundColor: '#F8F9FA', minHeight: '100vh' }}>
             
             {/* 상단 타이틀 영역 */}
-            <div className="d-flex justify-content-between align-items-end mb-4 pb-3 border-bottom">
-                <div>
-                    <h2 className="fw-bolder text-dark mb-2" style={{ letterSpacing: '-0.5px' }}>신규 데이터 업로드</h2>
-                    <p className="text-muted mb-0" style={{ fontSize: '0.95rem' }}>
+            <div className="justify-content-between align-items-end mb-4 pb-3 border-bottom">
+                <div className='row'>
+                    <div className='col'>
+                        <h2 className="fw-bolder text-dark mb-2">신규 데이터 업로드</h2>
+                    </div>
+                    <div className='col-auto'>
+                        <button className="btn btn-outline-secondary btn-sm fw-bold px-3 py-2" onClick={() => window.history.back()}>
+                            <i className="bi bi-arrow-left me-2"></i>목록으로 돌아가기
+                        </button>
+                    </div>
+                    <p className="text-muted mb-0" style={{ fontSize: '0.8rem' }}>
                         시스템 적재를 위한 기본 정보와 메타데이터를 입력하고 파일을 업로드해 주세요. 
                         <span className="text-danger fw-bold ms-1">*</span> 표시는 필수 입력 항목입니다.
                     </p>
                 </div>
-                <div>
-                    <button className="btn btn-outline-secondary btn-sm fw-bold px-3 py-2" onClick={() => window.history.back()}>
-                        <i className="bi bi-arrow-left me-2"></i>목록으로 돌아가기
-                    </button>
-                </div>
             </div>
 
             <div className="row g-4">
-                {/* 🚀 좌측 사이드바 (col-xl-2): 퀵 네비게이션 & 템플릿 */}
                 <div className="col-xl-2 d-none d-xl-block">
                     <div className="sticky-top" style={{ top: '2rem' }}>
                         
                         {/* 1. 퀵 네비게이션 (목차) */}
                         <h6 className="fw-bolder text-secondary mb-3 ps-1">바로가기</h6>
                         <div className="list-group mb-5 shadow-sm border-0 rounded-4 overflow-hidden">
-                            <a href="#section-1" className="list-group-item list-group-item-action border-0 py-3 fw-bold text-dark" style={{ backgroundColor: '#ffffff' }}>
+                            <a href="#section-1" className="list-group-item list-group-item-action border-0 py-3 fw-bold text-dark custom-hover-item">
                                 <i className="bi bi-1-circle-fill text-primary me-2 fs-5 align-middle"></i>기본 정보
                             </a>
-                            <a href="#section-2" className="list-group-item list-group-item-action border-0 py-3 fw-bold text-dark" style={{ backgroundColor: '#ffffff' }}>
+                            <a href="#section-2" className="list-group-item list-group-item-action border-0 py-3 fw-bold text-dark custom-hover-item">
                                 <i className="bi bi-2-circle-fill text-primary me-2 fs-5 align-middle"></i>메타데이터
                             </a>
-                            <a href="#section-3" className="list-group-item list-group-item-action border-0 py-3 fw-bold text-dark" style={{ backgroundColor: '#ffffff' }}>
+                            <a href="#section-3" className="list-group-item list-group-item-action border-0 py-3 fw-bold text-dark custom-hover-item">
                                 <i className="bi bi-3-circle-fill text-primary me-2 fs-5 align-middle"></i>파일 첨부
                             </a>
                         </div>
@@ -255,7 +253,7 @@ function UploadWritePage() {
                 <div className="col-xl-7 col-lg-8">
                     
                     {/* 1. 기본 정보 (id="section-1" 추가) */}
-                    <div id="section-1" className="card shadow-sm border-0 rounded-4 mb-4" style={{ scrollMarginTop: '2rem' }}>
+                    <div id="section-1" className="card shadow-sm rounded-2 mb-4" style={{ scrollMarginTop: '2rem' }}>
                         <div className="card-header bg-white border-bottom-0 pt-4 pb-0 px-4 px-md-5">
                             <h5 className="fw-bold text-dark mb-0 d-flex align-items-center">
                                 <div className="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style={{ width: '28px', height: '28px', fontSize: '0.9rem' }}>1</div>
@@ -301,6 +299,9 @@ function UploadWritePage() {
                                         <option value="4326">4326 (WGS84 - GPS 위경도)</option>
                                         <option value="5179">5179 (UTM-K - 네이버/카카오)</option>
                                         <option value="5181">5181 (중부원점 - 다음지도)</option>
+                                        <option value="5179">5179 (GRS80 - 네이버 지도)</option>
+                                        <option value="5174">5174 (수정된 중부원점 - 네이버 지도)</option>
+                                        <option value="3857">3857 (WGS 84 - 구글 맵)</option>
                                         <option value="0">원본 좌표계 없음 (파일 내장/해당 없음)</option>
                                     </select>
                                     {errors.originalSrid && <div className="invalid-feedback">{errors.originalSrid.message}</div>}
@@ -419,7 +420,7 @@ function UploadWritePage() {
                     </div>
 
                     {/* 2. 상세 메타데이터 (id="section-2" 추가) */}
-                    <div id="section-2" className="card shadow-sm border-0 rounded-4 mb-4" style={{ scrollMarginTop: '2rem' }}>
+                    <div id="section-2" className="card shadow-sm rounded-2 mb-4" style={{ scrollMarginTop: '2rem' }}>
                         <div className="card-header bg-white border-bottom-0 pt-4 pb-0 px-4 px-md-5">
                             <h5 className="fw-bold text-dark mb-0 d-flex align-items-center">
                                 <div className="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style={{ width: '28px', height: '28px', fontSize: '0.9rem' }}>2</div>
@@ -498,17 +499,18 @@ function UploadWritePage() {
                     </div>
 
                     {/* 3. 파일 첨부 (id="section-3" 추가) */}
-                    <div id="section-3" className="card shadow-sm border-0 rounded-4 mb-4" style={{ scrollMarginTop: '2rem' }}>
+                    <div id="section-3" className="card shadow-sm rounded-2 mb-4" style={{ scrollMarginTop: '2rem' }}>
                         <div className="card-header bg-white border-bottom-0 pt-4 pb-0 px-4 px-md-5 d-flex justify-content-between align-items-center">
                             <h5 className="fw-bold text-dark mb-0 d-flex align-items-center">
                                 <div className="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style={{ width: '28px', height: '28px', fontSize: '0.9rem' }}>3</div>
                                 파일 첨부 <span className="text-danger ms-1">*</span>
                             </h5>
-                            <div className="d-flex align-items-center bg-light px-3 py-1 rounded-pill border">
+                            <div className="d-flex align-items-center bg-light px-2 py-1 rounded-2 border">
                                 <span className="text-muted small fw-bold me-2">인코딩:</span>
                                 <select className="form-select form-select-sm border-0 bg-transparent text-primary fw-bold p-0 pe-3" {...register("encoding")} style={{width: 'auto', cursor: 'pointer'}}>
                                     <option value="UTF-8">UTF-8 (기본)</option>
                                     <option value="EUC-KR">EUC-KR (공공 CSV)</option>
+                                    <option value="">인코딩 없음</option>
                                 </select>
                             </div>
                         </div>
@@ -685,7 +687,7 @@ function UploadWritePage() {
                                 </h6>
                                 <ul className="mb-0 ps-3 text-dark" style={{ fontSize: '0.9rem', lineHeight: '1.7' }}>
                                     <li className="mb-2">파일은 백엔드 서버를 거쳐 <strong>AWS S3 클라우드로 직접 스트리밍</strong>되어 안전하게 보관됩니다.</li>
-                                    <li className="mb-2">일반 파일(CSV, EXCEL)은 최대 <strong>30MB</strong>까지 지원됩니다.</li>
+                                    <li className="mb-2">일반 파일(CSV, EXCEL, GEOJSON)은 최대 <strong>30MB</strong>까지 지원됩니다. 또한 CSV, GEOJSON은 행의 개수가 1000개 이하까지만 업로드 하실 수 있습니다.</li>
                                     <li>공간 데이터(SHP ZIP, TIFF)는 최대 <strong>2GB</strong>의 대용량 업로드를 지원합니다.</li>
                                 </ul>
                             </div>
@@ -712,6 +714,10 @@ function UploadWritePage() {
                     </div>
                 </div>
             </div>
+            <style>{`
+                .custom-hover-item { transition: background-color 0.2s ease-in-out; }
+                .custom-hover-item:hover { background-color: #E2E8F0 !important; } 
+            `}</style>
         </div>
     );
 }

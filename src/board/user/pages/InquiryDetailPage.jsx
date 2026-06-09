@@ -1,16 +1,21 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getInquiryDetailApi } from "../../api/inquiryApi";
+import {
+  getInquiryDetailApi,
+  deleteMyInquiryApi,
+} from "../../api/inquiryApi";
 import "../css/InquiryDetailPage.css";
 
 function InquiryDetailPage() {
   const { postId } = useParams();
   const navigate = useNavigate();
 
-  const hasFetchedRef = useRef(false);
-
   const [inquiry, setInquiry] = useState(null);
+  const [previousPostId, setPreviousPostId] = useState(null);
+  const [nextPostId, setNextPostId] = useState(null);
+  const [isOwner, setOwner] = useState(false);
   const [isLoading, setLoading] = useState(false);
+  const [isDeleting, setDeleting] = useState(false);
 
   const getInquiryDetail = async () => {
     try {
@@ -18,8 +23,13 @@ function InquiryDetailPage() {
 
       const data = await getInquiryDetailApi(postId);
 
+      console.log("문의 상세 응답:", data);
+
       if (data.result === "success") {
         setInquiry(data.inquiryDetail);
+        setPreviousPostId(data.previousPostId ?? null);
+        setNextPostId(data.nextPostId ?? null);
+        setOwner(data.isOwner === true);
       }
     } catch (error) {
       console.error("문의 상세 조회 실패:", error);
@@ -29,18 +39,37 @@ function InquiryDetailPage() {
     }
   };
 
+  useLayoutEffect(() => {
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: "auto",
+    });
+  }, [postId]);
+
   useEffect(() => {
     if (!postId) {
       return;
     }
 
-    if (hasFetchedRef.current) {
+    setInquiry(null);
+    setPreviousPostId(null);
+    setNextPostId(null);
+
+    getInquiryDetail();
+  }, [postId]);
+
+  useLayoutEffect(() => {
+    if (!inquiry) {
       return;
     }
 
-    hasFetchedRef.current = true;
-    getInquiryDetail();
-  }, [postId]);
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: "auto",
+    });
+  }, [postId, inquiry]);
 
   const getStatusClassName = (statusCode) => {
     if (statusCode === "RECEIVED") return "status-received";
@@ -64,16 +93,82 @@ function InquiryDetailPage() {
     return categoryCode ?? "-";
   };
 
+  const getVisibilityName = (visibilityStatus) => {
+    if (visibilityStatus === "PUBLIC") return "공개";
+    if (visibilityStatus === "PRIVATE") return "비공개";
+    return visibilityStatus ?? "-";
+  };
+
   const formatDate = (dateValue) => {
     if (!dateValue) return "-";
     return dateValue.substring(0, 10);
   };
 
-  if (isLoading) {
+  const handleMoveEdit = () => {
+    if (!isOwner) {
+      alert("작성자 본인만 수정할 수 있습니다.");
+      return;
+    }
+
+    navigate(`/board/inquiry/edit/${postId}`);
+  };
+
+  const handleDelete = async () => {
+    if (!isOwner) {
+      alert("작성자 본인만 삭제할 수 있습니다.");
+      return;
+    }
+
+    const isConfirm = window.confirm("정말 이 문의글을 삭제하시겠습니까?");
+
+    if (!isConfirm) {
+      return;
+    }
+
+    try {
+      setDeleting(true);
+
+      const data = await deleteMyInquiryApi(postId);
+
+      if (data.result === "success") {
+        alert("문의글이 삭제되었습니다.");
+        navigate("/board/inquiry");
+      } else {
+        alert("삭제에 실패했습니다.");
+      }
+    } catch (error) {
+      console.error("문의 삭제 실패:", error);
+      alert("삭제 중 오류가 발생했습니다.");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleMovePrevious = () => {
+    if (!previousPostId) {
+      alert("이전 글이 없습니다.");
+      return;
+    }
+
+    navigate(`/board/inquiry/${previousPostId}`);
+  };
+
+  const handleMoveNext = () => {
+    if (!nextPostId) {
+      alert("다음 글이 없습니다.");
+      return;
+    }
+
+    navigate(`/board/inquiry/${nextPostId}`);
+  };
+
+  if (isLoading && !inquiry) {
     return (
-      <div className="inquiry-detail-page">
+      <div className="container-fluid px-4 py-3 inquiry-detail-page">
         <div className="inquiry-detail-container">
-          <p>문의 상세 정보를 불러오는 중입니다.</p>
+          <section className="inquiry-not-found">
+            <p>문의 상세 정보를 불러오는 중입니다.</p>
+          </section>
         </div>
       </div>
     );
@@ -81,13 +176,20 @@ function InquiryDetailPage() {
 
   if (!inquiry) {
     return (
-      <div className="inquiry-detail-page">
+      <div className="container-fluid px-4 py-3 inquiry-detail-page">
         <div className="inquiry-detail-container">
-          <p>문의 게시글을 찾을 수 없습니다.</p>
+          <section className="inquiry-not-found">
+            <p>문의 게시글을 찾을 수 없습니다.</p>
+            <p>비공개 글인 경우 작성자 본인만 확인할 수 있습니다.</p>
 
-          <button type="button" onClick={() => navigate("/board/inquiry")}>
-            목록으로
-          </button>
+            <button
+              type="button"
+              className="inquiry-list-button"
+              onClick={() => navigate("/board/inquiry")}
+            >
+              목록으로
+            </button>
+          </section>
         </div>
       </div>
     );
@@ -99,77 +201,126 @@ function InquiryDetailPage() {
     inquiry.answerContent.trim() !== "";
 
   return (
-    <div className="inquiry-detail-page">
+    <div className="container-fluid px-4 py-3 inquiry-detail-page">
       <div className="inquiry-detail-container">
-        <section className="inquiry-detail-header">
-          <div className="inquiry-detail-badge-area">
-            <span className="inquiry-category-badge">
-              {getInquiryCategoryName(inquiry.inquiryCategoryCode)}
-            </span>
+        <section className="inquiry-detail-board">
+          <div className="inquiry-detail-top">
+            <div className="inquiry-detail-badge-area">
+              <span className="inquiry-category-badge">
+                {getInquiryCategoryName(inquiry.inquiryCategoryCode)}
+              </span>
 
-            <span
-              className={`inquiry-status-badge ${getStatusClassName(
-                inquiry.inquiryStatusCode
-              )}`}
-            >
-              {getInquiryStatusName(inquiry.inquiryStatusCode)}
-            </span>
-          </div>
+              <span
+                className={`inquiry-status-badge ${getStatusClassName(
+                  inquiry.inquiryStatusCode
+                )}`}
+              >
+                {getInquiryStatusName(inquiry.inquiryStatusCode)}
+              </span>
 
-          <h1>{inquiry.title}</h1>
-          <p>등록된 문의 내용과 답변 상태를 확인할 수 있습니다.</p>
-        </section>
+              <span className="inquiry-visibility-badge">
+                {getVisibilityName(inquiry.visibilityStatus)}
+              </span>
+            </div>
 
-        <section className="inquiry-detail-meta">
-          <div>
-            <span>작성자</span>
-            <strong>{inquiry.userId}</strong>
-          </div>
+            <h1>{inquiry.title || "제목 없음"}</h1>
 
-          <div>
-            <span>작성일</span>
-            <strong>{formatDate(inquiry.createdAt)}</strong>
-          </div>
+            <div className="inquiry-detail-info-row">
+              <span>
+                <em>작성자</em>
+                <strong>
+                  {inquiry.writerName ||
+                    inquiry.nickname ||
+                    `사용자 ${inquiry.userId ?? "-"}`}
+                </strong>
+              </span>
 
-          <div>
-            <span>조회수</span>
-            <strong>{inquiry.viewCount}</strong>
-          </div>
-        </section>
+              <span>
+                <em>작성일</em>
+                <strong>{formatDate(inquiry.createdAt)}</strong>
+              </span>
 
-        <section className="inquiry-detail-content">
-          <h2>문의 내용</h2>
-          <p>{inquiry.content || "등록된 문의 내용이 없습니다."}</p>
-        </section>
+              <span>
+                <em>조회수</em>
+                <strong>{inquiry.viewCount ?? 0}</strong>
+              </span>
+            </div>
 
-        <section className="inquiry-answer-section">
-          <h2>관리자 답변</h2>
+            {isOwner && (
+              <div className="inquiry-owner-button-area">
+                <button
+                  type="button"
+                  className="inquiry-edit-button"
+                  onClick={handleMoveEdit}
+                >
+                  수정
+                </button>
 
-          {hasAnswer ? (
-            <div className="answer-complete-box">
-              <div className="answer-meta">
-                <strong>{inquiry.replyWriterName || "관리자"}</strong>
-                <span>{formatDate(inquiry.answeredAt)}</span>
+                <button
+                  type="button"
+                  className="inquiry-delete-button"
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? "삭제 중..." : "삭제"}
+                </button>
               </div>
+            )}
+          </div>
 
-              <p>{inquiry.answerContent}</p>
+          <div className="inquiry-detail-body">
+            <div className="inquiry-detail-body-title">문의 내용</div>
+
+            <p>{inquiry.content || "등록된 문의 내용이 없습니다."}</p>
+          </div>
+
+          <div className="inquiry-answer-section">
+            <div className="inquiry-answer-title">관리자 답변</div>
+
+            {hasAnswer ? (
+              <div className="answer-complete-box">
+                <div className="answer-meta">
+                  <strong>{inquiry.replyWriterName || "관리자"}</strong>
+                  <span>{formatDate(inquiry.answeredAt)}</span>
+                </div>
+
+                <p>{inquiry.answerContent}</p>
+              </div>
+            ) : (
+              <div className="answer-waiting-box">
+                <strong>아직 답변이 등록되지 않았습니다.</strong>
+                <p>관리자가 문의 내용을 확인한 후 답변을 등록할 예정입니다.</p>
+              </div>
+            )}
+          </div>
+
+          <div className="inquiry-detail-button-area">
+            <button
+              type="button"
+              className="inquiry-list-button"
+              onClick={() => navigate("/board/inquiry")}
+            >
+              목록으로
+            </button>
+
+            <div className="inquiry-move-button-group">
+              <button
+                type="button"
+                className="inquiry-move-button"
+                onClick={handleMovePrevious}
+              >
+                이전글
+              </button>
+
+              <button
+                type="button"
+                className="inquiry-move-button"
+                onClick={handleMoveNext}
+              >
+                다음글
+              </button>
             </div>
-          ) : (
-            <div className="answer-waiting-box">
-              <strong>아직 답변이 등록되지 않았습니다.</strong>
-              <p>관리자가 문의 내용을 확인한 후 답변을 등록할 예정입니다.</p>
-            </div>
-          )}
-        </section>
-
-        <section className="inquiry-detail-button-area">
-          <button type="button">이전글</button>
-
-          <button type="button" onClick={() => navigate("/board/inquiry")}>
-            목록으로
-          </button>
-
-          <button type="button">다음글</button>
+          </div>
         </section>
       </div>
     </div>
