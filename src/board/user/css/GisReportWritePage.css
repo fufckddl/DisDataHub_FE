@@ -96,6 +96,17 @@
   box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.12);
 }
 
+.gis-report-form-row input[readonly] {
+  background: #f8fafc;
+  color: #475569;
+}
+
+.gis-report-form-row select:disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
 .textarea-row {
   align-items: start;
 }
@@ -108,6 +119,10 @@
   height: 1px;
   margin: 30px 0;
   background: #e5eaf2;
+}
+
+.gis-report-write-map-section {
+  margin-top: 28px;
 }
 
 .gis-report-write-map-section h2,
@@ -145,6 +160,68 @@
   margin-top: 14px;
 }
 
+.gis-report-location-select-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.gis-report-location-select-row select {
+  width: 100%;
+  height: 52px;
+  border: 1px solid #d6dee9;
+  border-radius: 8px;
+  padding: 0 16px;
+  font-size: 16px;
+  color: #1f2937;
+  background: #ffffff;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.gis-report-location-select-row select:focus {
+  border-color: #1f6feb;
+  box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.12);
+}
+
+.gis-report-location-select-row select:disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.gis-report-address-search-row {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.gis-report-address-search-row input {
+  flex: 1;
+}
+
+.location-search-button {
+  min-width: 118px;
+  height: 52px;
+  border: none;
+  border-radius: 8px;
+  background: #1f6feb;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.location-search-button:hover {
+  background: #155dcc;
+}
+
+.location-search-button:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
 .gis-report-button-area {
   display: flex;
   justify-content: flex-end;
@@ -159,6 +236,11 @@
   font-size: 17px;
   font-weight: 800;
   cursor: pointer;
+}
+
+.gis-report-button-area button:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
 }
 
 .cancel-button {
@@ -220,6 +302,18 @@
 
   .textarea-row label {
     padding-top: 0;
+  }
+
+  .gis-report-location-select-row {
+    grid-template-columns: 1fr;
+  }
+
+  .gis-report-address-search-row {
+    flex-direction: column;
+  }
+
+  .location-search-button {
+    width: 100%;
   }
 
   .gis-report-button-area {

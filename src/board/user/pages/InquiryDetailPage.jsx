@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   getInquiryDetailApi,
@@ -37,6 +37,14 @@ function InquiryDetailPage() {
     }
   };
 
+  useLayoutEffect(() => {
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: "auto",
+    });
+  }, [postId]);
+
   useEffect(() => {
     if (!postId) {
       return;
@@ -49,6 +57,18 @@ function InquiryDetailPage() {
     hasFetchedRef.current = true;
     getInquiryDetail();
   }, [postId]);
+
+  useLayoutEffect(() => {
+    if (!inquiry) {
+      return;
+    }
+
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: "auto",
+    });
+  }, [postId, inquiry]);
 
   const getStatusClassName = (statusCode) => {
     if (statusCode === "RECEIVED") return "status-received";
@@ -123,7 +143,7 @@ function InquiryDetailPage() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading && !inquiry) {
     return (
       <div className="container-fluid px-4 py-3 inquiry-detail-page">
         <div className="inquiry-detail-container">
@@ -143,7 +163,11 @@ function InquiryDetailPage() {
             <p>문의 게시글을 찾을 수 없습니다.</p>
             <p>비공개 글인 경우 작성자 본인만 확인할 수 있습니다.</p>
 
-            <button type="button" onClick={() => navigate("/board/inquiry")}>
+            <button
+              type="button"
+              className="inquiry-list-button"
+              onClick={() => navigate("/board/inquiry")}
+            >
               목록으로
             </button>
           </section>
@@ -160,104 +184,116 @@ function InquiryDetailPage() {
   return (
     <div className="container-fluid px-4 py-3 inquiry-detail-page">
       <div className="inquiry-detail-container">
-        <section className="inquiry-detail-header">
-          <div className="inquiry-detail-badge-area">
-            <span className="inquiry-category-badge">
-              {getInquiryCategoryName(inquiry.inquiryCategoryCode)}
-            </span>
+        <section className="inquiry-detail-board">
+          <div className="inquiry-detail-top">
+            <div className="inquiry-detail-badge-area">
+              <span className="inquiry-category-badge">
+                {getInquiryCategoryName(inquiry.inquiryCategoryCode)}
+              </span>
 
-            <span
-              className={`inquiry-status-badge ${getStatusClassName(
-                inquiry.inquiryStatusCode
-              )}`}
-            >
-              {getInquiryStatusName(inquiry.inquiryStatusCode)}
-            </span>
-
-            <span className="inquiry-visibility-badge">
-              {getVisibilityName(inquiry.visibilityStatus)}
-            </span>
-          </div>
-
-          <h1>{inquiry.title || "제목 없음"}</h1>
-          <p>등록된 문의 내용과 답변 상태를 확인할 수 있습니다.</p>
-
-          {isOwner && (
-            <div className="inquiry-owner-button-area">
-              <button
-                type="button"
-                className="inquiry-edit-button"
-                onClick={handleMoveEdit}
+              <span
+                className={`inquiry-status-badge ${getStatusClassName(
+                  inquiry.inquiryStatusCode
+                )}`}
               >
-                수정
-              </button>
+                {getInquiryStatusName(inquiry.inquiryStatusCode)}
+              </span>
 
-              <button
-                type="button"
-                className="inquiry-delete-button"
-                onClick={handleDelete}
-                disabled={isDeleting}
-              >
-                {isDeleting ? "삭제 중..." : "삭제"}
-              </button>
+              <span className="inquiry-visibility-badge">
+                {getVisibilityName(inquiry.visibilityStatus)}
+              </span>
             </div>
-          )}
-        </section>
 
-        <section className="inquiry-detail-meta">
-          <div>
-            <span>작성자</span>
-            <strong>
-              {inquiry.writerName ||
-                inquiry.nickname ||
-                `사용자 ${inquiry.userId ?? "-"}`}
-            </strong>
-          </div>
+            <h1>{inquiry.title || "제목 없음"}</h1>
 
-          <div>
-            <span>작성일</span>
-            <strong>{formatDate(inquiry.createdAt)}</strong>
-          </div>
+            <div className="inquiry-detail-info-row">
+              <span>
+                <em>작성자</em>
+                <strong>
+                  {inquiry.writerName ||
+                    inquiry.nickname ||
+                    `사용자 ${inquiry.userId ?? "-"}`}
+                </strong>
+              </span>
 
-          <div>
-            <span>조회수</span>
-            <strong>{inquiry.viewCount ?? 0}</strong>
-          </div>
-        </section>
+              <span>
+                <em>작성일</em>
+                <strong>{formatDate(inquiry.createdAt)}</strong>
+              </span>
 
-        <section className="inquiry-detail-content">
-          <h2>문의 내용</h2>
-          <p>{inquiry.content || "등록된 문의 내용이 없습니다."}</p>
-        </section>
+              <span>
+                <em>조회수</em>
+                <strong>{inquiry.viewCount ?? 0}</strong>
+              </span>
+            </div>
 
-        <section className="inquiry-answer-section">
-          <h2>관리자 답변</h2>
+            {isOwner && (
+              <div className="inquiry-owner-button-area">
+                <button
+                  type="button"
+                  className="inquiry-edit-button"
+                  onClick={handleMoveEdit}
+                >
+                  수정
+                </button>
 
-          {hasAnswer ? (
-            <div className="answer-complete-box">
-              <div className="answer-meta">
-                <strong>{inquiry.replyWriterName || "관리자"}</strong>
-                <span>{formatDate(inquiry.answeredAt)}</span>
+                <button
+                  type="button"
+                  className="inquiry-delete-button"
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? "삭제 중..." : "삭제"}
+                </button>
               </div>
+            )}
+          </div>
 
-              <p>{inquiry.answerContent}</p>
+          <div className="inquiry-detail-body">
+            <div className="inquiry-detail-body-title">문의 내용</div>
+
+            <p>{inquiry.content || "등록된 문의 내용이 없습니다."}</p>
+          </div>
+
+          <div className="inquiry-answer-section">
+            <div className="inquiry-answer-title">관리자 답변</div>
+
+            {hasAnswer ? (
+              <div className="answer-complete-box">
+                <div className="answer-meta">
+                  <strong>{inquiry.replyWriterName || "관리자"}</strong>
+                  <span>{formatDate(inquiry.answeredAt)}</span>
+                </div>
+
+                <p>{inquiry.answerContent}</p>
+              </div>
+            ) : (
+              <div className="answer-waiting-box">
+                <strong>아직 답변이 등록되지 않았습니다.</strong>
+                <p>관리자가 문의 내용을 확인한 후 답변을 등록할 예정입니다.</p>
+              </div>
+            )}
+          </div>
+
+          <div className="inquiry-detail-button-area">
+            <button
+              type="button"
+              className="inquiry-list-button"
+              onClick={() => navigate("/board/inquiry")}
+            >
+              목록으로
+            </button>
+
+            <div className="inquiry-move-button-group">
+              <button type="button" className="inquiry-move-button">
+                이전글
+              </button>
+
+              <button type="button" className="inquiry-move-button">
+                다음글
+              </button>
             </div>
-          ) : (
-            <div className="answer-waiting-box">
-              <strong>아직 답변이 등록되지 않았습니다.</strong>
-              <p>관리자가 문의 내용을 확인한 후 답변을 등록할 예정입니다.</p>
-            </div>
-          )}
-        </section>
-
-        <section className="inquiry-detail-button-area">
-          <button type="button">이전글</button>
-
-          <button type="button" onClick={() => navigate("/board/inquiry")}>
-            목록으로
-          </button>
-
-          <button type="button">다음글</button>
+          </div>
         </section>
       </div>
     </div>

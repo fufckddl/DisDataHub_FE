@@ -30,6 +30,15 @@ function NoticeDetailPage() {
   };
 
   useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: "auto",
+    });
+  }, [postId]);
+
+  
+  useEffect(() => {
     if (!postId) {
       return;
     }
@@ -68,7 +77,11 @@ function NoticeDetailPage() {
           </section>
 
           <section className="notice-detail-button-area">
-            <button type="button" onClick={() => navigate("/board/notice")}>
+            <button
+              type="button"
+              className="notice-list-button"
+              onClick={() => navigate("/board/notice")}
+            >
               목록으로
             </button>
           </section>
@@ -80,8 +93,8 @@ function NoticeDetailPage() {
   return (
     <div className="container-fluid px-4 py-3 notice-detail-page">
       <div className="notice-detail-container">
-        <section className="notice-detail-header">
-          <div>
+        <section className="notice-detail-board">
+          <div className="notice-detail-top">
             <div className="notice-detail-badge-area">
               <span className="notice-detail-category">공지사항</span>
 
@@ -91,46 +104,56 @@ function NoticeDetailPage() {
             </div>
 
             <h1>{noticeDetail.title || "제목 없음"}</h1>
-            <p>서비스 운영 및 데이터 관련 주요 공지사항입니다.</p>
+
+            <div className="notice-detail-info-row">
+              <span>
+                <em>작성자</em>
+                <strong>관리자</strong>
+              </span>
+
+              <span>
+                <em>작성일</em>
+                <strong>{formatDate(noticeDetail.createdAt)}</strong>
+              </span>
+
+              <span>
+                <em>조회수</em>
+                <strong>{noticeDetail.viewCount ?? 0}</strong>
+              </span>
+            </div>
           </div>
-        </section>
 
-        <section className="notice-detail-meta">
-          <div>
-            <span>작성자</span>
-            <strong>관리자</strong>
+          <div className="notice-detail-body">
+            <div className="notice-detail-body-title">내용</div>
+
+            <p>{noticeDetail.content || "등록된 공지 내용이 없습니다."}</p>
           </div>
 
-          <div>
-            <span>작성일</span>
-            <strong>{formatDate(noticeDetail.createdAt)}</strong>
+          <div className="notice-detail-files">
+            <h2>첨부파일</h2>
+
+            <div className="notice-file-item">첨부파일이 없습니다.</div>
           </div>
 
-          <div>
-            <span>조회수</span>
-            <strong>{noticeDetail.viewCount ?? 0}</strong>
+          <div className="notice-detail-button-area">
+            <button
+              type="button"
+              className="notice-list-button"
+              onClick={() => navigate("/board/notice")}
+            >
+              목록으로
+            </button>
+
+            <div className="notice-move-button-group">
+              <button type="button" className="notice-move-button">
+                이전글
+              </button>
+
+              <button type="button" className="notice-move-button">
+                다음글
+              </button>
+            </div>
           </div>
-        </section>
-
-        <section className="notice-detail-content">
-          <h2>공지 내용</h2>
-          <p>{noticeDetail.content || "등록된 공지 내용이 없습니다."}</p>
-        </section>
-
-        <section className="notice-detail-file-section">
-          <h2>첨부파일</h2>
-
-          <div className="notice-file-item">첨부파일이 없습니다.</div>
-        </section>
-
-        <section className="notice-detail-button-area">
-          <button type="button">이전글</button>
-
-          <button type="button" onClick={() => navigate("/board/notice")}>
-            목록으로
-          </button>
-
-          <button type="button">다음글</button>
         </section>
       </div>
     </div>

@@ -16,13 +16,16 @@ function InquiryListPage() {
 
   const inquiryStatusList = [
     { code: "", name: "전체 상태" },
-    { code: "PROCESSING", name: "처리중" },
+    { code: "RECEIVED", name: "접수완료" },
+    { code: "CHECKING", name: "확인중" },
     { code: "ANSWERED", name: "답변 완료" },
   ];
 
   const getInquiryList = async () => {
     try {
       const data = await getInquiryListApi();
+
+      console.log("문의 목록 응답:", data);
 
       if (data.result === "success") {
         setInquiryList(data.inquiryList ?? []);
@@ -33,12 +36,14 @@ function InquiryListPage() {
     }
   };
 
+  
   useEffect(() => {
     getInquiryList();
   }, []);
 
   const getInquiryStatusCode = (inquiry) => {
     const status =
+      inquiry.inquiryStatusCode ??
       inquiry.statusCode ??
       inquiry.status ??
       inquiry.answerStatus ??
@@ -49,22 +54,39 @@ function InquiryListPage() {
       status === "ANSWERED" ||
       status === "COMPLETE" ||
       status === "DONE" ||
-      status === "답변 완료"
+      status === "답변 완료" ||
+      status === "답변완료"
     ) {
       return "ANSWERED";
     }
 
-    return "PROCESSING";
+    if (
+      status === "CHECKING" ||
+      status === "확인중" ||
+      status === "검토중"
+    ) {
+      return "CHECKING";
+    }
+
+    if (
+      status === "RECEIVED" ||
+      status === "PROCESSING" ||
+      status === "처리중" ||
+      status === "접수완료"
+    ) {
+      return "RECEIVED";
+    }
+
+    return "RECEIVED";
   };
 
   const getInquiryStatusName = (inquiry) => {
     const statusCode = getInquiryStatusCode(inquiry);
 
-    if (statusCode === "ANSWERED") {
-      return "답변 완료";
-    }
+    if (statusCode === "ANSWERED") return "답변 완료";
+    if (statusCode === "CHECKING") return "확인중";
 
-    return "처리중";
+    return "접수완료";
   };
 
   const getInquiryStatusClassName = (inquiry) => {
@@ -74,7 +96,20 @@ function InquiryListPage() {
       return "inquiry-status-badge status-answered";
     }
 
+    if (statusCode === "CHECKING") {
+      return "inquiry-status-badge status-checking";
+    }
+
     return "inquiry-status-badge status-received";
+  };
+
+  const getInquiryCategoryName = (categoryCode) => {
+    if (categoryCode === "SYSTEM_USE") return "시스템 이용";
+    if (categoryCode === "DATA") return "데이터 문의";
+    if (categoryCode === "ERROR") return "오류 문의";
+    if (categoryCode === "ETC") return "기타 문의";
+
+    return categoryCode ?? "-";
   };
 
   const filteredInquiryList = inquiryList.filter((inquiry) => {
@@ -146,7 +181,7 @@ function InquiryListPage() {
     <div className="container-fluid px-4 py-3 inquiry-list-page">
       <div className="inquiry-list-header">
         <div>
-          <h1>문의 게시판</h1>
+          <h1>질문게시판</h1>
           <p>서비스 이용 중 궁금한 사항을 등록하고 답변을 확인할 수 있습니다.</p>
         </div>
       </div>
@@ -225,9 +260,19 @@ function InquiryListPage() {
                     {inquiry.title || "제목 없음"}
                   </td>
 
-                  <td>{inquiry.nickname || inquiry.writerName || "-"}</td>
+                  <td>
+                    {inquiry.writerName ||
+                      inquiry.nickname ||
+                      `사용자 ${inquiry.userId ?? "-"}`}
+                  </td>
 
-                  <td>{inquiry.categoryName || inquiry.inquiryTypeName || "-"}</td>
+                  <td>
+                    {getInquiryCategoryName(
+                      inquiry.inquiryCategoryCode ??
+                        inquiry.categoryCode ??
+                        inquiry.categoryName
+                    )}
+                  </td>
 
                   <td>{formatDate(inquiry.createdAt)}</td>
 
