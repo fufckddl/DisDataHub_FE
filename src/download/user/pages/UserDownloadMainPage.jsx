@@ -284,7 +284,6 @@ function DatasetForm({ dataset }) {
     const userInfo = useAuthStore((state) => state.userInfo);
 
     const handleDetailPageClick = async (isPublic) => {
-        console.log("click");
         if (!isPublic) {
             if (userInfo == null) {
                 if (confirm("비공개 데이터셋입니다. 로그인 페이지로 이동하시겠습니까?")) {
@@ -306,7 +305,6 @@ function DatasetForm({ dataset }) {
             }
         }
 
-        console.log("click2");
         navigate(`/download/user/${dataset.id}`);
     };
 

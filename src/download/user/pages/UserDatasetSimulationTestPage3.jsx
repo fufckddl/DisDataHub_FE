@@ -941,9 +941,7 @@ function UserDatasetSimulationTestPage3() {
                 showGuide={false}
               />
             </div>
-            <button type="button" className="simulation-test3-icon-button" onClick={() => setIsSettingOpen(false)} aria-label="설정 패널 닫기">
-              <i className="bi bi-chevron-left" />
-            </button>
+
           </div>
 
           <div className="simulation-test3-dataset-box">
