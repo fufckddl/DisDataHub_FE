@@ -250,6 +250,16 @@ function Header() {
                                     </Link>
                                 </li>
                                 <li className="nav-item">
+                                    <Link className="nav-link px-3 py-2" style={HEADER_STYLES.navLink} to="/download/user/main">
+                                        데이터 다운로드
+                                    </Link>
+                                </li>
+                                <li className="nav-item">
+                                    <Link className="nav-link px-3 py-2" style={HEADER_STYLES.navLink} to="/dashboard">
+                                        대시보드
+                                    </Link>
+                                </li>
+                                <li className="nav-item">
                                     <Link className="nav-link px-3 py-2" style={HEADER_STYLES.navLink} to="/register">
                                         회원가입
                                     </Link>
