@@ -42,7 +42,7 @@ function AdminGisReportDetailPage() {
 
   const adminGisProcessStatusList = [
     { code: "RECEIVED", name: "제보완료" },
-    { code: "PROCESSING", name: "처리중" },
+    { code: "PROCESSING", name: "검토중" },
     { code: "COMPLETED", name: "처리완료" },
   ];
 
@@ -179,7 +179,7 @@ function AdminGisReportDetailPage() {
   const getProcessStatusName = (statusCode) => {
     if (statusCode === "RECEIVED") return "제보완료";
     if (statusCode === "PROCESSING" || statusCode === "REVIEWING") {
-      return "처리중";
+      return "검토중";
     }
     if (statusCode === "COMPLETED") return "처리완료";
     return statusCode ?? "-";
