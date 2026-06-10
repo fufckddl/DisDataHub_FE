@@ -1,37 +1,18 @@
-import axios from "axios";
+import axiosInstance from "../../commons/api/axiosinstance";
 
-const normalizeBaseUrl = (url) => {
-  if (!url) return "";
-  return url.replace(/\/$/, "");
-};
-
-const API_BASE_URL = normalizeBaseUrl(import.meta.env.VITE_API_BASE_URL);
-const BASE_URL = `${API_BASE_URL}/api/board/gis-reports`;
-
-const getAuthHeaders = () => {
-  const token = localStorage.getItem("token");
-
-  return token
-    ? {
-        Authorization: `Bearer ${token}`,
-      }
-    : {};
-};
+const BASE_URL = "/api/board/gis-reports";
 
 // 사용자 GIS 오류제보 목록 조회
 export const getGisReportListApi = async () => {
-  const response = await axios.get(`${BASE_URL}/findGisReportList`);
+  const response = await axiosInstance.get(`${BASE_URL}/findGisReportList`);
   return response.data;
 };
 
 // 사용자 GIS 오류제보 작성
 export const createGisReportApi = async (gisReportData) => {
-  const response = await axios.post(
+  const response = await axiosInstance.post(
     `${BASE_URL}/createGisReport`,
-    gisReportData,
-    {
-      headers: getAuthHeaders(),
-    }
+    gisReportData
   );
 
   return response.data;
@@ -39,57 +20,43 @@ export const createGisReportApi = async (gisReportData) => {
 
 // 사용자 GIS 오류제보 상세 조회
 export const getGisReportDetailApi = async (postId) => {
-  const response = await axios.get(`${BASE_URL}/${postId}`, {
-    headers: getAuthHeaders(),
-  });
-
+  const response = await axiosInstance.get(`${BASE_URL}/${postId}`);
   return response.data;
 };
 
 // 사용자 본인 GIS 오류제보 수정
 export const updateMyGisReportApi = async (postId, gisReportData) => {
-  const response = await axios.put(`${BASE_URL}/${postId}`, gisReportData, {
-    headers: getAuthHeaders(),
-  });
+  const response = await axiosInstance.put(
+    `${BASE_URL}/${postId}`,
+    gisReportData
+  );
 
   return response.data;
 };
 
 // 사용자 본인 GIS 오류제보 삭제
 export const deleteMyGisReportApi = async (postId) => {
-  const response = await axios.delete(`${BASE_URL}/${postId}`, {
-    headers: getAuthHeaders(),
-  });
-
+  const response = await axiosInstance.delete(`${BASE_URL}/${postId}`);
   return response.data;
 };
 
 // 관리자 GIS 오류제보 목록 조회
 export const getAdminGisReportListApi = async () => {
-  const response = await axios.get(`${BASE_URL}/admin/list`, {
-    headers: getAuthHeaders(),
-  });
-
+  const response = await axiosInstance.get(`${BASE_URL}/admin/list`);
   return response.data;
 };
 
 // 관리자 GIS 오류제보 상세 조회
 export const getAdminGisReportDetailApi = async (postId) => {
-  const response = await axios.get(`${BASE_URL}/admin/detail/${postId}`, {
-    headers: getAuthHeaders(),
-  });
-
+  const response = await axiosInstance.get(`${BASE_URL}/admin/detail/${postId}`);
   return response.data;
 };
 
 // 관리자 GIS 오류제보 상태 변경 + 처리 내용 저장
 export const saveAdminGisReportProcessApi = async (postId, processData) => {
-  const response = await axios.put(
+  const response = await axiosInstance.put(
     `${BASE_URL}/admin/process/${postId}`,
-    processData,
-    {
-      headers: getAuthHeaders(),
-    }
+    processData
   );
 
   return response.data;
@@ -97,15 +64,15 @@ export const saveAdminGisReportProcessApi = async (postId, processData) => {
 
 // 관리자 GIS 오류제보 삭제
 export const deleteAdminGisReportApi = async (postId) => {
-  const response = await axios.delete(`${BASE_URL}/admin/delete/${postId}`, {
-    headers: getAuthHeaders(),
-  });
+  const response = await axiosInstance.delete(
+    `${BASE_URL}/admin/delete/${postId}`
+  );
 
   return response.data;
 };
 
 // 사용자 GIS 오류제보 검색 / 필터 / 마커 목록 조회
 export const searchGisReportListApi = async (searchData) => {
-  const response = await axios.post(`${BASE_URL}/search`, searchData);
+  const response = await axiosInstance.post(`${BASE_URL}/search`, searchData);
   return response.data;
 };
