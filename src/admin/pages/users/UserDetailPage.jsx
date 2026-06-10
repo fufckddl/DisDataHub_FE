@@ -1,110 +1,105 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axiosInstance from "../../../commons/api/axiosInstance";
+import "../../css/AdminUserManagement.css";
 
 function UserDetailTitle({ navigate }) {
     return (
-        <>
-            <div className="row mb-4">
-                <div className="col">
-                    <h3 className="fw-bold mb-1">
-                        사용자 상세 정보
-                    </h3>
+        <div className="admin-user-title-row">
+            <div>
+                <h1 className="admin-user-title">
+                    사용자 상세 정보
+                </h1>
 
-                    <div className="text-secondary">
-                        사용자 기본 정보와 활동 내역을 확인할 수 있습니다.
-                    </div>
-                </div>
-
-                <div className="col-auto d-flex align-items-center">
-                    <button
-                        className="btn border-0 text-black bi bi-house-door"
-                        onClick={() => {
-                            navigate("/admin/mainPage");
-                        }}
-                    >
-                        &nbsp;메인화면
-                    </button>
-                </div>
+                <p className="admin-user-description">
+                    사용자 기본 정보와 활동 내역을 확인할 수 있습니다.
+                </p>
             </div>
-        </>
+
+            <button
+                className="admin-user-home-button bi bi-house-door"
+                onClick={() => {
+                    navigate("/admin/mainPage");
+                }}
+            >
+                &nbsp;메인화면
+            </button>
+        </div>
     )
 }
 
-function UserSummaryCard({ userDetail, getRoleText, getStatusClassName }) {
+function UserSummaryCard({ userDetail, getRoleText, getStatusClassName, getStatusText }) {
     return (
-        <div className="row mb-3">
-            <div className="col">
-                <div className="border rounded p-4">
-                    <div className="d-flex align-items-center justify-content-between">
-                        <div>
-                            <div className="fs-4 fw-bold">
-                                {userDetail.username}
-                            </div>
-
-                            <div className="text-secondary">
-                                {userDetail.email}
-                            </div>
-                        </div>
-
-                        <div>
-                            <span className="badge text-bg-primary fs-6 me-2">
-                                {getRoleText(userDetail.role)}
-                            </span>
-
-                            <span className={`${getStatusClassName(userDetail.status)} fs-6`}>
-                                {userDetail.status}
-                            </span>
-                        </div>
-                    </div>
+        <div className="admin-user-detail-summary-card">
+            <div>
+                <div className="admin-user-detail-name">
+                    {userDetail.username}
                 </div>
+
+                <div className="admin-user-detail-email">
+                    {userDetail.email}
+                </div>
+            </div>
+
+            <div>
+                <span className="badge text-bg-primary fs-6 me-2">
+                    {getRoleText(userDetail.role)}
+                </span>
+
+                <span className={`${getStatusClassName(userDetail.status)} fs-6`}>
+                    {getStatusText(userDetail.status)}
+                </span>
             </div>
         </div>
     )
 }
 
-function BasicInfoCard({ userDetail, getRoleText }) {
+function BasicInfoCard({ userDetail, getRoleText, getStatusClassName, getStatusText }) {
     return (
         <div className="col-6">
-            <div className="border rounded p-4 h-100">
-                <h5 className="fw-bold mb-3">
+            <div className="admin-user-detail-card">
+                <h5 className="admin-user-detail-card-title">
                     기본 정보
                 </h5>
 
-                <table className="table table-bordered align-middle mb-0">
+                <table className="admin-user-detail-table">
                     <tbody>
                         <tr>
-                            <th className="table-light text-secondary w-25">사용자 ID</th>
+                            <th>사용자 ID</th>
                             <td>{userDetail.id}</td>
                         </tr>
 
                         <tr>
-                            <th className="table-light text-secondary">사용자명</th>
+                            <th>사용자명</th>
                             <td>{userDetail.username}</td>
                         </tr>
 
                         <tr>
-                            <th className="table-light text-secondary">이메일</th>
+                            <th>이메일</th>
                             <td>{userDetail.email}</td>
                         </tr>
 
                         <tr>
-                            <th className="table-light text-secondary">역할</th>
+                            <th>역할</th>
                             <td>{getRoleText(userDetail.role)}</td>
                         </tr>
 
                         <tr>
-                            <th className="table-light text-secondary">상태</th>
-                            <td>{userDetail.status}</td>
+                            <th>상태</th>
+                            <td>
+                                <span className={getStatusClassName(userDetail.status)}>
+                                    {getStatusText(userDetail.status)}
+                                </span>
+                            </td>
                         </tr>
 
                         <tr>
-                            <th className="table-light text-secondary">소속</th>
+                            <th>소속</th>
                             <td>{userDetail.organization}</td>
                         </tr>
 
                         <tr>
-                            <th className="table-light text-secondary">가입일</th>
+                            <th>가입일</th>
                             <td>{userDetail.created_at?.substring(0, 10)}</td>
                         </tr>
                     </tbody>
@@ -151,13 +146,13 @@ function ActivityInfoCard({ userDetail }) {
 
     return (
         <div className="col-6">
-            <div className="border rounded px-4 pt-4 pb-1 h-100">
-                <h5 className="fw-bold mb-3">
+            <div className="admin-user-detail-card">
+                <h5 className="admin-user-detail-card-title">
                     활동 정보
                 </h5>
 
-                <table className="table table-bordered align-middle mb-0 text-center">
-                    <thead className="table-light">
+                <table className="admin-user-detail-table text-center">
+                    <thead>
                         <tr>
                             <th>활동 항목</th>
                             <th>수치</th>
@@ -167,12 +162,12 @@ function ActivityInfoCard({ userDetail }) {
                     <tbody>
                         {activityList.map((activityData) => (
                             <tr key={activityData.title}>
-                                <td className="text-secondary">
+                                <td className="admin-user-detail-muted">
                                     {activityData.title}
                                 </td>
 
                                 <td>
-                                    <span className="fw-bold fs-5">
+                                    <span className="admin-user-detail-count">
                                         {activityData.value}
                                     </span>
                                     <span className="ms-1">
@@ -184,7 +179,7 @@ function ActivityInfoCard({ userDetail }) {
                     </tbody>
                 </table>
 
-                <div className="text-secondary text-center small mt-4">
+                <div className="admin-user-detail-guide">
                     최근 30일 기준 사용자 역할별 활동 통계입니다.
                 </div>
             </div>
@@ -192,12 +187,14 @@ function ActivityInfoCard({ userDetail }) {
     )
 }
 
-function DetailInfoSection({ userDetail, getRoleText }) {
+function DetailInfoSection({ userDetail, getRoleText, getStatusClassName, getStatusText }) {
     return (
         <div className="row mb-3">
             <BasicInfoCard
                 userDetail={userDetail}
                 getRoleText={getRoleText}
+                getStatusClassName={getStatusClassName}
+                getStatusText={getStatusText}
             />
 
             <ActivityInfoCard
@@ -209,20 +206,19 @@ function DetailInfoSection({ userDetail, getRoleText }) {
 
 function DetailButtonSection({ navigate }) {
     return (
-        <div className="row">
-            <div className="col-auto">
+        <div className="admin-user-detail-button-row">
+            <button
+                className="admin-user-home-button bi bi-chevron-left"
+                onClick={() => {
+                    navigate("/admin/users/userList");
+                }}
+            >
+                &nbsp;목록으로
+            </button>
+
+            <div className="d-flex gap-2">
                 <button
-                    className="btn btn-outline-secondary border-2 text-black bi bi-chevron-left"
-                    onClick={() => {
-                        navigate("/admin/users/userList");
-                    }}
-                >
-                    &nbsp;목록으로
-                </button>
-            </div>
-            <div className="col d-flex gap-2 justify-content-end">
-                <button
-                    className="btn btn-outline-danger"
+                    className="admin-user-danger-button"
                     onClick={() => {
                         alert("정말 이 작업을 실행하시겠습니까? 복구할 수 없습니다.");
                         navigate("/admin/users/userList");
@@ -232,7 +228,7 @@ function DetailButtonSection({ navigate }) {
                 </button>
 
                 <button
-                    className="btn btn-outline-primary"
+                    className="admin-user-primary-button"
                     data-bs-toggle="modal"
                     data-bs-target="#userManageModal"
                 >
@@ -272,7 +268,7 @@ function UserManageModal({ userDetail, loadUserDetail }) {
                     </div>
 
                     <div className="modal-body">
-                        <div className="border rounded p-3 mb-3 bg-light">
+                        <div className="admin-user-modal-target">
                             <div className="fw-bold">
                                 {userDetail.username}
                             </div>
@@ -359,19 +355,21 @@ function UserManageModal({ userDetail, loadUserDetail }) {
 
 function EmptyUserDetail({ navigate }) {
     return (
-        <div className="py-4">
-            <div className="text-secondary">
-                사용자 정보를 찾을 수 없습니다.
-            </div>
+        <div className="admin-user-page">
+            <div className="admin-user-card admin-user-empty-detail">
+                <div className="text-secondary">
+                    사용자 정보를 찾을 수 없습니다.
+                </div>
 
-            <button
-                className="btn btn-outline-secondary mt-3"
-                onClick={() => {
-                    navigate("/admin/users/userList");
-                }}
-            >
-                목록으로
-            </button>
+                <button
+                    className="admin-user-home-button mt-3"
+                    onClick={() => {
+                        navigate("/admin/users/userList");
+                    }}
+                >
+                    목록으로
+                </button>
+            </div>
         </div>
     )
 }
@@ -408,6 +406,13 @@ function UserDetailPage () {
         return "badge text-bg-secondary";
     };
 
+    const getStatusText = (status) => {
+        if(status === "ACTIVATE") return "활성";
+        if(status === "INACTIVATE") return "비활성";
+
+        return status;
+    };
+
     if(userDetail === null) {
         return (
             <EmptyUserDetail navigate={navigate} />
@@ -415,17 +420,30 @@ function UserDetailPage () {
     }
 
     return (
-        
-        <>
-        <div className="row justify-content-center py-3">
-            <div className="col-8">
-                <UserSummaryCard userDetail={userDetail} getRoleText={getRoleText} getStatusClassName={getStatusClassName} />
-                <DetailInfoSection userDetail={userDetail} getRoleText={getRoleText} />
-                <DetailButtonSection navigate={navigate} />
-                <UserManageModal userDetail={userDetail} loadUserDetail={loadUserDetail} />
-            </div>
+        <div className="admin-user-page">
+            <UserDetailTitle navigate={navigate} />
+
+            <UserSummaryCard
+                userDetail={userDetail}
+                getRoleText={getRoleText}
+                getStatusClassName={getStatusClassName}
+                getStatusText={getStatusText}
+            />
+
+            <DetailInfoSection
+                userDetail={userDetail}
+                getRoleText={getRoleText}
+                getStatusClassName={getStatusClassName}
+                getStatusText={getStatusText}
+            />
+
+            <DetailButtonSection navigate={navigate} />
+
+            <UserManageModal
+                userDetail={userDetail}
+                loadUserDetail={loadUserDetail}
+            />
         </div>
-        </>
     )
 }
 

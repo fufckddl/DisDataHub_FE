@@ -1,38 +1,44 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { updateSystemSettingApi } from "../../api/adminUserApi";
+import "../../css/AdminSystemSetting.css";
 
 function SettingUpdateTitle({ navigate }) {
     return (
-        <>
-            <div className="row mb-4 mt-3 align-items-center">
-                <div className="col">
-                    <h3 className="fw-bold mb-1">시스템 설정 변경</h3>
-                    <div className="text-secondary">
-                        GIS 데이터 플랫폼의 운영 정책 및 시스템 환경을 관리하는 페이지입니다.
-                    </div>
-                </div>
+        <div className="admin-system-title-row">
+            <div>
+                <h1 className="admin-system-title">
+                    시스템 설정 변경
+                </h1>
 
-                <div className="col-auto">
-                    <button
-                        className="btn border-0 text-black bi bi-house-door"
-                        onClick={() => {
-                            navigate("/admin/mainPage");
-                        }}
-                    >
-                        &nbsp;메인화면
-                    </button>
-                </div>
+                <p className="admin-system-description">
+                    GIS 데이터 플랫폼의 운영 정책 및 시스템 환경을 관리하는 페이지입니다.
+                </p>
             </div>
-        </>
+
+            <button
+                className="admin-system-home-button bi bi-house-door"
+                onClick={() => {
+                    navigate("/admin/mainPage");
+                }}
+            >
+                &nbsp;메인화면
+            </button>
+        </div>
     )
 }
 
 function SettingCard({ title, description, children }) {
     return (
-        <div className="border rounded p-4 h-100">
-            <h5 className="fw-bold mb-1">{title}</h5>
-            <div className="text-secondary small mb-4">{description}</div>
+        <div className="admin-system-card admin-setting-update-card">
+            <h5 className="admin-setting-card-title">
+                {title}
+            </h5>
+
+            <div className="admin-setting-card-description">
+                {description}
+            </div>
+
             {children}
         </div>
     )
@@ -46,7 +52,9 @@ function UploadPolicyCard({ settingData, changeSettingData, saveSystemSetting })
                 description="업로드 가능한 파일 형식 및 파일 크기 제한 정책을 설정합니다."
             >
                 <div className="mb-4">
-                    <label className="form-label fw-bold">최대 업로드 파일 크기</label>
+                    <label className="form-label fw-bold">
+                        최대 업로드 파일 크기
+                    </label>
 
                     <div className="input-group">
                         <input
@@ -60,7 +68,7 @@ function UploadPolicyCard({ settingData, changeSettingData, saveSystemSetting })
                     </div>
 
                     <button
-                        className="btn btn-outline-primary btn-sm mt-2"
+                        className="admin-setting-save-button"
                         onClick={() => {
                             saveSystemSetting(
                                 "maxUploadFileSize",
@@ -74,7 +82,9 @@ function UploadPolicyCard({ settingData, changeSettingData, saveSystemSetting })
                 </div>
 
                 <div>
-                    <label className="form-label fw-bold">허용 파일 확장자</label>
+                    <label className="form-label fw-bold">
+                        허용 파일 확장자
+                    </label>
 
                     <input
                         type="text"
@@ -85,7 +95,7 @@ function UploadPolicyCard({ settingData, changeSettingData, saveSystemSetting })
                     />
 
                     <button
-                        className="btn btn-outline-primary btn-sm mt-2"
+                        className="admin-setting-save-button"
                         onClick={() => {
                             saveSystemSetting(
                                 "allowedFileExtension",
@@ -126,7 +136,7 @@ function DownloadPolicyCard({ settingData, changeSettingData, saveSystemSetting 
                     </div>
 
                     <button
-                        className="btn btn-outline-primary btn-sm mt-2"
+                        className="admin-setting-save-button"
                         onClick={() => {
                             saveSystemSetting(
                                 "dailyDownloadLimit",
@@ -151,7 +161,9 @@ function CoordinatePolicyCard({ settingData }) {
                 description="시스템 핵심 좌표계 및 지도 기준 정보를 확인합니다."
             >
                 <div className="mb-3">
-                    <label className="form-label fw-bold">기본 저장 좌표계</label>
+                    <label className="form-label fw-bold">
+                        기본 저장 좌표계
+                    </label>
                     <input
                         type="text"
                         className="form-control shadow-none"
@@ -161,7 +173,9 @@ function CoordinatePolicyCard({ settingData }) {
                 </div>
 
                 <div className="mb-3">
-                    <label className="form-label fw-bold">기본 분석 좌표계</label>
+                    <label className="form-label fw-bold">
+                        기본 분석 좌표계
+                    </label>
                     <input
                         type="text"
                         className="form-control shadow-none"
@@ -171,7 +185,9 @@ function CoordinatePolicyCard({ settingData }) {
                 </div>
 
                 <div>
-                    <label className="form-label fw-bold">지도 기본 중심 좌표</label>
+                    <label className="form-label fw-bold">
+                        지도 기본 중심 좌표
+                    </label>
                     <input
                         type="text"
                         className="form-control shadow-none"
@@ -199,27 +215,39 @@ function SettingPreviewCard({ settingData }) {
                 <table className="table table-bordered align-middle mb-0">
                     <tbody>
                         <tr>
-                            <th className="table-light text-secondary w-50">최대 업로드 파일 크기</th>
+                            <th className="table-light text-secondary w-50">
+                                최대 업로드 파일 크기
+                            </th>
                             <td>{settingData.maxUploadFileSize}MB</td>
                         </tr>
                         <tr>
-                            <th className="table-light text-secondary">허용 파일 확장자</th>
+                            <th className="table-light text-secondary">
+                                허용 파일 확장자
+                            </th>
                             <td>{settingData.allowedFileExtension}</td>
                         </tr>
                         <tr>
-                            <th className="table-light text-secondary">기본 저장 좌표계</th>
+                            <th className="table-light text-secondary">
+                                기본 저장 좌표계
+                            </th>
                             <td>{settingData.defaultSaveCoordinate}</td>
                         </tr>
                         <tr>
-                            <th className="table-light text-secondary">기본 분석 좌표계</th>
+                            <th className="table-light text-secondary">
+                                기본 분석 좌표계
+                            </th>
                             <td>{settingData.defaultAnalysisCoordinate}</td>
                         </tr>
                         <tr>
-                            <th className="table-light text-secondary">일반 사용자 일일 다운로드 제한</th>
+                            <th className="table-light text-secondary">
+                                일반 사용자 일일 다운로드 제한
+                            </th>
                             <td>{settingData.dailyDownloadLimit}회</td>
                         </tr>
                         <tr>
-                            <th className="table-light text-secondary">지도 기본 중심 좌표</th>
+                            <th className="table-light text-secondary">
+                                지도 기본 중심 좌표
+                            </th>
                             <td>{settingData.defaultMapCenter}</td>
                         </tr>
                     </tbody>
@@ -231,20 +259,16 @@ function SettingPreviewCard({ settingData }) {
 
 function SettingButtonSection({ navigate }) {
     return (
-        <>
-            <div className="row">
-                <div className="col">
-                    <button
-                        className="btn btn-outline-secondary border-2 text-black bi bi-chevron-left"
-                        onClick={() => {
-                            navigate("/admin/system/settingList");
-                        }}
-                    >
-                        &nbsp;목록으로
-                    </button>
-                </div>
-            </div>
-        </>
+        <div className="admin-system-button-row justify-content-start">
+            <button
+                className="admin-system-home-button bi bi-chevron-left"
+                onClick={() => {
+                    navigate("/admin/system/settingList");
+                }}
+            >
+                &nbsp;목록으로
+            </button>
+        </div>
     )
 }
 
@@ -292,41 +316,37 @@ function SystemSettingUpdatePage() {
     };
 
     return (
-        <>
-            <div className="row justify-content-center">
-                <div className="col-8">
-                    <SettingUpdateTitle navigate={navigate} />
+        <div className="admin-system-page">
+            <SettingUpdateTitle navigate={navigate} />
 
-                    <div className="row mb-3">
-                        <UploadPolicyCard
-                            settingData={settingData}
-                            changeSettingData={changeSettingData}
-                            saveSystemSetting={saveSystemSetting}
-                        />
+            <div className="row mb-3">
+                <UploadPolicyCard
+                    settingData={settingData}
+                    changeSettingData={changeSettingData}
+                    saveSystemSetting={saveSystemSetting}
+                />
 
-                        <DownloadPolicyCard
-                            settingData={settingData}
-                            changeSettingData={changeSettingData}
-                            saveSystemSetting={saveSystemSetting}
-                        />
-                    </div>
-
-                    <div className="row mb-3">
-                        <CoordinatePolicyCard
-                            settingData={settingData}
-                        />
-
-                        <SettingPreviewCard
-                            settingData={settingData}
-                        />
-                    </div>
-
-                    <SettingButtonSection
-                        navigate={navigate}
-                    />
-                </div>
+                <DownloadPolicyCard
+                    settingData={settingData}
+                    changeSettingData={changeSettingData}
+                    saveSystemSetting={saveSystemSetting}
+                />
             </div>
-        </>
+
+            <div className="row mb-3">
+                <CoordinatePolicyCard
+                    settingData={settingData}
+                />
+
+                <SettingPreviewCard
+                    settingData={settingData}
+                />
+            </div>
+
+            <SettingButtonSection
+                navigate={navigate}
+            />
+        </div>
     )
 }
 

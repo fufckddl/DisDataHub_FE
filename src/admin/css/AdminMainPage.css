@@ -1,0 +1,238 @@
+.admin-main-page {
+    min-height: 100vh;
+    padding: 40px 56px;
+    background: #f4f8fc;
+    color: #17202a;
+    box-sizing: border-box;
+}
+
+.admin-main-title-area {
+    margin-bottom: 28px;
+}
+
+.admin-main-title {
+    margin: 0 0 8px;
+    font-size: 34px;
+    font-weight: 800;
+}
+
+.admin-main-description {
+    margin: 0;
+    color: #64748b;
+    font-size: 16px;
+}
+
+.admin-main-summary-card {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    height: 100%;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    padding: 24px;
+}
+
+.admin-main-summary-icon-box {
+    width: 64px;
+    height: 64px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: #dbeafe;
+    color: #2563eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.admin-main-summary-icon {
+    font-size: 30px;
+}
+
+.admin-main-summary-title {
+    font-weight: 800;
+    color: #334155;
+}
+
+.admin-main-summary-value {
+    font-size: 30px;
+    font-weight: 800;
+    color: #17202a;
+}
+
+.admin-main-summary-unit {
+    margin-left: 4px;
+    color: #334155;
+}
+
+.admin-main-summary-description {
+    margin-top: 4px;
+    color: #64748b;
+    font-size: 13px;
+}
+
+.admin-main-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    padding: 20px;
+    margin-bottom: 24px;
+}
+
+.admin-main-section-title {
+    font-size: 20px;
+    font-weight: 800;
+    color: #17202a;
+    margin-bottom: 18px;
+}
+
+.admin-main-section-description {
+    color: #64748b;
+    font-size: 14px;
+}
+
+.admin-main-feature-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 210px;
+    height: 100%;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 18px;
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.admin-main-feature-card:hover {
+    box-shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
+    transform: translateY(-2px);
+}
+
+.admin-main-feature-icon-box {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #dbeafe;
+    color: #2563eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 14px;
+}
+
+.admin-main-feature-icon {
+    font-size: 26px;
+}
+
+.admin-main-feature-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: #17202a;
+    margin-bottom: 8px;
+}
+
+.admin-main-feature-description {
+    min-height: 40px;
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.admin-main-feature-button-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 14px;
+}
+
+.admin-main-outline-button {
+    border: 1px solid #bfdbfe;
+    background: #ffffff;
+    color: #2563eb;
+    border-radius: 9px;
+    padding: 8px 13px;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.admin-main-outline-button:hover {
+    background: #eff6ff;
+}
+
+.admin-main-log-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+}
+
+.admin-main-tab-group {
+    display: flex;
+    margin-bottom: 16px;
+}
+
+.admin-main-tab-button {
+    border: 1px solid #d7e1ec;
+    background: #ffffff;
+    color: #475569;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.admin-main-tab-button:first-child {
+    border-radius: 9px 0 0 9px;
+}
+
+.admin-main-tab-button:last-child {
+    border-radius: 0 9px 9px 0;
+}
+
+.admin-main-tab-button.active {
+    background: #334155;
+    color: #ffffff;
+    border-color: #334155;
+}
+
+.admin-main-table-wrapper {
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+.admin-main-log-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+}
+
+.admin-main-log-table th {
+    height: 52px;
+    background: #fbfdff;
+    color: #334155;
+    font-size: 14px;
+    font-weight: 800;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 0 18px;
+    text-align: center;
+}
+
+.admin-main-log-table td {
+    height: 52px;
+    border-bottom: 1px solid #eef2f7;
+    padding: 0 18px;
+    font-size: 14px;
+    text-align: center;
+}
+
+.admin-main-log-table tr:last-child td {
+    border-bottom: none;
+}
+
+.admin-main-empty {
+    color: #64748b;
+    padding: 28px 0;
+    text-align: center;
+}
