@@ -6,8 +6,34 @@ import {
 } from "../components/DashboardInsightsPanel";
 import { useDashboardInsights } from "../hooks/useDashboardInsights";
 import PopulationPanel from "../components/PopulationPanel";
-import { getAreaPopulation } from "../api/dashBoardApi";
+import { getAreaPopulation, getDashboardGisDatasets } from "../api/dashBoardApi";
 import "./DashboardPage.css";
+
+const DEFAULT_MAP_DATASET_CODE = "STANDARD_LIBRARY_MAIN";
+const MAP_LAYER_DATASET_CODES = [
+    "STANDARD_LIBRARY_MAIN",
+    "STANDARD_URBAN_PARK_MAIN",
+    "STANDARD_BUS_STOP_MAIN",
+];
+const FALLBACK_MAP_LAYER = {
+    datasetCode: DEFAULT_MAP_DATASET_CODE,
+    datasetName: "전국도서관표준데이터",
+    layerType: "POINT",
+    featureCount: 0,
+};
+
+function toMapLayer(dataset) {
+    if (!dataset) {
+        return FALLBACK_MAP_LAYER;
+    }
+
+    return {
+        datasetCode: dataset.datasetCode,
+        datasetName: dataset.datasetName,
+        layerType: dataset.dashboardLayerType ?? dataset.layerType ?? "POINT",
+        featureCount: Number(dataset.featureCount ?? 0),
+    };
+}
 
 function formatDashboardTimestamp() {
     const now = new Date();
@@ -29,7 +55,16 @@ const MAP_LEVEL_CONTROLS = [
     { level: "EUPMYEONDONG", label: "행정동" },
 ];
 
-function DashboardControlBar({ selectedArea, mapLevel, insightState, loading, onRefresh }) {
+function DashboardControlBar({
+    selectedArea,
+    mapLevel,
+    gisLayer,
+    gisLayerOptions,
+    insightState,
+    loading,
+    onRefresh,
+    onGisLayerChange,
+}) {
     const selectedAreaName = getSelectedAreaName(selectedArea);
     const isRefreshing = loading || Boolean(insightState?.loading);
 
@@ -62,6 +97,27 @@ function DashboardControlBar({ selectedArea, mapLevel, insightState, loading, on
                         {control.label}
                     </span>
                 ))}
+                <label className="dashboard-control-layer" title="지도 GIS 포인트 레이어">
+                    <span>
+                        <i className="bi bi-geo-alt-fill" />
+                        GIS
+                    </span>
+                    <select
+                        value={gisLayer?.datasetCode ?? DEFAULT_MAP_DATASET_CODE}
+                        onChange={(event) => onGisLayerChange(event.target.value)}
+                        aria-label="지도 GIS 포인트 레이어 선택"
+                    >
+                        {gisLayerOptions.map((dataset) => (
+                            <option
+                                key={dataset.datasetCode}
+                                value={dataset.datasetCode}
+                                disabled={Number(dataset.featureCount ?? 0) <= 0}
+                            >
+                                {dataset.datasetName} ({Number(dataset.featureCount ?? 0).toLocaleString()}건)
+                            </option>
+                        ))}
+                    </select>
+                </label>
             </div>
 
             <div className="dashboard-control-right">
@@ -160,8 +216,60 @@ function DashboardPage() {
     const [error, setError] = useState(null);
     const [queryDate, setQueryDate] = useState(null);
     const [populationNotice, setPopulationNotice] = useState(null);
+    const [gisLayer, setGisLayer] = useState(FALLBACK_MAP_LAYER);
+    const [gisLayerOptions, setGisLayerOptions] = useState([FALLBACK_MAP_LAYER]);
     const closeStatsTimerRef = useRef(null);
     const insightState = useDashboardInsights(selectedArea);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        async function loadInitialMapLayer() {
+            try {
+                const datasets = await getDashboardGisDatasets({
+                    layerType: "POINT",
+                    activeOnly: true,
+                });
+
+                if (cancelled) {
+                    return;
+                }
+
+                const pointDatasets = (datasets ?? []).filter((dataset) => {
+                    const layerType = dataset.dashboardLayerType ?? dataset.layerType;
+                    return layerType === "POINT" && MAP_LAYER_DATASET_CODES.includes(dataset.datasetCode);
+                }).sort(
+                    (left, right) => MAP_LAYER_DATASET_CODES.indexOf(left.datasetCode)
+                        - MAP_LAYER_DATASET_CODES.indexOf(right.datasetCode)
+                );
+                setGisLayerOptions(pointDatasets.length ? pointDatasets : [FALLBACK_MAP_LAYER]);
+
+                const selectedDataset = pointDatasets.find(
+                    (dataset) => dataset.datasetCode === DEFAULT_MAP_DATASET_CODE
+                        && Number(dataset.featureCount ?? 0) > 0
+                ) ?? pointDatasets.find((dataset) => Number(dataset.featureCount ?? 0) > 0);
+
+                if (!selectedDataset) {
+                    setGisLayer(FALLBACK_MAP_LAYER);
+                    return;
+                }
+
+                setGisLayer(toMapLayer(selectedDataset));
+            } catch (err) {
+                console.error(err);
+                if (!cancelled) {
+                    setGisLayerOptions([FALLBACK_MAP_LAYER]);
+                    setGisLayer(FALLBACK_MAP_LAYER);
+                }
+            }
+        }
+
+        void loadInitialMapLayer();
+
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     const handleAreaSelect = useCallback(async (area) => {
         if (closeStatsTimerRef.current) {
@@ -233,19 +341,32 @@ function DashboardPage() {
         }, 360);
     }, [handleAreaSelect]);
 
+    const handleGisLayerChange = useCallback((datasetCode) => {
+        const selectedDataset = gisLayerOptions.find((dataset) => dataset.datasetCode === datasetCode);
+        if (!selectedDataset || Number(selectedDataset.featureCount ?? 0) <= 0) {
+            return;
+        }
+        setGisLayer(toMapLayer(selectedDataset));
+    }, [gisLayerOptions]);
+
     return (
         <div className="dashboard-ops-shell">
             <DashboardControlBar
                 selectedArea={selectedArea}
                 mapLevel={mapLevel}
+                gisLayer={gisLayer}
+                gisLayerOptions={gisLayerOptions}
                 insightState={insightState}
                 loading={loading}
                 onRefresh={handleRefreshDashboard}
+                onGisLayerChange={handleGisLayerChange}
             />
 
             <div className={`dashboard-workspace ${isStatsPanelOpen ? "stats-open" : "stats-closed"}`}>
                 <main className="dashboard-map-stage" aria-label="행정구역 Polygon 지도">
                     <DashboardMap
+                        selectedArea={selectedArea}
+                        gisLayer={gisLayer}
                         onAreaSelect={handleAreaSelect}
                         onViewLevelChange={setMapLevel}
                         clearSelectionSignal={mapSelectionResetSeq}
@@ -258,7 +379,11 @@ function DashboardPage() {
                         </div>
                         <div>
                             <span className="legend-line selected" />
-                            선택 지역
+                            선택 시도 경계
+                        </div>
+                        <div>
+                            <span className="legend-point" />
+                            GIS 포인트
                         </div>
                     </div>
                 </main>

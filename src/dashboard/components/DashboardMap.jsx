@@ -4,12 +4,13 @@ import Feature from "ol/Feature.js";
 import Map from "ol/Map.js";
 import View from "ol/View.js";
 import { defaults as defaultControls } from "ol/control/defaults.js";
-import { getCenter } from "ol/extent.js";
+import { createEmpty, extend, getCenter } from "ol/extent.js";
 import GeoJSON from "ol/format/GeoJSON.js";
 import Point from "ol/geom/Point.js";
 import { defaults as defaultInteractions } from "ol/interaction/defaults.js";
 import VectorLayer from "ol/layer/Vector.js";
 import { fromLonLat, transformExtent } from "ol/proj.js";
+import Cluster from "ol/source/Cluster.js";
 import VectorSource from "ol/source/Vector.js";
 import { Circle as CircleStyle, Fill, Stroke, Style, Text } from "ol/style.js";
 import axiosInstance from "../../commons/api/axiosinstance.js";
@@ -21,6 +22,10 @@ const MIN_ZOOM = 7.4;
 const MAX_ZOOM = 13;
 const SIGUNGU_MIN_ZOOM = 7.6;
 const EUPMYEONDONG_MIN_ZOOM = 10.4;
+const CLUSTER_DISTANCE = 36;
+const CLUSTER_MIN_DISTANCE = 14;
+const CLUSTER_BREAK_ZOOM = 11.6;
+const REGION_AGGREGATE_METRIC_CODE = "FEATURE_COUNT";
 const BOUNDARY_CACHE_LEVELS = ["SIDO", "SIGUNGU", "EUPMYEONDONG"];
 const BOUNDARY_FALLBACK_ORDER = ["EUPMYEONDONG", "SIGUNGU", "SIDO"];
 const LEVEL_Z_INDEX = {
@@ -32,6 +37,28 @@ const NEXT_LEVEL_BY_LEVEL = {
     SIDO: "SIGUNGU",
     SIGUNGU: "EUPMYEONDONG",
     EUPMYEONDONG: "JIPGYEGU",
+};
+const GIS_LAYER_THEMES = {
+    STANDARD_LIBRARY_MAIN: {
+        color: "#7c3aed",
+        glow: "rgba(124, 58, 237, 0.26)",
+        icon: "bi-book",
+    },
+    STANDARD_URBAN_PARK_MAIN: {
+        color: "#16a34a",
+        glow: "rgba(22, 163, 74, 0.26)",
+        icon: "bi-tree",
+    },
+    STANDARD_BUS_STOP_MAIN: {
+        color: "#0284c7",
+        glow: "rgba(2, 132, 199, 0.26)",
+        icon: "bi-bus-front",
+    },
+};
+const DEFAULT_GIS_LAYER_THEME = {
+    color: "#f97316",
+    glow: "rgba(249, 115, 22, 0.28)",
+    icon: "bi-geo-alt-fill",
 };
 
 const geoJsonFormat = new GeoJSON({
@@ -207,20 +234,28 @@ function getBoundaryStyle(feature, selectedFeature) {
     const isSelected = feature === selectedFeature;
     const level = feature.get("level");
     const name = feature.get("name") ?? "";
+    const showLabel = typeof window === "undefined" || window.innerWidth >= 640;
     const labelFont = level === "EUPMYEONDONG"
         ? "700 10px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
         : "800 11px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 
-    return [
+    const styles = [
         new Style({
             fill: new Fill({
-                color: isSelected ? "rgba(249, 115, 22, 0.24)" : "rgba(37, 99, 235, 0.1)",
+                color: isSelected ? "rgba(37, 99, 235, 0.16)" : "rgba(37, 99, 235, 0.1)",
             }),
             stroke: new Stroke({
-                color: isSelected ? "#f97316" : "#2563eb",
-                width: isSelected ? 3.2 : 1.55,
+                color: isSelected ? "#1d4ed8" : "#2563eb",
+                width: isSelected ? 2.2 : 1.55,
             }),
         }),
+    ];
+
+    if (!showLabel) {
+        return styles;
+    }
+
+    styles.push(
         new Style({
             geometry: (item) => getLabelPoint(item),
             text: new Text({
@@ -236,37 +271,195 @@ function getBoundaryStyle(feature, selectedFeature) {
                 offsetY: -2,
             }),
         }),
-    ];
+    );
+
+    return styles;
+}
+
+function isSelectedSidoBoundary(feature, selectedFeature) {
+    if (!selectedFeature) {
+        return false;
+    }
+
+    const featureSidoCode = feature.get("sidoCode");
+    const selectedSidoCode = selectedFeature.get("sidoCode");
+    return Boolean(featureSidoCode && selectedSidoCode && featureSidoCode === selectedSidoCode);
+}
+
+function getSidoContextBoundaryStyle(feature, selectedFeature) {
+    const isSelectedSido = isSelectedSidoBoundary(feature, selectedFeature);
+
+    return new Style({
+        fill: new Fill({
+            color: "rgba(255, 255, 255, 0)",
+        }),
+        stroke: new Stroke({
+            color: isSelectedSido ? "rgba(249, 115, 22, 0.96)" : "rgba(30, 64, 175, 0.56)",
+            width: isSelectedSido ? 3.2 : 1.8,
+        }),
+    });
+}
+
+function getGisLayerTheme(datasetCode) {
+    return GIS_LAYER_THEMES[datasetCode] ?? DEFAULT_GIS_LAYER_THEME;
+}
+
+function getGisClusterFeatures(feature) {
+    const clusteredFeatures = feature?.get?.("features");
+    return Array.isArray(clusteredFeatures) ? clusteredFeatures : null;
+}
+
+function formatNumberValue(value) {
+    const numberValue = Number(value);
+    if (!Number.isFinite(numberValue)) {
+        return null;
+    }
+    return numberValue.toLocaleString();
+}
+
+function getClusterDistanceForZoom(zoom) {
+    if (!Number.isFinite(zoom)) {
+        return CLUSTER_DISTANCE;
+    }
+    if (zoom >= CLUSTER_BREAK_ZOOM) {
+        return 0;
+    }
+    if (zoom >= EUPMYEONDONG_MIN_ZOOM) {
+        return CLUSTER_MIN_DISTANCE;
+    }
+    return CLUSTER_DISTANCE;
+}
+
+function getFeaturesExtent(features) {
+    const extent = createEmpty();
+    features.forEach((feature) => {
+        const geometry = feature.getGeometry();
+        if (geometry) {
+            extend(extent, geometry.getExtent());
+        }
+    });
+    return extent;
+}
+
+function getComparableAreaName(value) {
+    return String(value ?? "")
+        .replace(/특별자치도|특별자치시|광역시|특별시|자치도|도|시/g, "")
+        .trim();
+}
+
+function findRegionBoundaryFeature(boundaryFeatures, regionStat) {
+    const areaCode = regionStat.areaCode;
+    const sourceAreaCode = regionStat.sourceAreaCode;
+    const regionNames = [
+        regionStat.fullName,
+        regionStat.areaName,
+    ].map(getComparableAreaName).filter(Boolean);
+
+    return boundaryFeatures.find((feature) => feature.get("areaCode") === areaCode)
+        ?? boundaryFeatures.find((feature) => sourceAreaCode && feature.get("sidoCode") === sourceAreaCode)
+        ?? boundaryFeatures.find((feature) => {
+            const featureNames = [
+                feature.get("fullName"),
+                feature.get("name"),
+            ].map(getComparableAreaName);
+            return regionNames.some((name) => featureNames.includes(name));
+        })
+        ?? null;
+}
+
+function createRegionAggregateFeature(regionStat, boundaryFeature, datasetCode) {
+    const count = Number(regionStat.count ?? 0);
+    const percent = Number(regionStat.percent ?? 0);
+    const coordinate = getLabelPoint(boundaryFeature).getCoordinates();
+    const feature = new Feature({
+        geometry: new Point(coordinate),
+    });
+
+    feature.setProperties({
+        datasetCode,
+        metricCode: REGION_AGGREGATE_METRIC_CODE,
+        isRegionAggregate: true,
+        aggregateAreaCode: boundaryFeature.get("areaCode"),
+        aggregateAreaName: boundaryFeature.get("fullName") ?? boundaryFeature.get("name"),
+        featureName: `${boundaryFeature.get("name") ?? regionStat.areaName} ${count.toLocaleString()}건`,
+        featureCategory: "시도별 집계",
+        sourceAreaCode: regionStat.sourceAreaCode,
+        sourceAreaName: regionStat.areaName,
+        regionCount: count,
+        regionPercent: percent,
+    }, true);
+
+    return feature;
 }
 
 function getGisFeatureStyle(feature) {
-    const output = Number(feature.get("output") ?? 0);
-    const radius = output >= 100 ? 8 : output >= 50 ? 7 : 6;
+    const clusteredFeatures = getGisClusterFeatures(feature);
+    const clusterSize = clusteredFeatures?.length ?? 1;
+    const sourceFeature = clusteredFeatures?.[0] ?? feature;
+    const datasetCode = sourceFeature.get("datasetCode");
+    const theme = getGisLayerTheme(datasetCode);
+    const isRegionAggregate = Boolean(sourceFeature.get("isRegionAggregate"));
+    const isCluster = clusterSize > 1;
+    const regionCount = Number(sourceFeature.get("regionCount") ?? 0);
+    const radius = isRegionAggregate
+        ? Math.min(30, 15 + Math.log10(Math.max(regionCount, 1)) * 6)
+        : isCluster
+        ? Math.min(24, 13 + Math.log10(clusterSize) * 6)
+        : datasetCode === "STANDARD_BUS_STOP_MAIN" ? 4.8 : 6.4;
+    const text = isRegionAggregate
+        ? regionCount.toLocaleString()
+        : isCluster ? clusterSize.toLocaleString() : null;
 
     return new Style({
         image: new CircleStyle({
             radius,
             fill: new Fill({
-                color: "rgba(249, 115, 22, 0.88)",
+                color: isCluster || isRegionAggregate ? theme.glow.replace(/0\.\d+\)/, "0.86)") : theme.color,
             }),
             stroke: new Stroke({
                 color: "#ffffff",
                 width: 2,
             }),
         }),
+        text: text
+            ? new Text({
+                text,
+                font: "800 11px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                fill: new Fill({ color: "#ffffff" }),
+                stroke: new Stroke({ color: "rgba(15, 23, 42, 0.28)", width: 2 }),
+            })
+            : undefined,
     });
 }
 
 function formatGisFeatureNotice(feature) {
+    if (feature.get("isRegionAggregate")) {
+        const count = Number(feature.get("regionCount") ?? 0);
+        const percent = Number(feature.get("regionPercent") ?? 0);
+        const areaName = feature.get("aggregateAreaName") ?? feature.get("sourceAreaName") ?? "지역";
+        return `${areaName} / 저장 피처 ${count.toLocaleString()}건 / 전국 대비 ${percent.toLocaleString()}%`;
+    }
+
     const name = feature.get("featureName") ?? "GIS 피처";
     const address = feature.get("address") ?? feature.get("roadAddress") ?? "";
-    const output = feature.get("output");
-    const useTime = feature.get("useTime");
-    const businessCall = feature.get("businessCall");
+    const openTime = feature.get("openTime");
+    const closeTime = feature.get("closeTime");
+    const phoneNumber = feature.get("phoneNumber");
+    const managerName = feature.get("managerName");
+    const areaSize = feature.get("areaSize");
+    const featureCategory = feature.get("featureCategory");
+    const sourceAreaName = feature.get("sourceAreaName");
+    const baseDate = feature.get("baseDate");
+    const timeRange = openTime || closeTime ? `${openTime ?? "?"}-${closeTime ?? "?"}` : null;
+    const areaSizeLabel = formatNumberValue(areaSize);
     const details = [
-        output ? `${output}kW` : null,
-        useTime,
-        businessCall,
+        featureCategory,
+        sourceAreaName,
+        areaSizeLabel ? `면적 ${areaSizeLabel}㎡` : null,
+        timeRange,
+        phoneNumber,
+        managerName,
+        baseDate ? `기준 ${baseDate}` : null,
     ].filter(Boolean).join(" · ");
 
     return [name, address, details].filter(Boolean).join(" / ");
@@ -291,17 +484,21 @@ function emptyFeatureCollection() {
     };
 }
 
-function DashboardMap({ onAreaSelect, gisLayer, onViewLevelChange, clearSelectionSignal = 0 }) {
+function DashboardMap({ selectedArea, onAreaSelect, gisLayer, onViewLevelChange, clearSelectionSignal = 0 }) {
     const onAreaSelectRef = useRef(onAreaSelect);
     const onViewLevelChangeRef = useRef(onViewLevelChange);
     const mapElementRef = useRef(null);
     const mapRef = useRef(null);
     const boundaryLayersRef = useRef({});
     const boundarySourcesRef = useRef({});
+    const sidoContextLayerRef = useRef(null);
     const gisSourceRef = useRef(null);
+    const gisClusterSourceRef = useRef(null);
+    const gisLayerRef = useRef(null);
     const selectedFeatureRef = useRef(null);
     const boundaryAbortControllerRef = useRef(null);
     const gisAbortControllerRef = useRef(null);
+    const gisAggregateModeRef = useRef(false);
     const boundaryCacheLoadedRef = useRef(false);
     const activeBoundaryLevelRef = useRef("SIDO");
     const setActiveBoundaryLevelRef = useRef(null);
@@ -316,6 +513,7 @@ function DashboardMap({ onAreaSelect, gisLayer, onViewLevelChange, clearSelectio
     const [isGisLoading, setIsGisLoading] = useState(false);
     const [visibleGisFeatureCount, setVisibleGisFeatureCount] = useState(0);
     const [hoverArea, setHoverArea] = useState(null);
+    const [boundaryCacheVersion, setBoundaryCacheVersion] = useState(0);
 
     const resetToNationalView = useCallback(() => {
         const initialView = createInitialView();
@@ -366,12 +564,17 @@ function DashboardMap({ onAreaSelect, gisLayer, onViewLevelChange, clearSelectio
 
     useEffect(() => {
         if (clearSelectionSignal === 0) {
-            return;
+            return undefined;
         }
 
         selectedFeatureRef.current = null;
-        setHoverArea(null);
         Object.values(boundaryLayersRef.current).forEach((layer) => layer.changed());
+        sidoContextLayerRef.current?.changed();
+        const timerId = window.setTimeout(() => {
+            setHoverArea(null);
+        }, 0);
+
+        return () => window.clearTimeout(timerId);
     }, [clearSelectionSignal]);
 
     useEffect(() => {
@@ -392,10 +595,21 @@ function DashboardMap({ onAreaSelect, gisLayer, onViewLevelChange, clearSelectio
             boundarySources[level] = source;
             boundaryLayers[level] = layer;
         });
+        const sidoContextBoundaryLayer = new VectorLayer({
+            source: boundarySources.SIDO,
+            visible: false,
+            style: (feature) => getSidoContextBoundaryStyle(feature, selectedFeatureRef.current),
+        });
+        sidoContextBoundaryLayer.setZIndex(8);
 
         const gisFeatureSource = new VectorSource();
-        const gisFeatureLayer = new VectorLayer({
+        const gisClusterSource = new Cluster({
+            distance: CLUSTER_DISTANCE,
+            minDistance: 0,
             source: gisFeatureSource,
+        });
+        const gisFeatureLayer = new VectorLayer({
+            source: gisClusterSource,
             style: getGisFeatureStyle,
         });
         gisFeatureLayer.setZIndex(10);
@@ -408,7 +622,7 @@ function DashboardMap({ onAreaSelect, gisLayer, onViewLevelChange, clearSelectio
                 zoom: false,
             }),
             interactions: defaultInteractions(),
-            layers: [...Object.values(boundaryLayers), gisFeatureLayer],
+            layers: [...Object.values(boundaryLayers), sidoContextBoundaryLayer, gisFeatureLayer],
             view: new View({
                 center: KOREA_CENTER,
                 zoom: INITIAL_ZOOM,
@@ -439,6 +653,7 @@ function DashboardMap({ onAreaSelect, gisLayer, onViewLevelChange, clearSelectio
 
         function changeBoundaryLayerStyles() {
             Object.values(boundaryLayers).forEach((layer) => layer.changed());
+            sidoContextBoundaryLayer.changed();
         }
 
         function resolveAvailableLevel(requestedLevel) {
@@ -463,8 +678,11 @@ function DashboardMap({ onAreaSelect, gisLayer, onViewLevelChange, clearSelectio
             Object.entries(boundaryLayers).forEach(([level, layer]) => {
                 layer.setVisible(level === nextLevel);
             });
+            sidoContextBoundaryLayer.setVisible(
+                nextLevel !== "SIDO" && (boundarySources.SIDO?.getFeatures().length ?? 0) > 0
+            );
 
-            if (options.clearSelection || changed) {
+            if (options.clearSelection || (changed && !options.preserveSelection)) {
                 selectedFeatureRef.current = null;
                 setHoverArea(null);
                 onAreaSelectRef.current?.(null);
@@ -504,6 +722,7 @@ function DashboardMap({ onAreaSelect, gisLayer, onViewLevelChange, clearSelectio
                 });
 
                 boundaryCacheLoadedRef.current = true;
+                setBoundaryCacheVersion((version) => version + 1);
                 const activeLevel = setActiveBoundaryLevel(currentViewRef.current.level);
                 fitMapToExtent(map, boundarySources[activeLevel]?.getExtent());
                 const nextView = createViewFromMap(map, activeLevel);
@@ -530,15 +749,86 @@ function DashboardMap({ onAreaSelect, gisLayer, onViewLevelChange, clearSelectio
             window.clearTimeout(moveEndTimerId);
             moveEndTimerId = window.setTimeout(() => {
                 const requestedLevel = getLevelForZoom(map.getView().getZoom() ?? INITIAL_ZOOM);
-                const activeLevel = setActiveBoundaryLevel(requestedLevel);
+                gisClusterSource.setDistance(
+                    gisAggregateModeRef.current
+                        ? 0
+                        : getClusterDistanceForZoom(map.getView().getZoom() ?? INITIAL_ZOOM)
+                );
+                const activeLevel = setActiveBoundaryLevel(requestedLevel, { preserveSelection: true });
                 const nextView = createViewFromMap(map, activeLevel);
                 currentViewRef.current = nextView;
                 setViewState(nextView);
             }, 80);
         };
 
+        function selectRegionAggregateFeature(feature) {
+            const areaCode = feature.get("aggregateAreaCode");
+            const boundaryFeature = boundarySources.SIDO?.getFeatures()
+                .find((item) => item.get("areaCode") === areaCode);
+            if (!boundaryFeature) {
+                return false;
+            }
+
+            const area = getFeatureArea(boundaryFeature);
+            selectedFeatureRef.current = boundaryFeature;
+            setMapNotice(null);
+            setGisFeatureNotice(null);
+            const activeLevel = setActiveBoundaryLevel("SIGUNGU", { preserveSelection: true });
+            const nextView = {
+                level: activeLevel,
+                parentArea: area,
+                bbox: area.bbox,
+                stack: [],
+                zoom: map.getView().getZoom() ?? INITIAL_ZOOM,
+            };
+            currentViewRef.current = nextView;
+            setViewState(nextView);
+            changeBoundaryLayerStyles();
+            onAreaSelectRef.current?.(area);
+            fitMapToExtent(map, boundaryFeature.getGeometry().getExtent(), {
+                maxZoom: 8.8,
+                duration: 220,
+            });
+            return true;
+        }
+
         function handleFeatureClick(feature) {
+            const clusteredFeatures = getGisClusterFeatures(feature);
+            if (clusteredFeatures) {
+                if (clusteredFeatures.length > 1) {
+                    const extent = getFeaturesExtent(clusteredFeatures);
+                    const currentZoom = map.getView().getZoom() ?? INITIAL_ZOOM;
+                    const fitted = fitMapToExtent(map, extent, {
+                        maxZoom: Math.min(MAX_ZOOM, currentZoom + 2),
+                        duration: 180,
+                    });
+                    if (!fitted) {
+                        map.getView().animate({
+                            zoom: Math.min(MAX_ZOOM, currentZoom + 1),
+                            center: feature.getGeometry()?.getCoordinates(),
+                            duration: 180,
+                        });
+                    }
+                    setMapNotice(`${clusteredFeatures.length.toLocaleString()}개 지점을 확대합니다.`);
+                    setGisFeatureNotice(null);
+                    return;
+                }
+
+                if (clusteredFeatures[0].get("isRegionAggregate") && selectRegionAggregateFeature(clusteredFeatures[0])) {
+                    return;
+                }
+
+                setMapNotice(null);
+                setGisFeatureNotice(formatGisFeatureNotice(clusteredFeatures[0]));
+                return;
+            }
+
             if (feature.get("datasetCode")) {
+                if (feature.get("isRegionAggregate") && selectRegionAggregateFeature(feature)) {
+                    return;
+                }
+
+                setMapNotice(null);
                 setGisFeatureNotice(formatGisFeatureNotice(feature));
                 return;
             }
@@ -549,12 +839,24 @@ function DashboardMap({ onAreaSelect, gisLayer, onViewLevelChange, clearSelectio
             const area = getFeatureArea(feature);
             changeBoundaryLayerStyles();
             onAreaSelectRef.current?.(area);
+            fitMapToExtent(map, feature.getGeometry().getExtent(), {
+                maxZoom: area.level === "SIDO" ? 8.8 : area.level === "SIGUNGU" ? 10.8 : 12.6,
+                duration: 220,
+            });
         }
 
         map.on("singleclick", (event) => {
-            const feature = map.forEachFeatureAtPixel(event.pixel, (item) => item);
+            const clickedFeatures = map.getFeaturesAtPixel(event.pixel, {
+                hitTolerance: 4,
+                layerFilter: (layer) => (
+                    layer === gisFeatureLayer
+                    || (Object.values(boundaryLayers).includes(layer) && layer.getVisible())
+                ),
+            });
+            const gisFeature = clickedFeatures.find((item) => getGisClusterFeatures(item) || item.get("datasetCode"));
+            const feature = gisFeature ?? clickedFeatures.find((item) => !item.get("datasetCode"));
 
-            if (!(feature instanceof Feature)) {
+            if (!feature || typeof feature.get !== "function") {
                 setMapNotice(null);
                 setGisFeatureNotice(null);
                 setHoverArea(null);
@@ -577,13 +879,16 @@ function DashboardMap({ onAreaSelect, gisLayer, onViewLevelChange, clearSelectio
                 event.pixel,
                 (item) => item,
                 {
-                    layerFilter: (layer) => Object.values(boundaryLayers).includes(layer) && layer.getVisible(),
+                    layerFilter: (layer) => (
+                        layer === gisFeatureLayer
+                        || (Object.values(boundaryLayers).includes(layer) && layer.getVisible())
+                    ),
                 },
             );
 
             map.getTargetElement().style.cursor = feature instanceof Feature ? "pointer" : "";
 
-            if (!(feature instanceof Feature)) {
+            if (!(feature instanceof Feature) || getGisClusterFeatures(feature) || feature.get("datasetCode")) {
                 setHoverArea(null);
                 return;
             }
@@ -609,7 +914,10 @@ function DashboardMap({ onAreaSelect, gisLayer, onViewLevelChange, clearSelectio
         mapRef.current = map;
         boundaryLayersRef.current = boundaryLayers;
         boundarySourcesRef.current = boundarySources;
+        sidoContextLayerRef.current = sidoContextBoundaryLayer;
         gisSourceRef.current = gisFeatureSource;
+        gisClusterSourceRef.current = gisClusterSource;
+        gisLayerRef.current = gisFeatureLayer;
         setActiveBoundaryLevelRef.current = setActiveBoundaryLevel;
         void loadBoundaryCache();
 
@@ -627,8 +935,12 @@ function DashboardMap({ onAreaSelect, gisLayer, onViewLevelChange, clearSelectio
             mapRef.current = null;
             boundaryLayersRef.current = {};
             boundarySourcesRef.current = {};
+            sidoContextLayerRef.current = null;
             gisSourceRef.current = null;
+            gisClusterSourceRef.current = null;
+            gisLayerRef.current = null;
             selectedFeatureRef.current = null;
+            gisAggregateModeRef.current = false;
             setHoverArea(null);
             boundaryAbortControllerRef.current = null;
             gisAbortControllerRef.current = null;
@@ -639,42 +951,117 @@ function DashboardMap({ onAreaSelect, gisLayer, onViewLevelChange, clearSelectio
         };
     }, []);
 
+    const selectedAreaCode = selectedArea?.areaCode ?? null;
+    const effectiveGisRequestBbox = selectedArea?.bbox ?? null;
+    const gisRequestBbox = effectiveGisRequestBbox ?? viewState.bbox;
+    const useRegionAggregateLayer = !selectedAreaCode && viewState.level === "SIDO";
+    const gisRequestScopeLabel = selectedAreaCode
+        ? "선택 지역"
+        : useRegionAggregateLayer ? "시도 집계" : "현재 지도";
+
     useEffect(() => {
         const source = gisSourceRef.current;
         if (!source) {
             return undefined;
         }
 
+        const requestBbox = gisRequestBbox;
+        const selectedAreaGeometry = selectedFeatureRef.current?.getGeometry() ?? null;
+        const boundarySources = boundarySourcesRef.current;
         let cancelled = false;
+        let effectAbortController = null;
         const timerId = window.setTimeout(() => {
-            gisAbortControllerRef.current?.abort();
-            source.clear(true);
-            setGisFeatureNotice(null);
-            setGisLoadError(null);
-            setVisibleGisFeatureCount(0);
-
-            if (!gisLayer?.datasetCode) {
+            if (!gisLayer?.datasetCode || !requestBbox) {
+                gisAbortControllerRef.current?.abort();
+                source.clear(true);
+                setGisFeatureNotice(null);
+                setGisLoadError(null);
+                setVisibleGisFeatureCount(0);
                 setIsGisLoading(false);
+                setMapNotice(null);
                 lastGisRequestKeyRef.current = "";
                 return;
             }
 
-            const filterAreaCode = viewState.parentArea?.areaCode ?? null;
-            const requestKey = [gisLayer.datasetCode, viewState.bbox, filterAreaCode ?? "ROOT"].join(":");
+            const requestMode = useRegionAggregateLayer ? "SIDO_AGGREGATE" : selectedAreaCode ?? "VIEW";
+            const requestKey = [gisLayer.datasetCode, requestMode, requestBbox].join(":");
             if (requestKey === lastGisRequestKeyRef.current) {
                 return;
             }
             lastGisRequestKeyRef.current = requestKey;
 
+            gisAbortControllerRef.current?.abort();
+            source.clear(true);
+            setGisFeatureNotice(null);
+            setGisLoadError(null);
+            setMapNotice(null);
+            setVisibleGisFeatureCount(0);
+
             const abortController = new AbortController();
+            effectAbortController = abortController;
             gisAbortControllerRef.current = abortController;
             setIsGisLoading(true);
+
+            if (useRegionAggregateLayer) {
+                gisAggregateModeRef.current = true;
+                gisClusterSourceRef.current?.setDistance(0);
+
+                axiosInstance.get("/api/dashboard/gis-region-stats", {
+                    params: {
+                        datasetCode: gisLayer.datasetCode,
+                    },
+                    signal: abortController.signal,
+                }).then((response) => {
+                    if (cancelled || abortController.signal.aborted) {
+                        return;
+                    }
+
+                    const regionStats = Array.isArray(response.data?.items) ? response.data.items : [];
+                    const sidoFeatures = boundarySources.SIDO?.getFeatures() ?? [];
+                    const aggregateFeatures = regionStats
+                        .filter((item) => Number(item.count ?? 0) > 0)
+                        .map((item) => {
+                            const boundaryFeature = findRegionBoundaryFeature(sidoFeatures, item);
+                            return boundaryFeature
+                                ? createRegionAggregateFeature(item, boundaryFeature, gisLayer.datasetCode)
+                                : null;
+                        })
+                        .filter(Boolean);
+                    const totalCount = Number(response.data?.totalCount ?? 0);
+                    const aggregateTotal = aggregateFeatures.reduce(
+                        (sum, feature) => sum + Number(feature.get("regionCount") ?? 0),
+                        0
+                    );
+
+                    source.clear(true);
+                    source.addFeatures(aggregateFeatures);
+                    setVisibleGisFeatureCount(totalCount || aggregateTotal);
+                }).catch((error) => {
+                    if (cancelled || abortController.signal.aborted || error.name === "CanceledError") {
+                        return;
+                    }
+                    console.error(error);
+                    lastGisRequestKeyRef.current = "";
+                    source.clear(true);
+                    setVisibleGisFeatureCount(0);
+                    setGisLoadError("시도별 지도 레이어 집계를 불러오지 못했습니다.");
+                }).finally(() => {
+                    if (!cancelled && gisAbortControllerRef.current === abortController) {
+                        setIsGisLoading(false);
+                    }
+                });
+                return;
+            }
+
+            gisAggregateModeRef.current = false;
+            gisClusterSourceRef.current?.setDistance(
+                getClusterDistanceForZoom(mapRef.current?.getView().getZoom() ?? INITIAL_ZOOM)
+            );
 
             axiosInstance.get("/api/dashboard/gis-features", {
                 params: {
                     datasetCode: gisLayer.datasetCode,
-                    bbox: viewState.bbox,
-                    areaCode: filterAreaCode,
+                    bbox: requestBbox,
                     limit: 500,
                 },
                 signal: abortController.signal,
@@ -683,7 +1070,17 @@ function DashboardMap({ onAreaSelect, gisLayer, onViewLevelChange, clearSelectio
                     return;
                 }
 
-                const features = geoJsonFormat.readFeatures(response.data);
+                const features = geoJsonFormat.readFeatures(response.data)
+                    .filter((feature) => {
+                        if (!selectedAreaGeometry) {
+                            return true;
+                        }
+                        const geometry = feature.getGeometry();
+                        if (geometry?.getType?.() !== "Point") {
+                            return true;
+                        }
+                        return selectedAreaGeometry.intersectsCoordinate(geometry.getCoordinates());
+                    });
                 source.clear(true);
                 source.addFeatures(features);
                 setVisibleGisFeatureCount(features.length);
@@ -695,7 +1092,7 @@ function DashboardMap({ onAreaSelect, gisLayer, onViewLevelChange, clearSelectio
                 lastGisRequestKeyRef.current = "";
                 source.clear(true);
                 setVisibleGisFeatureCount(0);
-                setGisLoadError("선택한 지도 레이어 데이터를 불러오지 못했습니다.");
+                setGisLoadError("지도 레이어 데이터를 불러오지 못했습니다.");
             }).finally(() => {
                 if (!cancelled && gisAbortControllerRef.current === abortController) {
                     setIsGisLoading(false);
@@ -706,18 +1103,33 @@ function DashboardMap({ onAreaSelect, gisLayer, onViewLevelChange, clearSelectio
         return () => {
             cancelled = true;
             window.clearTimeout(timerId);
-            gisAbortControllerRef.current?.abort();
+            if (effectAbortController && gisAbortControllerRef.current === effectAbortController) {
+                effectAbortController.abort();
+            }
         };
-    }, [gisLayer?.datasetCode, viewState.bbox, viewState.parentArea?.areaCode]);
+    }, [gisLayer?.datasetCode, selectedAreaCode, gisRequestBbox, useRegionAggregateLayer, boundaryCacheVersion]);
 
     const isSidoView = viewState.level === "SIDO" && viewState.stack.length === 0;
     const storedGisFeatureCount = Number(gisLayer?.featureCount ?? 0);
+    const gisLayerTheme = getGisLayerTheme(gisLayer?.datasetCode);
     const gisLayerCountLabel = isGisLoading
-        ? "현재 지도 범위 조회 중"
-        : `현재 범위 ${visibleGisFeatureCount.toLocaleString()}건 표시`
-            + (storedGisFeatureCount > visibleGisFeatureCount
-                ? ` · 저장 ${storedGisFeatureCount.toLocaleString()}건`
-                : "");
+        ? `${gisRequestScopeLabel} 조회 중`
+        : selectedAreaCode
+            ? [
+                `선택 지역 표시 ${visibleGisFeatureCount.toLocaleString()}건`,
+                storedGisFeatureCount > 0 ? `저장 전체 ${storedGisFeatureCount.toLocaleString()}건` : null,
+                visibleGisFeatureCount >= 500 ? "최대 500건 샘플" : null,
+            ].filter(Boolean).join(" / ")
+            : useRegionAggregateLayer
+                ? [
+                    `시도별 집계 ${visibleGisFeatureCount.toLocaleString()}건`,
+                    storedGisFeatureCount > 0 ? `저장 전체 ${storedGisFeatureCount.toLocaleString()}건` : null,
+                ].filter(Boolean).join(" / ")
+            : [
+                `현재 지도 표시 ${visibleGisFeatureCount.toLocaleString()}건`,
+                storedGisFeatureCount > 0 ? `저장 전체 ${storedGisFeatureCount.toLocaleString()}건` : null,
+                visibleGisFeatureCount >= 500 ? "최대 500건 샘플" : null,
+            ].filter(Boolean).join(" / ");
 
     return (
         <div className="dashboard-map-card">
@@ -792,7 +1204,7 @@ function DashboardMap({ onAreaSelect, gisLayer, onViewLevelChange, clearSelectio
                         {mapNotice && !loadError && <span>{mapNotice}</span>}
                         {gisFeatureNotice && !loadError && (
                             <span>
-                                <i className="bi bi-ev-station me-1" />
+                                <i className={`bi ${gisLayerTheme.icon} me-1`} />
                                 {gisFeatureNotice}
                             </span>
                         )}
@@ -802,7 +1214,13 @@ function DashboardMap({ onAreaSelect, gisLayer, onViewLevelChange, clearSelectio
 
                 {gisLayer?.datasetName && (
                     <div className="dashboard-map-layer-badge">
-                        <span className="dashboard-map-layer-dot" />
+                        <span
+                            className="dashboard-map-layer-dot"
+                            style={{
+                                backgroundColor: gisLayerTheme.color,
+                                boxShadow: `0 0 0 2px ${gisLayerTheme.glow}`,
+                            }}
+                        />
                         <div>
                             <strong>{gisLayer.datasetName}</strong>
                             <span>{gisLayerCountLabel}</span>
