@@ -22,7 +22,6 @@ import {
   getGisReportListApi,
   searchGisReportListApi,
 } from "../../api/gisReportApi";
-import { getSidoListApi, getSigunguListApi } from "../../api/regionApi";
 
 import "../css/GisReportListPage.css";
 
@@ -30,6 +29,58 @@ const OSM_BASE_MAP_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 
 const OSM_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors';
+
+const sidoList = [
+  { code: "", name: "전체 시/도" },
+  { code: "서울특별시", name: "서울특별시" },
+  { code: "부산광역시", name: "부산광역시" },
+  { code: "대구광역시", name: "대구광역시" },
+  { code: "인천광역시", name: "인천광역시" },
+  { code: "광주광역시", name: "광주광역시" },
+  { code: "대전광역시", name: "대전광역시" },
+  { code: "울산광역시", name: "울산광역시" },
+  { code: "세종특별자치시", name: "세종특별자치시" },
+  { code: "경기도", name: "경기도" },
+  { code: "강원특별자치도", name: "강원특별자치도" },
+  { code: "충청북도", name: "충청북도" },
+  { code: "충청남도", name: "충청남도" },
+  { code: "전북특별자치도", name: "전북특별자치도" },
+  { code: "전라남도", name: "전라남도" },
+  { code: "경상북도", name: "경상북도" },
+  { code: "경상남도", name: "경상남도" },
+  { code: "제주특별자치도", name: "제주특별자치도" },
+];
+
+const sigunguMap = {
+  서울특별시: [
+    { code: "", name: "전체 시/군/구" },
+    { code: "강남구", name: "강남구" },
+    { code: "강동구", name: "강동구" },
+    { code: "강북구", name: "강북구" },
+    { code: "강서구", name: "강서구" },
+    { code: "관악구", name: "관악구" },
+    { code: "광진구", name: "광진구" },
+    { code: "구로구", name: "구로구" },
+    { code: "금천구", name: "금천구" },
+    { code: "노원구", name: "노원구" },
+    { code: "도봉구", name: "도봉구" },
+    { code: "동대문구", name: "동대문구" },
+    { code: "동작구", name: "동작구" },
+    { code: "마포구", name: "마포구" },
+    { code: "서대문구", name: "서대문구" },
+    { code: "서초구", name: "서초구" },
+    { code: "성동구", name: "성동구" },
+    { code: "성북구", name: "성북구" },
+    { code: "송파구", name: "송파구" },
+    { code: "양천구", name: "양천구" },
+    { code: "영등포구", name: "영등포구" },
+    { code: "용산구", name: "용산구" },
+    { code: "은평구", name: "은평구" },
+    { code: "종로구", name: "종로구" },
+    { code: "중구", name: "중구" },
+    { code: "중랑구", name: "중랑구" },
+  ],
+};
 
 function GisReportListPage() {
   const navigate = useNavigate();
@@ -46,9 +97,6 @@ function GisReportListPage() {
 
   const [searchWord, setSearchWord] = useState("");
 
-  const [sidoList, setSidoList] = useState([]);
-  const [sigunguList, setSigunguList] = useState([]);
-
   const [sidoCode, setSidoCode] = useState("");
   const [sigunguCode, setSigunguCode] = useState("");
 
@@ -58,6 +106,10 @@ function GisReportListPage() {
 
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 5;
+
+  const sigunguList = useMemo(() => {
+    return sigunguMap[sidoCode] ?? [{ code: "", name: "전체 시/군/구" }];
+  }, [sidoCode]);
 
   const visibleGisReportList = useMemo(() => {
     if (isCompletedVisible) {
@@ -77,16 +129,6 @@ function GisReportListPage() {
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   );
-
-  const getSelectedName = (list, code) => {
-    if (!Array.isArray(list)) return "";
-
-    const item = list.find((item) => String(item.code) === String(code));
-    return item?.name ?? "";
-  };
-
-  const sidoName = getSelectedName(sidoList, sidoCode);
-  const sigunguName = getSelectedName(sigunguList, sigunguCode);
 
   const hidePopup = () => {
     setPopupReport(null);
@@ -119,8 +161,8 @@ function GisReportListPage() {
 
       const searchData = {
         searchWord,
-        sido: sidoName,
-        sigungu: sigunguName,
+        sido: sidoCode,
+        sigungu: sigunguCode,
       };
 
       const data = await searchGisReportListApi(searchData);
@@ -141,7 +183,6 @@ function GisReportListPage() {
     setSearchWord("");
     setSidoCode("");
     setSigunguCode("");
-    setSigunguList([]);
     setCurrentPage(1);
     hidePopup();
   };
@@ -153,44 +194,13 @@ function GisReportListPage() {
   };
 
   useEffect(() => {
-    const getSidoList = async () => {
-      try {
-        const data = await getSidoListApi();
-        setSidoList(Array.isArray(data) ? data : []);
-      } catch (error) {
-        console.error("시/도 목록 조회 실패:", error);
-        setSidoList([]);
-      }
-    };
-
-    getSidoList();
-  }, []);
-
-  useEffect(() => {
-    if (!sidoCode) {
-      setSigunguCode("");
-      setSigunguList([]);
-      return;
-    }
-
-    const getSigunguList = async () => {
-      try {
-        const data = await getSigunguListApi(sidoCode);
-        setSigunguList(Array.isArray(data) ? data : []);
-        setSigunguCode("");
-      } catch (error) {
-        console.error("시/군/구 목록 조회 실패:", error);
-        setSigunguList([]);
-      }
-    };
-
-    getSigunguList();
+    setSigunguCode("");
   }, [sidoCode]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       const hasSearchCondition =
-        searchWord.trim() !== "" || sidoName !== "" || sigunguName !== "";
+        searchWord.trim() !== "" || sidoCode !== "" || sigunguCode !== "";
 
       if (hasSearchCondition) {
         searchGisReportList();
@@ -200,7 +210,7 @@ function GisReportListPage() {
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [searchWord, sidoName, sigunguName]);
+  }, [searchWord, sidoCode, sigunguCode]);
 
   useEffect(() => {
     if (totalPage > 0 && currentPage > totalPage) {
@@ -498,7 +508,6 @@ function GisReportListPage() {
           value={sidoCode}
           onChange={(e) => setSidoCode(e.target.value)}
         >
-          <option value="">전체 시/도</option>
           {sidoList.map((region) => (
             <option key={region.code} value={region.code}>
               {region.name}
@@ -509,9 +518,8 @@ function GisReportListPage() {
         <select
           value={sigunguCode}
           onChange={(e) => setSigunguCode(e.target.value)}
-          disabled={!sidoCode}
+          disabled={!sidoCode || sigunguList.length <= 1}
         >
-          <option value="">전체 시/군/구</option>
           {sigunguList.map((region) => (
             <option key={region.code} value={region.code}>
               {region.name}
