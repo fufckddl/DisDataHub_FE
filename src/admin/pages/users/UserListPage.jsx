@@ -1,37 +1,34 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../../../commons/api/axiosInstance";
+import "../../css/AdminUserManagement.css";
 
 function UserListTitle({ navigate }) {
     return(
-        <>
-            <div className="row align-items-center mb-4">
-                <div className="col">
-                    <h3 className="mt-3 fw-bold">사용자 관리</h3>
-                    <div className="text-secondary">
-                        전체 사용자를 조회하고 역할별로 관리할 수 있습니다.
-                    </div>
-                </div>
-
-                <div className="col-auto">
-                    <button
-                        className="btn border-0 text-black bi bi-house-door"
-                        onClick={() => {
-                            navigate("/admin/mainPage");
-                        }}
-                    >
-                        &nbsp;메인화면
-                    </button>
-                </div>
+        <div className="admin-user-title-row">
+            <div>
+                <h1 className="admin-user-title">사용자 관리</h1>
+                <p className="admin-user-description">
+                    전체 사용자를 조회하고 역할별로 관리할 수 있습니다.
+                </p>
             </div>
-        </>
+
+            <button
+                className="admin-user-home-button bi bi-house-door"
+                onClick={() => {
+                    navigate("/admin/mainPage");
+                }}
+            >
+                &nbsp;메인화면
+            </button>
+        </div>
     )
 }
 
 function UserListSearch({ searchType, changeSearchType, searchWord, changeSearchWord }) {
     return (
         <>
-            <div className="col-auto">
+            <div className="admin-user-search-type">
                 <select
                     className="form-select shadow-none"
                     value={searchType}
@@ -42,7 +39,7 @@ function UserListSearch({ searchType, changeSearchType, searchWord, changeSearch
                 </select>
             </div>
 
-            <div className="col">
+            <div className="admin-user-search-input">
                 <input
                     type="text"
                     className="form-control shadow-none"
@@ -57,129 +54,122 @@ function UserListSearch({ searchType, changeSearchType, searchWord, changeSearch
 
 function UserListFilter({ roleFilter, changeRoleFilter }) {
     return(
-        <>
-            <div className="col-auto d-flex align-items-center gap-3 me-2">
-                <div className="form-check">
-                    <input
-                        className="form-check-input shadow-none"
-                        type="checkbox"
-                        value="USER"
-                        id="checkRoleUser"
-                        checked={roleFilter.USER}
-                        onChange={changeRoleFilter}
-                    />
-                    <label className="form-check-label" htmlFor="checkRoleUser">
-                        사용자
-                    </label>
-                </div>
-
-                <div className="form-check">
-                    <input
-                        className="form-check-input shadow-none"
-                        type="checkbox"
-                        value="RESEARCHER"
-                        id="checkRoleResearcher"
-                        checked={roleFilter.RESEARCHER}
-                        onChange={changeRoleFilter}
-                    />
-                    <label className="form-check-label" htmlFor="checkRoleResearcher">
-                        연구자
-                    </label>
-                </div>
-
-                <div className="form-check">
-                    <input
-                        className="form-check-input shadow-none"
-                        type="checkbox"
-                        value="ADMIN"
-                        id="checkRoleAdmin"
-                        checked={roleFilter.ADMIN}
-                        onChange={changeRoleFilter}
-                    />
-                    <label className="form-check-label" htmlFor="checkRoleAdmin">
-                        관리자
-                    </label>
-                </div>
+        <div className="admin-user-filter-group">
+            <div className="form-check">
+                <input
+                    className="form-check-input shadow-none"
+                    type="checkbox"
+                    value="USER"
+                    id="checkRoleUser"
+                    checked={roleFilter.USER}
+                    onChange={changeRoleFilter}
+                />
+                <label className="form-check-label" htmlFor="checkRoleUser">
+                    사용자
+                </label>
             </div>
-        </>
+
+            <div className="form-check">
+                <input
+                    className="form-check-input shadow-none"
+                    type="checkbox"
+                    value="RESEARCHER"
+                    id="checkRoleResearcher"
+                    checked={roleFilter.RESEARCHER}
+                    onChange={changeRoleFilter}
+                />
+                <label className="form-check-label" htmlFor="checkRoleResearcher">
+                    연구자
+                </label>
+            </div>
+
+            <div className="form-check">
+                <input
+                    className="form-check-input shadow-none"
+                    type="checkbox"
+                    value="ADMIN"
+                    id="checkRoleAdmin"
+                    checked={roleFilter.ADMIN}
+                    onChange={changeRoleFilter}
+                />
+                <label className="form-check-label" htmlFor="checkRoleAdmin">
+                    관리자
+                </label>
+            </div>
+        </div>
     )
 }
 
 function UserListTopContent({ searchType, changeSearchType, searchWord, changeSearchWord, roleFilter, changeRoleFilter }) {
     return(
-        <>
-            <div className="row mb-3">
-                <UserListSearch
-                    searchType={searchType}
-                    changeSearchType={changeSearchType}
-                    searchWord={searchWord}
-                    changeSearchWord={changeSearchWord}
-                />
+        <div className="admin-user-control-card">
+            <UserListSearch
+                searchType={searchType}
+                changeSearchType={changeSearchType}
+                searchWord={searchWord}
+                changeSearchWord={changeSearchWord}
+            />
 
-                <UserListFilter
-                    roleFilter={roleFilter}
-                    changeRoleFilter={changeRoleFilter}
-                />
-            </div>
-        </>
+            <UserListFilter
+                roleFilter={roleFilter}
+                changeRoleFilter={changeRoleFilter}
+            />
+        </div>
     )
 }
 
 function UserListContent({ userList, navigate }) {
     return(
-        <>
-            <div className="col">
-                <table className="table table-hover align-middle text-center">
-                    <thead className="table-light">
-                        <tr>
-                            <th>사용자 ID</th>
-                            <th>사용자명</th>
-                            <th>이메일</th>
-                            <th>역할</th>
-                            <th>상태</th>
-                            <th>가입일</th>
+        <div className="admin-user-card">
+            <table className="admin-user-table">
+                <thead>
+                    <tr>
+                        <th>사용자 ID</th>
+                        <th>사용자명</th>
+                        <th>이메일</th>
+                        <th>역할</th>
+                        <th>상태</th>
+                        <th>가입일</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {userList.map((userData) => (
+                        <tr
+                            key={userData.id}
+                            onClick={() => {
+                                navigate(`/admin/users/detail/${userData.id}`);
+                            }}
+                        >
+                            <td>{userData.id}</td>
+                            <td className="admin-user-name">{userData.username}</td>
+                            <td>{userData.email}</td>
+                            <td>{userData.role}</td>
+                            <td>
+                                <span
+                                    className={
+                                        userData.status === "ACTIVATE"
+                                            ? "badge text-bg-success"
+                                            : "badge text-bg-danger"
+                                    }
+                                >
+                                    {userData.status === "ACTIVATE" ? "활성" : "비활성"}
+                                </span>
+                            </td>
+                            <td>{userData.created_at?.substring(0, 10)}</td>
                         </tr>
-                    </thead>
+                    ))}
 
-                    <tbody>
-                        {userList.map((userData) => (
-                            <tr
-                                key={userData.id}
-                                onClick={() => {
-                                    navigate(`/admin/users/detail/${userData.id}`);
-                                }}
-                                style={{ cursor: "pointer" }}
-                            >
-                                <td>{userData.id}</td>
-                                <td>{userData.username}</td>
-                                <td>{userData.email}</td>
-                                <td>{userData.role}</td>
-                                <td>
-                                    <span
-                                        className={
-                                            userData.status === "ACTIVATE"
-                                                ? "badge text-bg-success"
-                                                : "badge text-bg-danger"
-                                        }
-                                    >
-                                        {userData.status === "ACTIVATE" ? "활성" : "비활성"}
-                                    </span>
-                                </td>
-                                <td>{userData.created_at?.substring(0, 10)}</td>
-                            </tr>
-                        ))}
-
-                        {userList.length === 0 && (
-                            <tr>
-                                <td colSpan="7" className="text-center text-secondary py-4">
-                                    조회된 사용자가 없습니다.
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
-        </>
+                    {userList.length === 0 && (
+                        <tr>
+                            <td colSpan="6" className="admin-user-empty">
+                                조회된 사용자가 없습니다.
+                            </td>
+                        </tr>
+                    )}
+                </tbody>
+            </table>
+        </div>
     )
 }
 
@@ -196,51 +186,47 @@ function UserListPaging({ currentPage, totalPage, changeCurrentPage }) {
     }
 
     return (
-        <>
-            <div className="row mt-3 mb-4">
-                <div className="col d-flex justify-content-center">
-                    <ul className="pagination mb-0">
-                        <li className={`page-item ${currentPage === 1 ? "disabled" : ""}`}>
-                            <button
-                                className="page-link shadow-none"
-                                onClick={() => {
-                                    changeCurrentPage(currentPage - 1);
-                                }}
-                            >
-                                이전
-                            </button>
-                        </li>
+        <div className="admin-user-paging-row">
+            <ul className="pagination mb-0">
+                <li className={`page-item ${currentPage === 1 ? "disabled" : ""}`}>
+                    <button
+                        className="page-link shadow-none"
+                        onClick={() => {
+                            changeCurrentPage(currentPage - 1);
+                        }}
+                    >
+                        이전
+                    </button>
+                </li>
 
-                        {pageNumberList.map((pageNumber) => (
-                            <li
-                                key={pageNumber}
-                                className={`page-item ${currentPage === pageNumber ? "active" : ""}`}
-                            >
-                                <button
-                                    className="page-link shadow-none"
-                                    onClick={() => {
-                                        changeCurrentPage(pageNumber);
-                                    }}
-                                >
-                                    {pageNumber}
-                                </button>
-                            </li>
-                        ))}
+                {pageNumberList.map((pageNumber) => (
+                    <li
+                        key={pageNumber}
+                        className={`page-item ${currentPage === pageNumber ? "active" : ""}`}
+                    >
+                        <button
+                            className="page-link shadow-none"
+                            onClick={() => {
+                                changeCurrentPage(pageNumber);
+                            }}
+                        >
+                            {pageNumber}
+                        </button>
+                    </li>
+                ))}
 
-                        <li className={`page-item ${currentPage === totalPage ? "disabled" : ""}`}>
-                            <button
-                                className="page-link shadow-none"
-                                onClick={() => {
-                                    changeCurrentPage(currentPage + 1);
-                                }}
-                            >
-                                다음
-                            </button>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </>
+                <li className={`page-item ${currentPage === totalPage ? "disabled" : ""}`}>
+                    <button
+                        className="page-link shadow-none"
+                        onClick={() => {
+                            changeCurrentPage(currentPage + 1);
+                        }}
+                    >
+                        다음
+                    </button>
+                </li>
+            </ul>
+        </div>
     )
 }
 
@@ -330,35 +316,29 @@ function UserListPage() {
     const pagedUserList = filteredUserList.slice(startIndex, endIndex);
 
     return (
-        <>
-            <div className="row justify-content-center">
-                <div className="col-8">
-                    <UserListTitle navigate={navigate} />
+        <div className="admin-user-page">
+            <UserListTitle navigate={navigate} />
 
-                    <UserListTopContent
-                        searchType={searchType}
-                        changeSearchType={changeSearchType}
-                        searchWord={searchWord}
-                        changeSearchWord={changeSearchWord}
-                        roleFilter={roleFilter}
-                        changeRoleFilter={changeRoleFilter}
-                    />
+            <UserListTopContent
+                searchType={searchType}
+                changeSearchType={changeSearchType}
+                searchWord={searchWord}
+                changeSearchWord={changeSearchWord}
+                roleFilter={roleFilter}
+                changeRoleFilter={changeRoleFilter}
+            />
 
-                    <div className="row">
-                        <UserListContent
-                            userList={pagedUserList}
-                            navigate={navigate}
-                        />
-                    </div>
+            <UserListContent
+                userList={pagedUserList}
+                navigate={navigate}
+            />
 
-                    <UserListPaging
-                        currentPage={currentPage}
-                        totalPage={totalPage}
-                        changeCurrentPage={setCurrentPage}
-                    />
-                </div>
-            </div>
-        </>
+            <UserListPaging
+                currentPage={currentPage}
+                totalPage={totalPage}
+                changeCurrentPage={setCurrentPage}
+            />
+        </div>
     )
 }
 

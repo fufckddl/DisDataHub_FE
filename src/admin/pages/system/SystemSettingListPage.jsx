@@ -1,93 +1,74 @@
 import { useNavigate } from "react-router-dom";
+import "../../css/AdminSystemSetting.css";
 
 function SettingTitle({ navigate }) {
     return(
-        <>
-            <div className="row mb-4 mt-3 align-items-center">
-                <div className="col">
-                    <h3 className="fw-bold mb-1">시스템 설정</h3>
-                    <div className="text-secondary">
-                        GIS 데이터 플랫폼의 기본 운영 정책을 확인하고 관리합니다.
-                    </div>
-                </div>
-                <div className="col-auto">
-                    <button
-                        className="btn border-0 text-black bi bi-house-door"
-                        onClick={() => {
-                            navigate("/admin/mainPage");
-                        }}
-                    >
-                        &nbsp;메인화면
-                    </button>
-                </div>
+        <div className="admin-system-title-row">
+            <div>
+                <h1 className="admin-system-title">시스템 설정</h1>
+                <p className="admin-system-description">
+                    GIS 데이터 플랫폼의 기본 운영 정책을 확인하고 관리합니다.
+                </p>
             </div>
-        </>
+
+            <button
+                className="admin-system-home-button bi bi-house-door"
+                onClick={() => {
+                    navigate("/admin/mainPage");
+                }}
+            >
+                &nbsp;메인화면
+            </button>
+        </div>
     )
 }
 
-function SystemSettingList ({ settingList }) {
-
+function SystemSettingList({ settingList }) {
     return(
-        <>
-            <div className="row justify-content-center">
-                <div className="col">
+        <div className="admin-system-card">
+            <table className="admin-system-table">
+                <thead>
+                    <tr>
+                        <th style={{ width: "24%" }}>설정 항목</th>
+                        <th style={{ width: "24%" }}>현재 값</th>
+                        <th>설명</th>
+                    </tr>
+                </thead>
 
-                    <div className="row">
-                        <div className="col">
-                            <div className="border rounded py-4 px-5">
-                                <table className="table align-middle mb-0">
-                                    <thead className="table">
-                                        <tr style={{borderTop : "3px solid #000000"}}>
-                                            <th style={{width : "20em"}}>설정 항목</th>
-                                            <th style={{borderLeft: "1px solid #2e303191", borderRight: "1px solid #2e303191"}}>현재 값</th>
-                                            <th>설명</th>
-                                        </tr>
-                                    </thead>
-
-                                    <tbody className="table-group-divider">
-                                        {settingList.map((settingData) => (
-                                            <tr key={settingData.settingName} style={{borderBottom: "1px solid #6d6e6e91"}}>
-                                                <td className="fw-bold">{settingData.settingName}</td>
-                                                <td style={{borderLeft: "1px solid #2e303191", borderRight: "1px solid #2e303191"}}>{settingData.settingValue}</td>
-                                                <td className="text-secondary">{settingData.settingDescription}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </>
+                <tbody>
+                    {settingList.map((settingData) => (
+                        <tr key={settingData.settingName}>
+                            <td className="admin-system-setting-name">
+                                {settingData.settingName}
+                            </td>
+                            <td>{settingData.settingValue}</td>
+                            <td className="admin-system-setting-description">
+                                {settingData.settingDescription}
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
     )
 }
 
-function SettingListButtomButton ({ navigate }) {
+function SettingListButtomButton({ navigate }) {
     return(
-        <>
-            <div className="row mt-2">
-                <div className="col d-flex justify-content-end gap-2">
-
-                    <button
-                        className="btn btn-outline-primary border-2"
-                        onClick={() => {
-
-                            // 나중에 실제 DB 연동 시 사용 예정
-                            // axiosInstance.post("/api/admin/system/setting/update", settingData);
-
-                            navigate("/admin/system/settingUpdate");
-                        }}
-                    >
-                        설정 변경
-                    </button>
-                </div>
-            </div>
-        </>
+        <div className="admin-system-button-row">
+            <button
+                className="admin-system-primary-button"
+                onClick={() => {
+                    navigate("/admin/system/settingUpdate");
+                }}
+            >
+                설정 변경
+            </button>
+        </div>
     )
 }
 
-function SystemSettingListPage () {
+function SystemSettingListPage() {
 
     const navigate = useNavigate();
 
@@ -135,15 +116,11 @@ function SystemSettingListPage () {
     ];
 
     return (
-        <>
-            <div className="row justify-content-center">
-                <div className="col-8">
-                    <SettingTitle navigate={navigate} />
-                    <SystemSettingList settingList={settingList}/>
-                    <SettingListButtomButton navigate={navigate}/>
-                </div>
-            </div>
-        </>
+        <div className="admin-system-page">
+            <SettingTitle navigate={navigate} />
+            <SystemSettingList settingList={settingList}/>
+            <SettingListButtomButton navigate={navigate}/>
+        </div>
     )
 }
 

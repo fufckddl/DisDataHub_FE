@@ -1,309 +1,274 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axiosInstance from "../../commons/api/axiosInstance";
+import {
+    getDashboardSummaryApi,
+    getSystemSettingConfigLogListApi,
+    getUserManagementLogListApi
+} from "../api/adminUserApi";
+import "../css/AdminMainPage.css";
 
-function TopCard({ title, value, unit, description, icon, descriptionIcon, descriptionText }) {
+function SummaryCard({ title, value, unit, description, icon }) {
     return (
-        <div className="top-card border rounded px-3 pt-3 my-2">
-            <div className="d-flex align-items-center">
-                <div
-                    className={`${icon} fs-3 m-1 rounded-circle bg-primary-subtle d-flex justify-content-center align-items-center`}
-                    style={{ width: "60px", height: "60px" }}
+        <div className="admin-main-summary-card">
+            <div className="admin-main-summary-icon-box">
+                <i className={`${icon} admin-main-summary-icon`}></i>
+            </div>
+
+            <div>
+                <div className="admin-main-summary-title">{title}</div>
+
+                <div>
+                    <span className="admin-main-summary-value">{value}</span>
+                    <span className="admin-main-summary-unit">{unit}</span>
+                </div>
+
+                <div className="admin-main-summary-description">
+                    {description}
+                </div>
+            </div>
+        </div>
+    )
+}
+
+function SummarySection({ dashboardSummary }) {
+    return (
+        <div className="row mb-4">
+            <div className="col-3">
+                <SummaryCard
+                    title="전체 사용자"
+                    value={dashboardSummary.totalUserCount}
+                    unit="명"
+                    description="전체 등록된 사용자 수"
+                    icon="bi bi-person"
                 />
-                <div className="px-2">
-                    <div>{title}</div>
-                    <div>
-                        <span className="fw-bold fs-3">&nbsp;{value}</span>
-                        <span>{unit}</span>
+            </div>
+
+            <div className="col-3">
+                <SummaryCard
+                    title="전체 데이터셋"
+                    value={dashboardSummary.totalDatasetCount}
+                    unit="개"
+                    description="전체 등록된 데이터셋 수"
+                    icon="bi bi-database"
+                />
+            </div>
+
+            <div className="col-3">
+                <SummaryCard
+                    title="업로드 요청 건수"
+                    value={dashboardSummary.uploadRequestCount}
+                    unit="건"
+                    description="승인 대기 중인 업로드 요청"
+                    icon="bi bi-cloud-arrow-up"
+                />
+            </div>
+
+            <div className="col-3">
+                <SummaryCard
+                    title="다운로드 건수"
+                    value={dashboardSummary.downloadCount}
+                    unit="회"
+                    description="전체 다운로드 수"
+                    icon="bi bi-download"
+                />
+            </div>
+        </div>
+    )
+}
+
+function FeatureCard({ title, description, icon, movePath }) {
+    const navigate = useNavigate();
+
+    return (
+        <div className="col-3 mb-3">
+            <div className="admin-main-feature-card">
+                <div>
+                    <div className="admin-main-feature-icon-box">
+                        <i className={`${icon} admin-main-feature-icon`}></i>
+                    </div>
+
+                    <h5 className="admin-main-feature-title">
+                        {title}
+                    </h5>
+
+                    <div className="admin-main-feature-description">
+                        {description}
                     </div>
                 </div>
-            </div>
 
-            <p className="d-flex align-items-center ms-3 mb-0">
-                <span className="d-flex align-items-center fw-bold">
-                    <i className={`${descriptionIcon} fs-4 me-1`}></i>
-                    <span className={descriptionText}>{description}</span>
-                </span>
-                <span className="text-secondary ms-1">(전일 대비)</span>
-            </p>
-        </div>
-    )
-}
-
-function TotalTopCard() {
-    return (
-        <div className="row">
-            <div className="col">
-                <TopCard
-                    title="전체 사용자"
-                    value="231"
-                    unit=" 명"
-                    description="8명"
-                    icon="bi bi-person-lines-fill"
-                    descriptionIcon="bi bi-arrow-up-short text-success"
-                    descriptionText="text-success"
-                />
-            </div>
-
-            <div className="col">
-                <TopCard
-                    title="전체 데이터셋"
-                    value="913"
-                    unit=" 개"
-                    description="54개"
-                    icon="bi bi-database-fill"
-                    descriptionIcon="bi bi-arrow-up-short text-success"
-                    descriptionText="text-success"
-                />
-            </div>
-
-            <div className="col">
-                <TopCard
-                    title="권한 요청 건수"
-                    value="311"
-                    unit=" 건"
-                    description="12건"
-                    icon="bi bi-shield-lock-fill"
-                    descriptionIcon="bi bi-arrow-down-short text-danger"
-                    descriptionText="text-danger"
-                />
-            </div>
-
-            <div className="col">
-                <TopCard
-                    title="업로드 요청 건수"
-                    value="53"
-                    unit=" 건"
-                    description="3건"
-                    icon="bi bi-cloud-arrow-up-fill"
-                    descriptionIcon="bi bi-arrow-up-short text-success"
-                    descriptionText="text-success"
-                />
-            </div>
-
-            <div className="col">
-                <TopCard
-                    title="오늘 다운로드"
-                    value="423"
-                    unit=" 회"
-                    description="29회"
-                    icon="bi bi-download"
-                    descriptionIcon="bi bi-arrow-down-short text-danger"
-                    descriptionText="text-danger"
-                />
-            </div>
-        </div>
-    )
-}
-
-function BoardCard({ title, sortReason, movePath, children }) {
-    const navigate = useNavigate();
-
-    return (
-        <div className="border rounded px-4 py-2 my-1 align-items-center" style={{ minHeight: "16em" }}>
-            <div className="row align-items-center">
-                <div className="col-auto p-0 fw-bold" style={{ fontSize: "1.1em" }}>
-                    {title}
-                </div>
-
-                <span className="col">
-                    {sortReason}
-                </span>
-
-                {movePath && (
+                <div className="admin-main-feature-button-row">
                     <button
-                        onClick={() => navigate(movePath)}
-                        className="col-auto btn btn-outline-primary px-2 py-1"
-                        style={{ fontSize: "0.7em" }}
+                        className="admin-main-outline-button"
+                        onClick={() => {
+                            navigate(movePath);
+                        }}
                     >
-                        자세히 보기
+                        바로가기&nbsp;
+                        <i className="bi bi-arrow-right" />
                     </button>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+function FeatureSection() {
+    return (
+        <div className="admin-main-card">
+            <h5 className="admin-main-section-title">
+                관리 기능 바로가기
+            </h5>
+
+            <div className="row">
+                <FeatureCard
+                    title="사용자 관리"
+                    description="사용자 계정, 권한, 상태를 관리합니다."
+                    icon="bi bi-people"
+                    movePath="/admin/users/userList"
+                />
+
+                <FeatureCard
+                    title="데이터 승인 관리"
+                    description="업로드된 데이터의 승인 및 반려 처리를 관리합니다."
+                    icon="bi bi-clipboard-check"
+                    movePath="/upload/admin/approveList"
+                />
+
+                <FeatureCard
+                    title="데이터 상세 검토"
+                    description="업로드된 데이터의 상세 내용을 확인, 검토합니다."
+                    icon="bi bi-file-earmark-text"
+                    movePath="/upload/admin/approveList/89"
+                />
+
+                <FeatureCard
+                    title="외부연계 API"
+                    description="외부 시스템 연계 API 정보를 관리합니다."
+                    icon="bi bi-diagram-3"
+                    movePath="/admin/api"
+                />
+
+                <FeatureCard
+                    title="공지사항 관리"
+                    description="공지사항 등록, 수정, 삭제를 관리합니다."
+                    icon="bi bi-megaphone"
+                    movePath="/admin/board/notice"
+                />
+
+                <FeatureCard
+                    title="문의사항 목록"
+                    description="사용자 문의사항을 확인하고 답변을 관리합니다."
+                    icon="bi bi-chat-dots"
+                    movePath="/admin/board/inquiry"
+                />
+
+                <FeatureCard
+                    title="GIS 데이터 오류 제보"
+                    description="GIS 데이터 오류 제보 내역을 확인하고 처리합니다."
+                    icon="bi bi-exclamation-triangle"
+                    movePath="/admin/board/gis-report"
+                />
+
+                <FeatureCard
+                    title="시스템 설정"
+                    description="시스템 환경 설정 및 기본 정책을 관리합니다."
+                    icon="bi bi-gear"
+                    movePath="/admin/system/settingList"
+                />
+            </div>
+        </div>
+    )
+}
+
+function UserManagementLogPreviewTable({ userManagementLogList }) {
+    const previewLogList = userManagementLogList.slice(0, 5);
+
+    return (
+        <table className="admin-main-log-table">
+            <thead>
+                <tr>
+                    <th>로그 ID</th>
+                    <th>대상 사용자</th>
+                    <th>관리 유형</th>
+                    <th>처리 관리자</th>
+                    <th>관리 사유</th>
+                    <th>처리 일시</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {previewLogList.map((logData) => (
+                    <tr key={logData.logId}>
+                        <td>{logData.logId}</td>
+                        <td>{logData.targetUsername}</td>
+                        <td>{logData.typeName}</td>
+                        <td>{logData.adminUsername}</td>
+                        <td>{logData.description}</td>
+                        <td>{logData.createdAt?.substring(0, 10)}</td>
+                    </tr>
+                ))}
+
+                {previewLogList.length === 0 && (
+                    <tr>
+                        <td colSpan="6" className="admin-main-empty">
+                            조회된 사용자 관리 로그가 없습니다.
+                        </td>
+                    </tr>
                 )}
-            </div>
-
-            <div className="mt-2 overflow-auto">
-                {children}
-            </div>
-        </div>
+            </tbody>
+        </table>
     )
 }
 
-function UserManagementCard({ userList }) {
-    const recentUserList = [...userList]
-        .sort((firstUser, secondUser) => secondUser.id - firstUser.id)
-        .slice(0, 4);
-
-    const getRoleText = (role) => {
-        if(role === "ADMIN") return "관리자";
-        if(role === "RESEARCHER") return "연구자";
-        return "사용자";
-    };
+function SystemSettingLogPreviewTable({ systemSettingConfigLogList }) {
+    const previewLogList = systemSettingConfigLogList.slice(0, 5);
 
     return (
-        <BoardCard title="사용자 관리" sortReason="(최근 가입 순)" movePath="/admin/users/userList">
-            <table className="table table-sm text-center m-0 small">
-                <thead className="bg-primary-subtle">
-                    <tr>
-                        <th>ID</th>
-                        <th>이름</th>
-                        <th>역할</th>
-                        <th>가입일</th>
+        <table className="admin-main-log-table">
+            <thead>
+                <tr>
+                    <th>로그 ID</th>
+                    <th>설정 키</th>
+                    <th>변경 전</th>
+                    <th>변경 후</th>
+                    <th>처리 관리자</th>
+                    <th>변경 사유</th>
+                    <th>처리 일시</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {previewLogList.map((logData) => (
+                    <tr key={logData.logId}>
+                        <td>{logData.logId}</td>
+                        <td>{logData.settingKey}</td>
+                        <td>{logData.beforeValue}</td>
+                        <td>{logData.afterValue}</td>
+                        <td>{logData.adminUsername}</td>
+                        <td>{logData.description}</td>
+                        <td>{logData.createdAt?.substring(0, 10)}</td>
                     </tr>
-                </thead>
+                ))}
 
-                <tbody>
-                    {recentUserList.map((userData) => (
-                        <tr key={userData.id}>
-                            <td>{userData.id}</td>
-                            <td>{userData.username}</td>
-                            <td>{getRoleText(userData.role)}</td>
-                            <td>{userData.created_at?.substring(0, 10)}</td>
-                        </tr>
-                    ))}
-
-                    {recentUserList.length === 0 && (
-                        <tr>
-                            <td colSpan="4" className="text-secondary py-4">
-                                조회된 사용자가 없습니다.
-                            </td>
-                        </tr>
-                    )}
-                </tbody>
-            </table>
-        </BoardCard>
-    )
-}
-
-function SystemSettingCard({ systemSettingList }) {
-    const previewSettingList = systemSettingList.slice(0, 4);
-
-    const getEditableBadge = (isEditable) => {
-
-        if(isEditable) {
-            return (
-                <span className="badge text-bg-success">
-                    변경 가능
-                </span>
-            );
-        }
-
-        return (
-            <span className="badge text-bg-danger">
-                변경 불가
-            </span>
-        );
-
-    };
-
-    return (
-        <BoardCard title="시스템 설정" movePath="/admin/system/settingList">
-            <table className="table table-sm text-center m-0 small">
-                <thead className="bg-primary-subtle">
+                {previewLogList.length === 0 && (
                     <tr>
-                        <th>설정명</th>
-                        <th>설정 값</th>
-                        <th>변경</th>
+                        <td colSpan="7" className="admin-main-empty">
+                            조회된 시스템 설정 로그가 없습니다.
+                        </td>
                     </tr>
-                </thead>
-
-                <tbody>
-                    {previewSettingList.map((settingData) => (
-                        <tr key={settingData.settingKey}>
-                            <td>{settingData.settingName}</td>
-                            <td>{settingData.settingValue}</td>
-                            <td>{getEditableBadge(settingData.isEditable)}</td>
-                        </tr>
-                    ))}
-
-                    {previewSettingList.length === 0 && (
-                        <tr>
-                            <td colSpan="3" className="text-secondary py-4">
-                                조회된 설정이 없습니다.
-                            </td>
-                        </tr>
-                    )}
-                </tbody>
-            </table>
-        </BoardCard>
+                )}
+            </tbody>
+        </table>
     )
 }
 
-function EmptyBoardCard({ title, sortReason, text }) {
-    return (
-        <BoardCard title={title} sortReason={sortReason}>
-            <div className="text-secondary py-5 text-center">
-                {text}
-            </div>
-        </BoardCard>
-    )
-}
-
-function TotalBoardCard({ userList, systemSettingList }) {
-    return (
-        <>
-            <div className="row">
-                <div className="col-4">
-                    <UserManagementCard userList={userList} />
-                </div>
-
-                <div className="col-4">
-                    <EmptyBoardCard title="게시판 관리" sortReason="(추후 연동)" text="게시판 관리 데이터는 추후 연동 예정입니다." />
-                </div>
-
-                <div className="col-4">
-                    <EmptyBoardCard title="단어표준 관리" sortReason="(추후 연동)" text="단어표준 관리 데이터는 추후 연동 예정입니다." />
-                </div>
-            </div>
-
-            <div className="row">
-                <div className="col-4">
-                    <SystemSettingCard systemSettingList={systemSettingList} />
-                </div>
-
-                <div className="col-4">
-                    <EmptyBoardCard title="외부연계 API" sortReason="(추후 연동)" text="외부연계 API 데이터는 추후 연동 예정입니다." />
-                </div>
-
-                <div className="col-4">
-                    <EmptyBoardCard title="요청 관리" sortReason="(추후 연동)" text="요청 관리 데이터는 추후 연동 예정입니다." />
-                </div>
-            </div>
-        </>
-    )
-}
-
-function LogBoardCard({ moveLogPage, children }) {
-    return (
-        <div className="border rounded px-4 py-2 my-1 align-items-center" style={{ minHeight: "16em" }}>
-            <div className="row align-items-center">
-                <div className="col-auto p-0 fw-bold" style={{ fontSize: "1.1em" }}>
-                    로그 관리
-                </div>
-
-                <span className="col">
-                    (최근 활동 순)
-                </span>
-
-                <button
-                    onClick={moveLogPage}
-                    className="col-auto btn btn-outline-primary px-2 py-1"
-                    style={{ fontSize: "0.7em" }}
-                >
-                    로그 전체보기
-                </button>
-            </div>
-
-            <div className="mt-2 overflow-auto">
-                {children}
-            </div>
-        </div>
-    )
-}
-
-function TotalLogBoardCard() {
+function LogPreviewSection({
+    selectedLogType,
+    changeSelectedLogType,
+    userManagementLogList,
+    systemSettingConfigLogList
+}) {
     const navigate = useNavigate();
-
-    const [selectedLogType, setSelectedLogType] = useState("user");
 
     const moveLogPage = () => {
         if(selectedLogType === "user") {
@@ -315,77 +280,127 @@ function TotalLogBoardCard() {
             navigate("/admin/log/systemSetting");
             return;
         }
-
-        if(selectedLogType === "download") {
-            navigate("/admin/log/download");
-            return;
-        }
     };
 
     return (
-        <div className="row">
-            <div className="col-12">
-                <LogBoardCard moveLogPage={moveLogPage}>
-                    <div className="btn-group mb-3" role="group">
-                        <button
-                            className={`btn btn-sm rounded-0 ${selectedLogType === "user" ? "btn-secondary" : "btn-outline-secondary"}`}
-                            onClick={() => setSelectedLogType("user")}
-                        >
-                            사용자 관리 로그
-                        </button>
-
-                        <button
-                            className={`btn btn-sm rounded-0 ${selectedLogType === "system" ? "btn-secondary" : "btn-outline-secondary"}`}
-                            onClick={() => setSelectedLogType("system")}
-                        >
-                            시스템 설정 로그
-                        </button>
-
-                        <button
-                            className={`btn btn-sm rounded-0 ${selectedLogType === "download" ? "btn-secondary" : "btn-outline-secondary"}`}
-                            onClick={() => setSelectedLogType("download")}
-                        >
-                            다운로드 로그
-                        </button>
+        <div className="admin-main-card">
+            <div className="admin-main-log-header">
+                <div>
+                    <h5 className="admin-main-section-title mb-1">
+                        로그 관리
+                    </h5>
+                    <div className="admin-main-section-description">
+                        사용자 관리 및 시스템 설정 변경 이력을 확인합니다.
                     </div>
+                </div>
 
-                    <div className="text-secondary py-4 text-center">
-                        로그 미리보기는 추후 연동 예정입니다.
-                    </div>
-                </LogBoardCard>
+                <button
+                    className="admin-main-outline-button"
+                    onClick={moveLogPage}
+                >
+                    로그 전체보기
+                </button>
+            </div>
+
+            <div className="admin-main-tab-group">
+                <button
+                    className={
+                        selectedLogType === "user"
+                            ? "admin-main-tab-button active"
+                            : "admin-main-tab-button"
+                    }
+                    onClick={() => {
+                        changeSelectedLogType("user");
+                    }}
+                >
+                    사용자 관리 로그
+                </button>
+
+                <button
+                    className={
+                        selectedLogType === "system"
+                            ? "admin-main-tab-button active"
+                            : "admin-main-tab-button"
+                    }
+                    onClick={() => {
+                        changeSelectedLogType("system");
+                    }}
+                >
+                    시스템 설정 로그
+                </button>
+            </div>
+
+            <div className="admin-main-table-wrapper">
+                {selectedLogType === "user" && (
+                    <UserManagementLogPreviewTable
+                        userManagementLogList={userManagementLogList}
+                    />
+                )}
+
+                {selectedLogType === "system" && (
+                    <SystemSettingLogPreviewTable
+                        systemSettingConfigLogList={systemSettingConfigLogList}
+                    />
+                )}
             </div>
         </div>
     )
 }
 
 function AdminMainPage() {
-    const [userList, setUserList] = useState([]);
-    const [systemSettingList, setSystemSettingList] = useState([]);
+
+    const [selectedLogType, setSelectedLogType] = useState("user");
+    const [userManagementLogList, setUserManagementLogList] = useState([]);
+    const [systemSettingConfigLogList, setSystemSettingConfigLogList] = useState([]);
+
+    const [dashboardSummary, setDashboardSummary] = useState({
+        totalUserCount: 0,
+        totalDatasetCount: 0,
+        uploadRequestCount: 0,
+        downloadCount: 0
+    });
 
     useEffect(() => {
-        loadAdminMainData();
+        loadLogData();
+        loadDashboardSummary();
     }, []);
 
-    const loadAdminMainData = async () => {
-        const userResponse = await axiosInstance.get("/api/admin/users/findUserList");
-        setUserList(userResponse.data.userList);
+    const loadLogData = async () => {
+        const userLogResponse = await getUserManagementLogListApi();
+        setUserManagementLogList(userLogResponse.data.userManagementLogList);
 
-        const settingResponse = await axiosInstance.get("/api/admin/systemSetting/list");
-        setSystemSettingList(settingResponse.data.systemSettingList);
+        const systemLogResponse = await getSystemSettingConfigLogListApi();
+        setSystemSettingConfigLogList(systemLogResponse.data.systemSettingConfigLogList);
+    };
+
+    const loadDashboardSummary = async () => {
+        const response = await getDashboardSummaryApi();
+        setDashboardSummary(response.data.dashboardSummary);
     };
 
     return (
-        <div className="row justify-content-center mt-3 mb-4">
-            <div className="col-10">
-                <h3 className="fs-4 fw-bold">관리자 대시보드</h3>
-
-                <TotalTopCard userList={userList} />
-                <TotalBoardCard
-                    userList={userList}
-                    systemSettingList={systemSettingList}
-                />
-                <TotalLogBoardCard />
+        <div className="admin-main-page">
+            <div className="admin-main-title-area">
+                <h1 className="admin-main-title">
+                    관리자 대시보드
+                </h1>
+                <p className="admin-main-description">
+                    시스템 현황을 확인하고 주요 관리 기능으로 이동할 수 있습니다.
+                </p>
             </div>
+
+            <SummarySection
+                dashboardSummary={dashboardSummary}
+            />
+
+            <FeatureSection />
+
+            <LogPreviewSection
+                selectedLogType={selectedLogType}
+                changeSelectedLogType={setSelectedLogType}
+                userManagementLogList={userManagementLogList}
+                systemSettingConfigLogList={systemSettingConfigLogList}
+            />
         </div>
     )
 }

@@ -1,0 +1,81 @@
+.admin-log-page {
+    min-height: 100vh;
+    padding: 40px 56px;
+    background: #f4f8fc;
+    color: #17202a;
+    box-sizing: border-box;
+}
+
+.admin-log-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 28px;
+}
+
+.admin-log-title {
+    margin: 0 0 8px;
+    font-size: 34px;
+    font-weight: 800;
+}
+
+.admin-log-description {
+    margin: 0;
+    color: #64748b;
+    font-size: 16px;
+}
+
+.admin-log-home-button {
+    border: 1px solid #d7e1ec;
+    background: #ffffff;
+    color: #17202a;
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-weight: 700;
+}
+
+.admin-log-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    overflow: hidden;
+}
+
+.admin-log-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.admin-log-table th {
+    height: 56px;
+    background: #fbfdff;
+    color: #334155;
+    font-size: 15px;
+    font-weight: 800;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 0 20px;
+    text-align: center;
+}
+
+.admin-log-table td {
+    height: 58px;
+    border-bottom: 1px solid #eef2f7;
+    padding: 0 20px;
+    font-size: 14px;
+    text-align: center;
+}
+
+.admin-log-table tbody tr:hover {
+    background: #f8fbff;
+}
+
+.admin-log-table tr:last-child td {
+    border-bottom: none;
+}
+
+.admin-log-empty {
+    color: #64748b;
+    padding: 28px 0;
+    text-align: center;
+}
