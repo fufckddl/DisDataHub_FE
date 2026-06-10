@@ -601,6 +601,7 @@
   font-weight: 800;
 }
 
+/* OpenLayers 컨트롤 */
 .vworld-map .ol-zoom {
   top: 16px;
   left: 16px;
@@ -621,11 +622,32 @@
   background: #f4f8fc;
 }
 
+/* OSM / OpenLayers 출처 표시 */
 .vworld-map .ol-attribution {
   right: 12px;
   bottom: 8px;
   border-radius: 0;
   background: rgba(255, 255, 255, 0.9);
+  font-size: 11px;
+}
+
+.vworld-map .ol-attribution button {
+  border-radius: 0;
+  background: #ffffff;
+  color: #0f172a;
+  border: 1px solid #cfd8e3;
+  cursor: pointer;
+}
+
+.vworld-map .ol-attribution ul {
+  margin: 0;
+  padding: 2px 6px;
+}
+
+.vworld-map .ol-attribution a {
+  color: #334155;
+  font-weight: 700;
+  text-decoration: none;
 }
 
 @media (max-width: 1300px) {

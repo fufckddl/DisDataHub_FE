@@ -668,4 +668,33 @@
   .admin-gis-save-button {
     width: 100%;
   }
+
+
+  /* OSM / OpenLayers 출처 표시 */
+  .admin-gis-detail-map .ol-attribution {
+    right: 8px;
+    bottom: 8px;
+    border-radius: 0;
+    background: rgba(255, 255, 255, 0.9);
+    font-size: 11px;
+  }
+
+  .admin-gis-detail-map .ol-attribution button {
+    border-radius: 0;
+    background: #ffffff;
+    color: #0f172a;
+    border: 1px solid #d6dee9;
+    cursor: pointer;
+  }
+
+  .admin-gis-detail-map .ol-attribution ul {
+    margin: 0;
+    padding: 2px 6px;
+  }
+
+  .admin-gis-detail-map .ol-attribution a {
+    color: #334155;
+    font-weight: 700;
+    text-decoration: none;
+  }
 }

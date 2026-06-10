@@ -17,12 +17,16 @@ import CircleStyle from "ol/style/Circle";
 import Fill from "ol/style/Fill";
 import Stroke from "ol/style/Stroke";
 
-import { VWORLD_BASE_MAP_URL } from "../../config/vworldConfig";
 import { createGisReportApi } from "../../api/gisReportApi";
 import { searchLocationApi } from "../../api/locationApi";
 
 import useAuthStore from "../../../commons/auth/useAuthStore";
 import "../css/GisReportWritePage.css";
+
+const OSM_BASE_MAP_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+
+const OSM_ATTRIBUTION =
+  '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors';
 
 function GisReportWritePage() {
   const navigate = useNavigate();
@@ -109,7 +113,9 @@ function GisReportWritePage() {
       layers: [
         new TileLayer({
           source: new XYZ({
-            url: VWORLD_BASE_MAP_URL,
+            url: OSM_BASE_MAP_URL,
+            attributions: OSM_ATTRIBUTION,
+            crossOrigin: "anonymous",
           }),
         }),
         markerLayer,
@@ -132,20 +138,35 @@ function GisReportWritePage() {
       setLongitude(lon.toFixed(7));
       setLatitude(lat.toFixed(7));
 
-      if (!address.trim()) {
-        setAddress("지도에서 직접 선택한 위치");
-      }
+      setAddress((prevAddress) => {
+        if (!prevAddress.trim()) {
+          return "지도에서 직접 선택한 위치";
+        }
+
+        return prevAddress;
+      });
 
       moveMarker(lon, lat, false);
     };
 
     map.on("singleclick", handleMapClick);
 
+    requestAnimationFrame(() => {
+      map.updateSize();
+    });
+
+    setTimeout(() => {
+      map.updateSize();
+    }, 300);
+
     return () => {
       map.un("singleclick", handleMapClick);
       map.setTarget(null);
+      mapInstanceRef.current = null;
+      markerSourceRef.current = null;
+      markerStyleRef.current = null;
     };
-  }, [address]);
+  }, []);
 
   const handleSearchLocation = async () => {
     if (!locationKeyword.trim()) {

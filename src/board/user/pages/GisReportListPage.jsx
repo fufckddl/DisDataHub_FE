@@ -18,7 +18,6 @@ import CircleStyle from "ol/style/Circle";
 import Fill from "ol/style/Fill";
 import Stroke from "ol/style/Stroke";
 
-import { VWORLD_BASE_MAP_URL } from "../../config/vworldConfig";
 import {
   getGisReportListApi,
   searchGisReportListApi,
@@ -26,6 +25,11 @@ import {
 import { getSidoListApi, getSigunguListApi } from "../../api/regionApi";
 
 import "../css/GisReportListPage.css";
+
+const OSM_BASE_MAP_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+
+const OSM_ATTRIBUTION =
+  '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors';
 
 function GisReportListPage() {
   const navigate = useNavigate();
@@ -243,7 +247,9 @@ function GisReportListPage() {
       layers: [
         new TileLayer({
           source: new XYZ({
-            url: VWORLD_BASE_MAP_URL,
+            url: OSM_BASE_MAP_URL,
+            attributions: OSM_ATTRIBUTION,
+            crossOrigin: "anonymous",
           }),
         }),
         markerLayer,
@@ -324,6 +330,10 @@ function GisReportListPage() {
     });
 
     mapInstanceRef.current = map;
+
+    setTimeout(() => {
+      map.updateSize();
+    }, 0);
 
     return () => {
       map.setTarget(null);
@@ -443,7 +453,7 @@ function GisReportListPage() {
     if (statusCode === "RECEIVED") return "제보완료";
     if (statusCode === "REVIEWING") return "검토중";
     if (statusCode === "CHECKING") return "검토중";
-    if (statusCode === "PROCESSING") return "조치중";
+    if (statusCode === "PROCESSING") return "검토중";
     if (statusCode === "COMPLETED") return "처리완료";
     return statusCode ?? "-";
   };

@@ -17,13 +17,17 @@ import CircleStyle from "ol/style/Circle";
 import Fill from "ol/style/Fill";
 import Stroke from "ol/style/Stroke";
 
-import { VWORLD_BASE_MAP_URL } from "../../config/vworldConfig";
 import {
   getGisReportDetailApi,
   updateMyGisReportApi,
 } from "../../api/gisReportApi";
 
 import "../css/GisReportWritePage.css";
+
+const OSM_BASE_MAP_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+
+const OSM_ATTRIBUTION =
+  '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors';
 
 function GisReportEditPage() {
   const { postId } = useParams();
@@ -155,7 +159,9 @@ function GisReportEditPage() {
       layers: [
         new TileLayer({
           source: new XYZ({
-            url: VWORLD_BASE_MAP_URL,
+            url: OSM_BASE_MAP_URL,
+            attributions: OSM_ATTRIBUTION,
+            crossOrigin: "anonymous",
           }),
         }),
         markerLayer,
@@ -182,6 +188,14 @@ function GisReportEditPage() {
     };
 
     map.on("singleclick", handleMapClick);
+
+    requestAnimationFrame(() => {
+      map.updateSize();
+    });
+
+    setTimeout(() => {
+      map.updateSize();
+    }, 300);
 
     return () => {
       map.un("singleclick", handleMapClick);

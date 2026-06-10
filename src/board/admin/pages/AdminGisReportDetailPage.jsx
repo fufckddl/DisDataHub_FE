@@ -17,7 +17,6 @@ import CircleStyle from "ol/style/Circle";
 import Fill from "ol/style/Fill";
 import Stroke from "ol/style/Stroke";
 
-import { VWORLD_BASE_MAP_URL } from "../../config/vworldConfig";
 import {
   getAdminGisReportDetailApi,
   deleteAdminGisReportApi,
@@ -124,7 +123,9 @@ function AdminGisReportDetailPage() {
       layers: [
         new TileLayer({
           source: new XYZ({
-            url: VWORLD_BASE_MAP_URL,
+            url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+            attributions:
+              '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors',
           }),
         }),
         markerLayer,
@@ -134,6 +135,10 @@ function AdminGisReportDetailPage() {
         zoom: 15,
       }),
     });
+
+    setTimeout(() => {
+      map.updateSize();
+    }, 0);
 
     return () => {
       map.setTarget(null);
