@@ -687,7 +687,7 @@ function UploadWritePage() {
                                 </h6>
                                 <ul className="mb-0 ps-3 text-dark" style={{ fontSize: '0.9rem', lineHeight: '1.7' }}>
                                     <li className="mb-2">파일은 백엔드 서버를 거쳐 <strong>AWS S3 클라우드로 직접 스트리밍</strong>되어 안전하게 보관됩니다.</li>
-                                    <li className="mb-2">일반 파일(CSV, EXCEL, GEOJSON)은 최대 <strong>30MB</strong>까지 지원됩니다. 또한 CSV, GEOJSON은 행의 개수가 1000개 이하까지만 업로드 하실 수 있습니다.</li>
+                                    <li className="mb-2">일반 파일(CSV, EXCEL, GEOJSON)은 최대 <strong>30MB</strong>까지 지원됩니다. 또한 CSV, EXCEL,GEOJSON은 행의 개수가 1000개 이하까지만 업로드 하실 수 있습니다.</li>
                                     <li>공간 데이터(SHP ZIP, TIFF)는 최대 <strong>2GB</strong>의 대용량 업로드를 지원합니다.</li>
                                 </ul>
                             </div>
