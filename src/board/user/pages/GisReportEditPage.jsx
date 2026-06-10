@@ -22,12 +22,326 @@ import {
   updateMyGisReportApi,
 } from "../../api/gisReportApi";
 
+import { loadKakaoMapScript } from "../../utils/loadKakaoMapScript";
+
 import "../css/GisReportWritePage.css";
 
 const OSM_BASE_MAP_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 
 const OSM_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors';
+
+const DEFAULT_LATITUDE = "37.5007000";
+const DEFAULT_LONGITUDE = "127.0365000";
+
+const MAX_LOCATION_RESULT_COUNT = 20;
+
+const SEOUL_GU_LIST = [
+  "종로구",
+  "중구",
+  "용산구",
+  "성동구",
+  "광진구",
+  "동대문구",
+  "중랑구",
+  "성북구",
+  "강북구",
+  "도봉구",
+  "노원구",
+  "은평구",
+  "서대문구",
+  "마포구",
+  "양천구",
+  "강서구",
+  "구로구",
+  "금천구",
+  "영등포구",
+  "동작구",
+  "관악구",
+  "서초구",
+  "강남구",
+  "송파구",
+  "강동구",
+];
+
+const normalizeText = (value) => {
+  return String(value ?? "").replace(/\s+/g, " ").trim();
+};
+
+const parseRegionFromAddress = (addressText) => {
+  const result = {
+    sido: "",
+    sigungu: "",
+    eupmyeondong: "",
+  };
+
+  if (!addressText) {
+    return result;
+  }
+
+  const trimmedAddress = normalizeText(addressText);
+  const parts = trimmedAddress.split(/\s+/);
+
+  result.sido = parts[0] ?? "";
+  result.sigungu = parts[1] ?? "";
+
+  const openIndex = trimmedAddress.indexOf("(");
+  const closeIndex = trimmedAddress.indexOf(")");
+
+  if (openIndex >= 0 && closeIndex > openIndex) {
+    result.eupmyeondong = trimmedAddress
+      .substring(openIndex + 1, closeIndex)
+      .trim();
+
+    return result;
+  }
+
+  result.eupmyeondong = parts[2] ?? "";
+
+  return result;
+};
+
+const hasSidoText = (keyword) => {
+  return (
+    keyword.startsWith("서울") ||
+    keyword.startsWith("서울특별시") ||
+    keyword.startsWith("부산") ||
+    keyword.startsWith("부산광역시") ||
+    keyword.startsWith("대구") ||
+    keyword.startsWith("대구광역시") ||
+    keyword.startsWith("인천") ||
+    keyword.startsWith("인천광역시") ||
+    keyword.startsWith("광주") ||
+    keyword.startsWith("광주광역시") ||
+    keyword.startsWith("대전") ||
+    keyword.startsWith("대전광역시") ||
+    keyword.startsWith("울산") ||
+    keyword.startsWith("울산광역시") ||
+    keyword.startsWith("세종") ||
+    keyword.startsWith("세종특별자치시") ||
+    keyword.startsWith("경기") ||
+    keyword.startsWith("경기도") ||
+    keyword.startsWith("강원") ||
+    keyword.startsWith("강원특별자치도") ||
+    keyword.startsWith("충북") ||
+    keyword.startsWith("충청북도") ||
+    keyword.startsWith("충남") ||
+    keyword.startsWith("충청남도") ||
+    keyword.startsWith("전북") ||
+    keyword.startsWith("전라북도") ||
+    keyword.startsWith("전남") ||
+    keyword.startsWith("전라남도") ||
+    keyword.startsWith("경북") ||
+    keyword.startsWith("경상북도") ||
+    keyword.startsWith("경남") ||
+    keyword.startsWith("경상남도") ||
+    keyword.startsWith("제주") ||
+    keyword.startsWith("제주특별자치도")
+  );
+};
+
+const isSeoulWideKeyword = (keyword) => {
+  const normalizedKeyword = normalizeText(keyword);
+
+  return (
+    normalizedKeyword === "서울" ||
+    normalizedKeyword === "서울시" ||
+    normalizedKeyword === "서울특별시"
+  );
+};
+
+const isNumberOnly = (keyword) => {
+  return /^\d+$/.test(normalizeText(keyword));
+};
+
+const createSearchKeywordList = (keyword) => {
+  const trimmedKeyword = normalizeText(keyword);
+
+  if (!trimmedKeyword) {
+    return [];
+  }
+
+  const keywordList = [trimmedKeyword];
+
+  if (isSeoulWideKeyword(trimmedKeyword)) {
+    SEOUL_GU_LIST.forEach((gu) => {
+      keywordList.push(`서울특별시 ${gu}`);
+    });
+
+    keywordList.push("서울특별시 구청");
+    keywordList.push("서울특별시 주민센터");
+    keywordList.push("서울특별시 행정복지센터");
+
+    return [...new Set(keywordList)];
+  }
+
+  const hasSido = hasSidoText(trimmedKeyword);
+
+  const hasSigungu =
+    trimmedKeyword.includes("구 ") ||
+    trimmedKeyword.includes("군 ") ||
+    trimmedKeyword.includes("시 ") ||
+    trimmedKeyword.endsWith("구") ||
+    trimmedKeyword.endsWith("군") ||
+    trimmedKeyword.endsWith("시");
+
+  if (!hasSido && hasSigungu) {
+    keywordList.push(`서울특별시 ${trimmedKeyword}`);
+  }
+
+  if (!hasSido && !hasSigungu) {
+    keywordList.push(`서울특별시 ${trimmedKeyword}`);
+    keywordList.push(`강남구 ${trimmedKeyword}`);
+    keywordList.push(`서울특별시 강남구 ${trimmedKeyword}`);
+  }
+
+  if (isNumberOnly(trimmedKeyword)) {
+    keywordList.push(`봉은사로 ${trimmedKeyword}`);
+    keywordList.push(`강남구 봉은사로 ${trimmedKeyword}`);
+    keywordList.push(`서울특별시 강남구 봉은사로 ${trimmedKeyword}`);
+  }
+
+  return [...new Set(keywordList)];
+};
+
+const searchKakaoAddress = (geocoder, kakao, keyword) => {
+  return new Promise((resolve) => {
+    geocoder.addressSearch(
+      keyword,
+      (data, status) => {
+        if (status === kakao.maps.services.Status.OK) {
+          resolve(data);
+        } else {
+          resolve([]);
+        }
+      },
+      {
+        size: 10,
+        analyze_type: kakao.maps.services.AnalyzeType.SIMILAR,
+      }
+    );
+  });
+};
+
+const searchKakaoPlaces = (places, kakao, keyword) => {
+  return new Promise((resolve) => {
+    places.keywordSearch(
+      keyword,
+      (data, status) => {
+        if (status === kakao.maps.services.Status.OK) {
+          resolve(data);
+        } else {
+          resolve([]);
+        }
+      },
+      {
+        size: 15,
+      }
+    );
+  });
+};
+
+const convertAddressResult = (item, index) => {
+  const roadAddress = item.road_address?.address_name ?? "";
+  const jibunAddress = item.address?.address_name ?? "";
+  const mainAddress = roadAddress || jibunAddress || item.address_name || "";
+
+  const parsedRegion = parseRegionFromAddress(mainAddress);
+
+  const sidoValue =
+    item.road_address?.region_1depth_name ||
+    item.address?.region_1depth_name ||
+    parsedRegion.sido;
+
+  const sigunguValue =
+    item.road_address?.region_2depth_name ||
+    item.address?.region_2depth_name ||
+    parsedRegion.sigungu;
+
+  const eupmyeondongValue =
+    item.road_address?.region_3depth_name ||
+    item.address?.region_3depth_name ||
+    parsedRegion.eupmyeondong;
+
+  return {
+    id: `address-${item.x}-${item.y}-${index}`,
+    title: mainAddress,
+    address: mainAddress,
+    roadAddress,
+    jibunAddress,
+    zonecode: item.road_address?.zone_no ?? "",
+    latitude: Number(item.y),
+    longitude: Number(item.x),
+    sido: sidoValue,
+    sigungu: sigunguValue,
+    eupmyeondong: eupmyeondongValue,
+  };
+};
+
+const convertPlaceResult = (item, index) => {
+  const roadAddress = item.road_address_name ?? "";
+  const jibunAddress = item.address_name ?? "";
+  const mainAddress = roadAddress || jibunAddress || item.place_name || "";
+
+  const parsedRegion = parseRegionFromAddress(mainAddress);
+
+  return {
+    id: `place-${item.id ?? `${item.x}-${item.y}-${index}`}`,
+    title: item.place_name || mainAddress,
+    address: mainAddress,
+    roadAddress,
+    jibunAddress,
+    zonecode: "",
+    latitude: Number(item.y),
+    longitude: Number(item.x),
+    sido: parsedRegion.sido,
+    sigungu: parsedRegion.sigungu,
+    eupmyeondong: parsedRegion.eupmyeondong,
+  };
+};
+
+const addUniqueLocation = (resultMap, location) => {
+  if (!location.address || !location.latitude || !location.longitude) {
+    return;
+  }
+
+  const key = `${location.address}_${location.latitude}_${location.longitude}`;
+
+  if (!resultMap.has(key)) {
+    resultMap.set(key, location);
+  }
+};
+
+const searchKakaoLocationList = async (kakao, keyword) => {
+  const geocoder = new kakao.maps.services.Geocoder();
+  const places = new kakao.maps.services.Places();
+
+  const keywordList = createSearchKeywordList(keyword);
+
+  // OpenLayers의 Map import와 충돌하지 않도록 브라우저 기본 Map 사용
+  const resultMap = new globalThis.Map();
+
+  for (const searchKeyword of keywordList) {
+    const [addressResultList, placeResultList] = await Promise.all([
+      searchKakaoAddress(geocoder, kakao, searchKeyword),
+      searchKakaoPlaces(places, kakao, searchKeyword),
+    ]);
+
+    addressResultList
+      .map((item, index) => convertAddressResult(item, index))
+      .forEach((location) => addUniqueLocation(resultMap, location));
+
+    placeResultList
+      .map((item, index) => convertPlaceResult(item, index))
+      .forEach((location) => addUniqueLocation(resultMap, location));
+
+    if (resultMap.size >= MAX_LOCATION_RESULT_COUNT) {
+      break;
+    }
+  }
+
+  return Array.from(resultMap.values()).slice(0, MAX_LOCATION_RESULT_COUNT);
+};
 
 function GisReportEditPage() {
   const { postId } = useParams();
@@ -44,6 +358,11 @@ function GisReportEditPage() {
   const [errorTypeCode, setErrorTypeCode] = useState("COORDINATE_ERROR");
   const [content, setContent] = useState("");
 
+  const [locationKeyword, setLocationKeyword] = useState("");
+  const [locationResultList, setLocationResultList] = useState([]);
+  const [selectedLocation, setSelectedLocation] = useState(null);
+  const [hasSearchedLocation, setHasSearchedLocation] = useState(false);
+
   const [address, setAddress] = useState("");
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
@@ -55,6 +374,7 @@ function GisReportEditPage() {
   const [report, setReport] = useState(null);
   const [isOwner, setOwner] = useState(false);
   const [isLoading, setLoading] = useState(false);
+  const [isSearchingLocation, setSearchingLocation] = useState(false);
   const [isSubmitting, setSubmitting] = useState(false);
 
   const addMarker = (lon, lat) => {
@@ -107,6 +427,8 @@ function GisReportEditPage() {
         setContent(detail.content ?? "");
 
         setAddress(detail.address ?? "");
+        setLocationKeyword(detail.address ?? "");
+
         setLatitude(String(detail.latitude ?? ""));
         setLongitude(String(detail.longitude ?? ""));
 
@@ -132,8 +454,8 @@ function GisReportEditPage() {
   useEffect(() => {
     if (!mapRef.current || !report) return;
 
-    const defaultLongitude = Number(report.longitude || 127.0365);
-    const defaultLatitude = Number(report.latitude || 37.5007);
+    const defaultLongitude = Number(report.longitude || DEFAULT_LONGITUDE);
+    const defaultLatitude = Number(report.latitude || DEFAULT_LATITUDE);
 
     const markerSource = new VectorSource();
 
@@ -183,6 +505,7 @@ function GisReportEditPage() {
 
       setLongitude(lon.toFixed(7));
       setLatitude(lat.toFixed(7));
+      setSelectedLocation(null);
 
       moveMarker(lon, lat, false);
     };
@@ -206,13 +529,53 @@ function GisReportEditPage() {
     };
   }, [report]);
 
+  const handleSearchLocation = async () => {
+    if (!locationKeyword.trim()) {
+      alert("검색할 주소나 장소명을 입력해주세요.");
+      return;
+    }
+
+    try {
+      setSearchingLocation(true);
+      setHasSearchedLocation(true);
+      setLocationResultList([]);
+      setSelectedLocation(null);
+
+      const kakao = await loadKakaoMapScript();
+      const resultList = await searchKakaoLocationList(kakao, locationKeyword);
+
+      setLocationResultList(resultList);
+    } catch (error) {
+      console.error("위치 검색 실패:", error);
+      alert("위치 검색 중 오류가 발생했습니다.");
+    } finally {
+      setSearchingLocation(false);
+    }
+  };
+
+  const handleSelectLocation = (location) => {
+    setSelectedLocation(location);
+
+    setAddress(location.address ?? "");
+    setLocationKeyword(location.address ?? "");
+
+    setLatitude(String(location.latitude ?? ""));
+    setLongitude(String(location.longitude ?? ""));
+
+    setSido(location.sido ?? "");
+    setSigungu(location.sigungu ?? "");
+    setEupmyeondong(location.eupmyeondong ?? "");
+
+    moveMarker(location.longitude, location.latitude, true);
+  };
+
   const getAddressParts = () => {
-    const addressParts = address.trim().split(/\s+/);
+    const parsedRegion = parseRegionFromAddress(address);
 
     return {
-      sido: sido || addressParts[0] || "",
-      sigungu: sigungu || addressParts[1] || "",
-      eupmyeondong: eupmyeondong || addressParts[2] || "",
+      sido: sido || parsedRegion.sido,
+      sigungu: sigungu || parsedRegion.sigungu,
+      eupmyeondong: eupmyeondong || parsedRegion.eupmyeondong,
     };
   };
 
@@ -233,7 +596,7 @@ function GisReportEditPage() {
     }
 
     if (!address.trim()) {
-      alert("주소를 입력해주세요.");
+      alert("주소 검색 결과를 선택해주세요.");
       return;
     }
 
@@ -251,7 +614,7 @@ function GisReportEditPage() {
 
       reportCategoryCode,
       errorTypeCode,
-      targetDataName: report?.targetDataName ?? "",
+      targetDataName: selectedLocation?.title ?? report?.targetDataName ?? "",
 
       address,
       detailAddress: address,
@@ -355,10 +718,91 @@ function GisReportEditPage() {
         <section className="gis-report-location-info">
           <h2>위치 정보</h2>
 
+          <div className="gis-report-form-row">
+            <label>주소 검색</label>
+
+            <div className="gis-report-address-search-row">
+              <input
+                type="text"
+                placeholder="예: 서울특별시, 강남구, 삼성동, 봉은사로 531, 531"
+                value={locationKeyword}
+                onChange={(e) => setLocationKeyword(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleSearchLocation();
+                  }
+                }}
+              />
+
+              <button
+                type="button"
+                className="location-search-button"
+                onClick={handleSearchLocation}
+                disabled={isSearchingLocation}
+              >
+                {isSearchingLocation ? "검색 중..." : "검색"}
+              </button>
+            </div>
+          </div>
+
           <p className="location-search-help">
-            기존 제보 위치가 표시됩니다. 실제 오류 위치가 다르면 지도를 클릭해
-            좌표를 조정할 수 있습니다.
+            주소를 다시 검색하거나, 실제 오류 위치가 다르면 지도를 클릭해
+            좌표를 조정할 수 있습니다. 넓은 지역명만 입력하면 대표 검색 결과만
+            표시됩니다.
           </p>
+
+          {hasSearchedLocation && locationResultList.length === 0 && (
+            <div className="location-result-empty">
+              검색 결과가 없습니다. 주소를 더 자세히 입력하거나 지도에서 직접
+              위치를 선택해주세요.
+            </div>
+          )}
+
+          {locationResultList.length > 0 && (
+            <div className="location-result-list">
+              {locationResultList.map((location, index) => {
+                const isSelected =
+                  selectedLocation &&
+                  selectedLocation.address === location.address &&
+                  selectedLocation.latitude === location.latitude &&
+                  selectedLocation.longitude === location.longitude;
+
+                return (
+                  <button
+                    type="button"
+                    key={location.id ?? `${location.address}-${index}`}
+                    className={
+                      isSelected
+                        ? "location-result-item selected"
+                        : "location-result-item"
+                    }
+                    onClick={() => handleSelectLocation(location)}
+                  >
+                    <strong>{location.title || location.address}</strong>
+
+                    {location.roadAddress && <span>{location.roadAddress}</span>}
+
+                    {location.jibunAddress && (
+                      <em>
+                        {location.jibunAddress}
+                        {location.zonecode
+                          ? ` / 우편번호 ${location.zonecode}`
+                          : ""}
+                      </em>
+                    )}
+
+                    {!location.roadAddress && !location.jibunAddress && (
+                      <em>
+                        {location.sido} {location.sigungu}{" "}
+                        {location.eupmyeondong}
+                      </em>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
           <div className="gis-report-form-row">
             <label>확정 주소</label>
@@ -366,8 +810,8 @@ function GisReportEditPage() {
             <input
               type="text"
               value={address}
-              placeholder="주소를 입력해주세요"
-              onChange={(e) => setAddress(e.target.value)}
+              placeholder="검색 결과를 선택하면 자동으로 입력됩니다"
+              readOnly
             />
           </div>
 
@@ -383,29 +827,17 @@ function GisReportEditPage() {
 
           <div className="gis-report-form-row">
             <label>시/도</label>
-            <input
-              type="text"
-              value={sido}
-              onChange={(e) => setSido(e.target.value)}
-            />
+            <input type="text" value={sido} readOnly />
           </div>
 
           <div className="gis-report-form-row">
             <label>시/군/구</label>
-            <input
-              type="text"
-              value={sigungu}
-              onChange={(e) => setSigungu(e.target.value)}
-            />
+            <input type="text" value={sigungu} readOnly />
           </div>
 
           <div className="gis-report-form-row">
             <label>읍/면/동</label>
-            <input
-              type="text"
-              value={eupmyeondong}
-              onChange={(e) => setEupmyeondong(e.target.value)}
-            />
+            <input type="text" value={eupmyeondong} readOnly />
           </div>
         </section>
 
@@ -415,7 +847,8 @@ function GisReportEditPage() {
           <div ref={mapRef} className="gis-report-write-map"></div>
 
           <p className="map-help-text">
-            지도에서 오류 위치를 클릭하면 위도와 경도가 변경됩니다.
+            검색 결과를 선택하면 지도에 마커가 표시됩니다. 실제 오류 위치가
+            다르면 지도를 클릭해 좌표를 조정할 수 있습니다.
           </p>
         </section>
 
