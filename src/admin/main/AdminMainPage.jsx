@@ -145,7 +145,7 @@ function FeatureSection() {
                     title="외부연계 API"
                     description="외부 시스템 연계 API 정보를 관리합니다."
                     icon="bi bi-diagram-3"
-                    movePath="/admin/api"
+                    movePath="/externaldata/admin/manage"
                 />
 
                 <FeatureCard
