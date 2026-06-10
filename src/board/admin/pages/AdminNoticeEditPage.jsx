@@ -23,6 +23,12 @@ function AdminNoticeEditPage() {
       if (data.result === "success") {
         const notice = data.adminNoticeDetail;
 
+        if (!notice) {
+          alert("수정할 공지사항 정보를 찾을 수 없습니다.");
+          navigate("/admin/board/notice");
+          return;
+        }
+
         setTitle(notice.title ?? "");
         setContent(notice.content ?? "");
         setVisibilityStatus(notice.visibilityStatus ?? "PUBLIC");
@@ -31,6 +37,7 @@ function AdminNoticeEditPage() {
     } catch (error) {
       console.error("공지사항 수정 데이터 조회 실패:", error);
       alert("공지사항 정보를 불러오는 중 오류가 발생했습니다.");
+      navigate("/admin/board/notice");
     } finally {
       setLoading(false);
     }
@@ -79,125 +86,131 @@ function AdminNoticeEditPage() {
 
   if (isLoading) {
     return (
-      <div className="admin-notice-write-page">
+      <div className="container-fluid px-4 py-3 admin-notice-write-page">
+        <section className="admin-notice-write-header">
+          <div>
+            <h1>공지사항 수정</h1>
+            <p>공지사항 정보를 불러오는 중입니다.</p>
+          </div>
+        </section>
+
         <section className="admin-notice-write-form-card">
-          공지사항 정보를 불러오는 중입니다.
+          <div className="admin-notice-loading-message">
+            공지사항 정보를 불러오는 중입니다.
+          </div>
         </section>
       </div>
     );
   }
 
   return (
-    <div className="admin-notice-write-page">
+    <div className="container-fluid px-4 py-3 admin-notice-write-page">
       <section className="admin-notice-write-header">
         <div>
           <h1>공지사항 수정</h1>
-          <p>등록된 공지사항 내용을 수정할 수 있습니다.</p>
+          <p>등록된 공지사항 내용을 수정합니다.</p>
         </div>
       </section>
 
       <section className="admin-notice-write-form-card">
-        <div className="admin-notice-form-row">
-          <label>제목 *</label>
+        <section className="admin-notice-form-section">
+          <div className="admin-notice-section-title">기본 정보</div>
 
-          <div className="input-with-count">
-            <input
-              type="text"
-              placeholder="제목을 입력하세요."
-              value={title}
-              maxLength={100}
-              onChange={(e) => setTitle(e.target.value)}
-            />
+          <div className="admin-notice-form-row">
+            <label>제목</label>
 
-            <span>{title.length} / 100자</span>
-          </div>
-        </div>
-
-        <div className="admin-notice-form-row">
-          <label>공개 여부 *</label>
-
-          <div className="radio-group">
-            <label className="radio-item">
+            <div className="input-with-count">
               <input
-                type="radio"
-                name="visibilityStatus"
-                value="PUBLIC"
-                checked={visibilityStatus === "PUBLIC"}
-                onChange={(e) => setVisibilityStatus(e.target.value)}
+                type="text"
+                placeholder="제목을 입력하세요."
+                value={title}
+                maxLength={100}
+                onChange={(e) => setTitle(e.target.value)}
               />
-              <span>공개</span>
-            </label>
 
-            <label className="radio-item">
-              <input
-                type="radio"
-                name="visibilityStatus"
-                value="PRIVATE"
-                checked={visibilityStatus === "PRIVATE"}
-                onChange={(e) => setVisibilityStatus(e.target.value)}
-              />
-              <span>비공개</span>
-            </label>
-          </div>
-        </div>
-
-        <div className="admin-notice-form-row">
-          <label>상단 고정 여부</label>
-
-          <div className="radio-group">
-            <label className="radio-item">
-              <input
-                type="radio"
-                name="pinnedYn"
-                value="Y"
-                checked={pinnedYn === "Y"}
-                onChange={(e) => setPinnedYn(e.target.value)}
-              />
-              <span>고정</span>
-            </label>
-
-            <label className="radio-item">
-              <input
-                type="radio"
-                name="pinnedYn"
-                value="N"
-                checked={pinnedYn === "N"}
-                onChange={(e) => setPinnedYn(e.target.value)}
-              />
-              <span>고정하지 않음</span>
-            </label>
-          </div>
-        </div>
-
-        <div className="admin-notice-form-row textarea-row">
-          <label>내용 *</label>
-
-          <div className="editor-box">
-            <div className="editor-toolbar">
-              <select>
-                <option>본문</option>
-                <option>제목</option>
-                <option>소제목</option>
-              </select>
-
-              <button type="button">B</button>
-              <button type="button">I</button>
-              <button type="button">U</button>
-              <button type="button">≡</button>
-              <button type="button">🔗</button>
-              <button type="button">🖼</button>
+              <span>{title.length} / 100자</span>
             </div>
-
-            <textarea
-              placeholder="내용을 입력하세요."
-              value={content}
-              maxLength={5000}
-              onChange={(e) => setContent(e.target.value)}
-            />
-
-            <span className="content-count">{content.length} / 5000자</span>
           </div>
-        </div>
+
+          <div className="admin-notice-form-row">
+            <label>공개 여부</label>
+
+            <div className="radio-group">
+              <label className="radio-item">
+                <input
+                  type="radio"
+                  name="visibilityStatus"
+                  value="PUBLIC"
+                  checked={visibilityStatus === "PUBLIC"}
+                  onChange={(e) => setVisibilityStatus(e.target.value)}
+                />
+
+                <span>공개</span>
+              </label>
+
+              <label className="radio-item">
+                <input
+                  type="radio"
+                  name="visibilityStatus"
+                  value="PRIVATE"
+                  checked={visibilityStatus === "PRIVATE"}
+                  onChange={(e) => setVisibilityStatus(e.target.value)}
+                />
+
+                <span>비공개</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="admin-notice-form-row">
+            <label>상단 고정</label>
+
+            <div className="radio-group">
+              <label className="radio-item">
+                <input
+                  type="radio"
+                  name="pinnedYn"
+                  value="Y"
+                  checked={pinnedYn === "Y"}
+                  onChange={(e) => setPinnedYn(e.target.value)}
+                />
+
+                <span>고정</span>
+              </label>
+
+              <label className="radio-item">
+                <input
+                  type="radio"
+                  name="pinnedYn"
+                  value="N"
+                  checked={pinnedYn === "N"}
+                  onChange={(e) => setPinnedYn(e.target.value)}
+                />
+
+                <span>고정하지 않음</span>
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <section className="admin-notice-content-section">
+          <div className="admin-notice-section-title">본문 내용</div>
+
+          <div className="admin-notice-form-row textarea-row">
+            <label>내용</label>
+
+            <div className="textarea-with-count">
+              <textarea
+                placeholder="공지사항 내용을 입력하세요."
+                value={content}
+                maxLength={5000}
+                onChange={(e) => setContent(e.target.value)}
+              />
+
+              <span>{content.length} / 5000자</span>
+            </div>
+          </div>
+        </section>
 
         <div className="admin-notice-write-button-area">
           <button
@@ -214,7 +227,7 @@ function AdminNoticeEditPage() {
             onClick={handleSubmit}
             disabled={isSubmitting}
           >
-            {isSubmitting ? "수정 중..." : "수정"}
+            {isSubmitting ? "수정 중..." : "수정 완료"}
           </button>
         </div>
       </section>

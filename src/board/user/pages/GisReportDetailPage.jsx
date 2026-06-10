@@ -152,6 +152,14 @@ function GisReportDetailPage() {
 
     mapInstanceRef.current = map;
 
+    requestAnimationFrame(() => {
+      map.updateSize();
+    });
+
+    setTimeout(() => {
+      map.updateSize();
+    }, 300);
+
     return () => {
       map.setTarget(null);
       mapInstanceRef.current = null;
@@ -226,11 +234,11 @@ function GisReportDetailPage() {
   };
 
   const getStatusClassName = (statusCode) => {
-    if (statusCode === "RECEIVED") return "status-received";
-    if (statusCode === "REVIEWING") return "status-checking";
-    if (statusCode === "CHECKING") return "status-checking";
-    if (statusCode === "PROCESSING") return "status-processing";
-    if (statusCode === "COMPLETED") return "status-completed";
+    if (statusCode === "RECEIVED") return "user-gis-detail-status-received";
+    if (statusCode === "REVIEWING") return "user-gis-detail-status-checking";
+    if (statusCode === "CHECKING") return "user-gis-detail-status-checking";
+    if (statusCode === "PROCESSING") return "user-gis-detail-status-processing";
+    if (statusCode === "COMPLETED") return "user-gis-detail-status-completed";
     return "";
   };
 
@@ -240,7 +248,7 @@ function GisReportDetailPage() {
     if (statusCode === "CHECKING") return "검토중";
     if (statusCode === "PROCESSING") return "조치중";
     if (statusCode === "COMPLETED") return "처리완료";
-    return statusCode ?? "-";
+    return "";
   };
 
   const getReportCategoryName = (categoryCode) => {
@@ -248,7 +256,7 @@ function GisReportDetailPage() {
     if (categoryCode === "MISSING_DATA") return "데이터 누락";
     if (categoryCode === "ATTRIBUTE_ERROR") return "속성 오류";
     if (categoryCode === "ETC") return "기타";
-    return categoryCode ?? "-";
+    return "";
   };
 
   const getErrorTypeName = (errorTypeCode) => {
@@ -256,13 +264,13 @@ function GisReportDetailPage() {
     if (errorTypeCode === "NAME_ERROR") return "명칭 오류";
     if (errorTypeCode === "VALUE_ERROR") return "속성값 오류";
     if (errorTypeCode === "ETC") return "기타";
-    return errorTypeCode ?? "-";
+    return "";
   };
 
   const getVisibilityName = (visibilityStatus) => {
     if (visibilityStatus === "PUBLIC") return "공개";
     if (visibilityStatus === "PRIVATE") return "비공개";
-    return visibilityStatus ?? "-";
+    return "";
   };
 
   const formatDate = (dateValue) => {
@@ -310,31 +318,49 @@ function GisReportDetailPage() {
 
   const hasLocation = gisReport.latitude != null && gisReport.longitude != null;
 
+  const reportCategoryName = getReportCategoryName(
+    gisReport.reportCategoryCode
+  );
+
+  const errorTypeName = getErrorTypeName(gisReport.errorTypeCode);
+
+  const processStatusName = getProcessStatusName(gisReport.processStatusCode);
+
+  const visibilityName = getVisibilityName(gisReport.visibilityStatus);
+
   return (
     <div className="container-fluid px-4 py-3 gis-detail-page">
       <div className="gis-detail-container">
         <section className="gis-detail-board">
           <div className="gis-detail-top">
             <div className="gis-detail-badge-area">
-              <span className="gis-category-badge">
-                {getReportCategoryName(gisReport.reportCategoryCode)}
-              </span>
+              {reportCategoryName && (
+                <span className="user-gis-detail-category-badge">
+                  {reportCategoryName}
+                </span>
+              )}
 
-              <span className="gis-error-type-badge">
-                {getErrorTypeName(gisReport.errorTypeCode)}
-              </span>
+              {errorTypeName && (
+                <span className="user-gis-detail-error-type-badge">
+                  {errorTypeName}
+                </span>
+              )}
 
-              <span
-                className={`gis-status-badge ${getStatusClassName(
-                  gisReport.processStatusCode
-                )}`}
-              >
-                {getProcessStatusName(gisReport.processStatusCode)}
-              </span>
+              {gisReport.processStatusCode && processStatusName && (
+                <span
+                  className={`user-gis-detail-status-badge ${getStatusClassName(
+                    gisReport.processStatusCode
+                  )}`}
+                >
+                  {processStatusName}
+                </span>
+              )}
 
-              <span className="gis-visibility-badge">
-                {getVisibilityName(gisReport.visibilityStatus)}
-              </span>
+              {visibilityName && (
+                <span className="user-gis-detail-visibility-badge">
+                  {visibilityName}
+                </span>
+              )}
             </div>
 
             <h1>{gisReport.title || "제목 없음"}</h1>
@@ -403,13 +429,8 @@ function GisReportDetailPage() {
             <div className="gis-location-content">
               <div className="gis-location-info-box">
                 <div>
-                  <em>주소</em>
+                  <em>확정 주소</em>
                   <strong>{gisReport.address || "주소 정보 없음"}</strong>
-                </div>
-
-                <div>
-                  <em>상세 위치</em>
-                  <strong>{gisReport.detailAddress || "-"}</strong>
                 </div>
 
                 <div>
@@ -418,12 +439,28 @@ function GisReportDetailPage() {
                 </div>
 
                 <div>
-                  <em>좌표</em>
-                  <strong>
-                    {hasLocation
-                      ? `${gisReport.latitude}, ${gisReport.longitude}`
-                      : "좌표 정보 없음"}
-                  </strong>
+                  <em>시/도</em>
+                  <strong>{gisReport.sido || "-"}</strong>
+                </div>
+
+                <div>
+                  <em>시/군/구</em>
+                  <strong>{gisReport.sigungu || "-"}</strong>
+                </div>
+
+                <div>
+                  <em>읍/면/동</em>
+                  <strong>{gisReport.eupmyeondong || "-"}</strong>
+                </div>
+
+                <div>
+                  <em>위도</em>
+                  <strong>{gisReport.latitude ?? "-"}</strong>
+                </div>
+
+                <div>
+                  <em>경도</em>
+                  <strong>{gisReport.longitude ?? "-"}</strong>
                 </div>
               </div>
 
@@ -458,7 +495,7 @@ function GisReportDetailPage() {
 
                       <div className="gis-process-right-area">
                         {history.processStatusCode === "COMPLETED" && (
-                          <span className="gis-answer-completed-badge">
+                          <span className="user-gis-answer-completed-badge">
                             처리완료
                           </span>
                         )}

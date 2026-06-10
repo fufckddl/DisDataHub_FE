@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAdminGisReportListApi } from "../../api/gisReportApi";
 import "../css/AdminGisReportManagePage.css";
@@ -11,33 +11,53 @@ function AdminGisReportManagePage() {
   const [errorTypeCode, setErrorTypeCode] = useState("");
   const [processStatusCode, setProcessStatusCode] = useState("");
   const [regionCode, setRegionCode] = useState("");
+  const [isDeletedVisible, setDeletedVisible] = useState(false);
   const [isLoading, setLoading] = useState(false);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 15;
+
   const adminGisErrorTypeList = [
-    { code: "", name: "전체" },
+    { code: "", name: "오류 유형 전체" },
     { code: "COORDINATE_ERROR", name: "좌표 오류" },
     { code: "NAME_ERROR", name: "명칭 오류" },
     { code: "VALUE_ERROR", name: "속성값 오류" },
   ];
 
   const adminGisProcessStatusList = [
-    { code: "", name: "전체" },
+    { code: "", name: "처리 상태 전체" },
     { code: "RECEIVED", name: "제보완료" },
-    { code: "REVIEWING", name: "검토중" },
-    { code: "PROCESSING", name: "조치중" },
+    { code: "PROCESSING", name: "처리중" },
     { code: "COMPLETED", name: "처리완료" },
   ];
 
   const adminGisRegionList = [
-    { code: "", name: "전체" },
-    { code: "서울", name: "서울" },
-    { code: "부산", name: "부산" },
-    { code: "대구", name: "대구" },
-    { code: "인천", name: "인천" },
-    { code: "광주", name: "광주" },
-    { code: "대전", name: "대전" },
-    { code: "울산", name: "울산" },
-    { code: "기타", name: "기타" },
+    { code: "", name: "행정구역 전체" },
+    { code: "강남구", name: "강남구" },
+    { code: "강동구", name: "강동구" },
+    { code: "강북구", name: "강북구" },
+    { code: "강서구", name: "강서구" },
+    { code: "관악구", name: "관악구" },
+    { code: "광진구", name: "광진구" },
+    { code: "구로구", name: "구로구" },
+    { code: "금천구", name: "금천구" },
+    { code: "노원구", name: "노원구" },
+    { code: "도봉구", name: "도봉구" },
+    { code: "동대문구", name: "동대문구" },
+    { code: "동작구", name: "동작구" },
+    { code: "마포구", name: "마포구" },
+    { code: "서대문구", name: "서대문구" },
+    { code: "서초구", name: "서초구" },
+    { code: "성동구", name: "성동구" },
+    { code: "성북구", name: "성북구" },
+    { code: "송파구", name: "송파구" },
+    { code: "양천구", name: "양천구" },
+    { code: "영등포구", name: "영등포구" },
+    { code: "용산구", name: "용산구" },
+    { code: "은평구", name: "은평구" },
+    { code: "종로구", name: "종로구" },
+    { code: "중구", name: "중구" },
+    { code: "중랑구", name: "중랑구" },
   ];
 
   const getAdminGisReportList = async () => {
@@ -45,8 +65,6 @@ function AdminGisReportManagePage() {
       setLoading(true);
 
       const data = await getAdminGisReportListApi();
-
-      console.log("관리자 GIS 오류제보 목록 응답:", data);
 
       if (data.result === "success") {
         setGisReportList(data.adminGisReportList ?? data.gisReportList ?? []);
@@ -63,30 +81,83 @@ function AdminGisReportManagePage() {
     getAdminGisReportList();
   }, []);
 
-  const filteredReportList = gisReportList.filter((report) => {
-    const title = report.title ?? "";
-    const address = report.address ?? "";
-    const writerName = report.writerName ?? "";
-    const userId = String(report.userId ?? "");
-    const sido = report.sido ?? "";
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    searchWord,
+    errorTypeCode,
+    processStatusCode,
+    regionCode,
+    isDeletedVisible,
+  ]);
 
-    const matchSearch =
-      title.toLowerCase().includes(searchWord.toLowerCase()) ||
-      address.toLowerCase().includes(searchWord.toLowerCase()) ||
-      writerName.toLowerCase().includes(searchWord.toLowerCase()) ||
-      userId.includes(searchWord);
+  const filteredReportList = useMemo(() => {
+    return gisReportList.filter((report) => {
+      const title = report.title ?? "";
+      const address = report.address ?? "";
+      const writerName = report.writerName ?? "";
+      const userId = String(report.userId ?? "");
+      const sigungu = report.sigungu ?? "";
 
-    const matchErrorType =
-      errorTypeCode === "" || report.errorTypeCode === errorTypeCode;
+      const matchSearch =
+        title.toLowerCase().includes(searchWord.toLowerCase()) ||
+        address.toLowerCase().includes(searchWord.toLowerCase()) ||
+        writerName.toLowerCase().includes(searchWord.toLowerCase()) ||
+        userId.includes(searchWord);
 
-    const matchStatus =
-      processStatusCode === "" ||
-      report.processStatusCode === processStatusCode;
+      const matchErrorType =
+        errorTypeCode === "" || report.errorTypeCode === errorTypeCode;
 
-    const matchRegion = regionCode === "" || sido.includes(regionCode);
+      const matchStatus =
+        processStatusCode === "" ||
+        report.processStatusCode === processStatusCode ||
+        (processStatusCode === "PROCESSING" &&
+          report.processStatusCode === "REVIEWING");
 
-    return matchSearch && matchErrorType && matchStatus && matchRegion;
-  });
+      const matchRegion =
+        regionCode === "" ||
+        sigungu.includes(regionCode) ||
+        address.includes(regionCode);
+
+      const matchDeletedVisible =
+        isDeletedVisible || report.deletedYn !== "Y";
+
+      return (
+        matchSearch &&
+        matchErrorType &&
+        matchStatus &&
+        matchRegion &&
+        matchDeletedVisible
+      );
+    });
+  }, [
+    gisReportList,
+    searchWord,
+    errorTypeCode,
+    processStatusCode,
+    regionCode,
+    isDeletedVisible,
+  ]);
+
+  const totalPage = Math.max(
+    1,
+    Math.ceil(filteredReportList.length / pageSize)
+  );
+
+  const startIndex = (currentPage - 1) * pageSize;
+
+  const pagedReportList = filteredReportList.slice(
+    startIndex,
+    startIndex + pageSize
+  );
+
+  const pageNumbers = Array.from({ length: totalPage }, (_, index) => index + 1);
+
+  useEffect(() => {
+    if (currentPage > totalPage) {
+      setCurrentPage(totalPage);
+    }
+  }, [currentPage, totalPage]);
 
   const totalCount = gisReportList.length;
 
@@ -94,12 +165,10 @@ function AdminGisReportManagePage() {
     (report) => report.processStatusCode === "RECEIVED"
   ).length;
 
-  const reviewingCount = gisReportList.filter(
-    (report) => report.processStatusCode === "REVIEWING"
-  ).length;
-
   const processingCount = gisReportList.filter(
-    (report) => report.processStatusCode === "PROCESSING"
+    (report) =>
+      report.processStatusCode === "PROCESSING" ||
+      report.processStatusCode === "REVIEWING"
   ).length;
 
   const completedCount = gisReportList.filter(
@@ -111,9 +180,9 @@ function AdminGisReportManagePage() {
   ).length;
 
   const getErrorTypeClassName = (errorTypeCode) => {
-    if (errorTypeCode === "COORDINATE_ERROR") return "error-spatial";
-    if (errorTypeCode === "NAME_ERROR") return "error-classify";
-    if (errorTypeCode === "VALUE_ERROR") return "error-attribute";
+    if (errorTypeCode === "COORDINATE_ERROR") return "error-coordinate";
+    if (errorTypeCode === "NAME_ERROR") return "error-name";
+    if (errorTypeCode === "VALUE_ERROR") return "error-value";
     return "error-etc";
   };
 
@@ -126,16 +195,18 @@ function AdminGisReportManagePage() {
 
   const getStatusClassName = (statusCode) => {
     if (statusCode === "RECEIVED") return "status-received";
-    if (statusCode === "REVIEWING") return "status-reviewing";
-    if (statusCode === "PROCESSING") return "status-actioning";
+    if (statusCode === "PROCESSING" || statusCode === "REVIEWING") {
+      return "status-processing";
+    }
     if (statusCode === "COMPLETED") return "status-completed";
     return "";
   };
 
   const getProcessStatusName = (statusCode) => {
     if (statusCode === "RECEIVED") return "제보완료";
-    if (statusCode === "REVIEWING") return "검토중";
-    if (statusCode === "PROCESSING") return "조치중";
+    if (statusCode === "PROCESSING" || statusCode === "REVIEWING") {
+      return "처리중";
+    }
     if (statusCode === "COMPLETED") return "처리완료";
     return statusCode ?? "-";
   };
@@ -150,6 +221,8 @@ function AdminGisReportManagePage() {
     setErrorTypeCode("");
     setProcessStatusCode("");
     setRegionCode("");
+    setDeletedVisible(false);
+    setCurrentPage(1);
   };
 
   const handleMoveDetail = (postId) => {
@@ -157,7 +230,7 @@ function AdminGisReportManagePage() {
   };
 
   return (
-    <div className="admin-gis-report-manage-page">
+    <div className="container-fluid px-4 py-3 admin-gis-report-manage-page">
       <section className="admin-gis-report-header">
         <div>
           <h1>GIS 오류 제보 관리</h1>
@@ -167,76 +240,48 @@ function AdminGisReportManagePage() {
 
       <section className="admin-gis-summary-section">
         <div className="admin-gis-summary-card">
-          <div className="summary-icon">💬</div>
-          <div>
-            <p>전체 제보</p>
-            <strong>{totalCount}건</strong>
-            <span>전체 제보 건수</span>
-          </div>
+          <p>전체 제보</p>
+          <strong>{totalCount}건</strong>
+          <span>전체 제보 건수</span>
         </div>
 
         <div className="admin-gis-summary-card">
-          <div className="summary-icon">✓</div>
-          <div>
-            <p>제보완료</p>
-            <strong>{receivedCount}건</strong>
-            <span>제보 접수 완료</span>
-          </div>
+          <p>제보완료</p>
+          <strong>{receivedCount}건</strong>
+          <span>제보 접수 완료</span>
         </div>
 
         <div className="admin-gis-summary-card">
-          <div className="summary-icon">🔎</div>
-          <div>
-            <p>검토중</p>
-            <strong>{reviewingCount}건</strong>
-            <span>내용 검토 중</span>
-          </div>
+          <p>처리중</p>
+          <strong>{processingCount}건</strong>
+          <span>수정·반영 진행 중</span>
         </div>
 
         <div className="admin-gis-summary-card">
-          <div className="summary-icon">⚙</div>
-          <div>
-            <p>조치중</p>
-            <strong>{processingCount}건</strong>
-            <span>수정·반영 진행 중</span>
-          </div>
+          <p>처리완료</p>
+          <strong>{completedCount}건</strong>
+          <span>조치 완료</span>
         </div>
 
         <div className="admin-gis-summary-card">
-          <div className="summary-icon">⚑</div>
-          <div>
-            <p>처리완료</p>
-            <strong>{completedCount}건</strong>
-            <span>조치 완료</span>
-          </div>
-        </div>
-
-        <div className="admin-gis-summary-card">
-          <div className="summary-icon">🗑</div>
-          <div>
-            <p>삭제됨</p>
-            <strong>{deletedCount}건</strong>
-            <span>삭제 처리된 제보</span>
-          </div>
+          <p>삭제됨</p>
+          <strong>{deletedCount}건</strong>
+          <span>삭제 처리된 제보</span>
         </div>
       </section>
 
-      <section className="admin-gis-filter-section">
-        <div className="filter-item search-item">
-          <label>검색</label>
-
+      <section className="admin-gis-board-section">
+        <div className="admin-gis-filter-section">
           <input
+            className="admin-gis-search-input"
             type="text"
             placeholder="제목, 작성자, 주소를 입력하세요."
             value={searchWord}
             onChange={(e) => setSearchWord(e.target.value)}
           />
-        </div>
-
-        <div className="filter-item">
-          <label>오류 유형</label>
 
           <select
+            className="admin-gis-filter-select"
             value={errorTypeCode}
             onChange={(e) => setErrorTypeCode(e.target.value)}
           >
@@ -246,12 +291,9 @@ function AdminGisReportManagePage() {
               </option>
             ))}
           </select>
-        </div>
-
-        <div className="filter-item">
-          <label>처리 상태</label>
 
           <select
+            className="admin-gis-filter-select"
             value={processStatusCode}
             onChange={(e) => setProcessStatusCode(e.target.value)}
           >
@@ -261,12 +303,9 @@ function AdminGisReportManagePage() {
               </option>
             ))}
           </select>
-        </div>
-
-        <div className="filter-item">
-          <label>행정구역</label>
 
           <select
+            className="admin-gis-filter-select"
             value={regionCode}
             onChange={(e) => setRegionCode(e.target.value)}
           >
@@ -276,112 +315,135 @@ function AdminGisReportManagePage() {
               </option>
             ))}
           </select>
+
+          <button
+            type="button"
+            className="admin-gis-reset-button"
+            onClick={handleReset}
+          >
+            초기화
+          </button>
         </div>
 
-        <button
-          type="button"
-          className="gis-search-button"
-          onClick={getAdminGisReportList}
-        >
-          🔍 새로고침
-        </button>
+        <div className="admin-gis-table-header">
+          <div className="admin-gis-table-title-area">
+            <h2>GIS 오류 제보 목록</h2>
+            <span>
+              검색 결과 {filteredReportList.length}건 / 전체 {totalCount}건
+            </span>
+          </div>
 
-        <button
-          type="button"
-          className="gis-reset-button"
-          onClick={handleReset}
-        >
-          ⟳ 초기화
-        </button>
-      </section>
+          <button
+            type="button"
+            className={`admin-gis-deleted-toggle ${
+              isDeletedVisible ? "on" : ""
+            }`}
+            onClick={() => setDeletedVisible((prev) => !prev)}
+          >
+            <span className="admin-gis-deleted-toggle-label">
+              {isDeletedVisible
+                ? "삭제된 게시글 숨기기"
+                : "삭제된 게시글 보기"}
+            </span>
 
-      <section className="admin-gis-table-section">
-        <table>
-          <thead>
-            <tr>
-              <th>번호</th>
-              <th>제목</th>
-              <th>오류 유형</th>
-              <th>작성자</th>
-              <th>주소</th>
-              <th>처리 상태</th>
-              <th>삭제여부</th>
-              <th>작성일</th>
-              <th>상세</th>
-            </tr>
-          </thead>
+            <span className="admin-gis-deleted-toggle-track">
+              <span className="admin-gis-deleted-toggle-thumb"></span>
+            </span>
+          </button>
+        </div>
 
-          <tbody>
-            {filteredReportList.map((report) => (
-              <tr
-                key={report.postId}
-                className={
-                  report.deletedYn === "Y"
-                    ? "admin-gis-clickable-row deleted-row"
-                    : "admin-gis-clickable-row"
-                }
-                onClick={() => handleMoveDetail(report.postId)}
-              >
-                <td>{report.postId}</td>
-
-                <td className="gis-title-cell">
-                  {report.title || "제목 없음"}
-                </td>
-
-                <td>
-                  <span
-                    className={`gis-error-type-badge ${getErrorTypeClassName(
-                      report.errorTypeCode
-                    )}`}
-                  >
-                    {getErrorTypeName(report.errorTypeCode)}
-                  </span>
-                </td>
-
-                <td>{report.writerName || `사용자 ${report.userId ?? "-"}`}</td>
-
-                <td className="gis-address-cell">{report.address || "-"}</td>
-
-                <td>
-                  <span
-                    className={`gis-status-badge ${getStatusClassName(
-                      report.processStatusCode
-                    )}`}
-                  >
-                    {getProcessStatusName(report.processStatusCode)}
-                  </span>
-                </td>
-
-                <td>
-                  <span
-                    className={
-                      report.deletedYn === "Y"
-                        ? "gis-delete-status deleted"
-                        : "gis-delete-status normal"
-                    }
-                  >
-                    {report.deletedYn === "Y" ? "삭제됨" : "정상"}
-                  </span>
-                </td>
-
-                <td>{formatDate(report.createdAt)}</td>
-
-                <td>
-                  <button
-                    type="button"
-                    className="gis-detail-button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleMoveDetail(report.postId);
-                    }}
-                  >
-                    보기
-                  </button>
-                </td>
+        <div className="admin-gis-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>번호</th>
+                <th>제목</th>
+                <th>오류 유형</th>
+                <th>작성자</th>
+                <th>주소</th>
+                <th>처리 상태</th>
+                <th>삭제여부</th>
+                <th>작성일</th>
+                <th>상세</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+
+            <tbody>
+              {pagedReportList.map((report) => (
+                <tr
+                  key={report.postId}
+                  className={
+                    report.deletedYn === "Y"
+                      ? "admin-gis-clickable-row admin-gis-deleted-row"
+                      : "admin-gis-clickable-row"
+                  }
+                  onClick={() => handleMoveDetail(report.postId)}
+                >
+                  <td>{report.postId}</td>
+
+                  <td className="admin-gis-title-cell">
+                    <span className="admin-gis-title-text">
+                      {report.title || "제목 없음"}
+                    </span>
+                  </td>
+
+                  <td>
+                    <span
+                      className={`admin-gis-error-type-badge ${getErrorTypeClassName(
+                        report.errorTypeCode
+                      )}`}
+                    >
+                      {getErrorTypeName(report.errorTypeCode)}
+                    </span>
+                  </td>
+
+                  <td>{report.writerName || `사용자 ${report.userId ?? "-"}`}</td>
+
+                  <td className="admin-gis-address-cell">
+                    {report.address || "-"}
+                  </td>
+
+                  <td>
+                    <span
+                      className={`admin-gis-list-status-badge ${getStatusClassName(
+                        report.processStatusCode
+                      )}`}
+                    >
+                      {getProcessStatusName(report.processStatusCode)}
+                    </span>
+                  </td>
+
+                  <td>
+                    <span
+                      className={
+                        report.deletedYn === "Y"
+                          ? "admin-gis-delete-status deleted"
+                          : "admin-gis-delete-status normal"
+                      }
+                    >
+                      {report.deletedYn === "Y" ? "삭제됨" : "정상"}
+                    </span>
+                  </td>
+
+                  <td>{formatDate(report.createdAt)}</td>
+
+                  <td>
+                    <button
+                      type="button"
+                      className="admin-gis-detail-button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleMoveDetail(report.postId);
+                      }}
+                    >
+                      보기
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
         {isLoading && (
           <div className="admin-gis-empty-message">
@@ -393,21 +455,46 @@ function AdminGisReportManagePage() {
           <div className="admin-gis-empty-message">검색 결과가 없습니다.</div>
         )}
 
-        <div className="admin-gis-pagination">
-          <button type="button">«</button>
-          <button type="button">‹</button>
-          <button type="button" className="active">
-            1
-          </button>
-          <button type="button">›</button>
-          <button type="button">»</button>
+        {!isLoading && filteredReportList.length > 0 && (
+          <div className="admin-gis-list-bottom">
+            <div className="admin-gis-pagination">
+              <button
+                type="button"
+                className="admin-gis-pagination-arrow-button"
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+              >
+                &lt;
+              </button>
 
-          <select className="gis-page-size-select">
-            <option>10개씩 보기</option>
-            <option>20개씩 보기</option>
-            <option>50개씩 보기</option>
-          </select>
-        </div>
+              {pageNumbers.map((pageNumber) => (
+                <button
+                  key={pageNumber}
+                  type="button"
+                  className={currentPage === pageNumber ? "active" : ""}
+                  onClick={() => setCurrentPage(pageNumber)}
+                >
+                  {pageNumber}
+                </button>
+              ))}
+
+              <button
+                type="button"
+                className="admin-gis-pagination-arrow-button"
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(prev + 1, totalPage))
+                }
+                disabled={currentPage === totalPage}
+              >
+                &gt;
+              </button>
+            </div>
+
+            <div className="admin-gis-page-info">
+              {currentPage} / {totalPage}페이지
+            </div>
+          </div>
+        )}
       </section>
     </div>
   );

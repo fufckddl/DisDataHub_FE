@@ -1,50 +1,93 @@
 .admin-notice-write-page {
   min-height: 100vh;
-  padding: 40px 56px;
   background: #f4f8fc;
   color: #17202a;
   box-sizing: border-box;
 }
 
+/* 상단 제목 */
 .admin-notice-write-header {
-  margin-bottom: 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 20px;
+  margin-bottom: 22px;
 }
 
 .admin-notice-write-header h1 {
   margin: 0;
-  font-size: 34px;
-  font-weight: 800;
+  padding-left: 16px;
+  border-left: 5px solid #334155;
   color: #0f172a;
+  font-size: 31px;
+  font-weight: 800;
+  line-height: 1.4;
 }
 
 .admin-notice-write-header p {
-  margin: 10px 0 0;
+  margin: 6px 0 0 21px;
   color: #64748b;
-  font-size: 16px;
+  font-size: 14px;
+  font-weight: 700;
 }
 
+/* 전체 폼 카드 */
 .admin-notice-write-form-card {
-  max-width: 1120px;
-  padding: 36px 42px 44px;
+  width: 100%;
+  max-width: none;
+  padding: 0;
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  border: 1px solid #d6dee9;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: hidden;
   box-sizing: border-box;
 }
 
+/* 섹션 */
+.admin-notice-form-section,
+.admin-notice-content-section {
+  padding: 30px 36px 34px;
+  background: #ffffff;
+}
+
+.admin-notice-content-section {
+  border-top: 1px solid #e2e8f0;
+}
+
+.admin-notice-section-title {
+  display: flex;
+  align-items: center;
+  margin-bottom: 22px;
+  color: #0f172a;
+  font-size: 21px;
+  font-weight: 800;
+}
+
+.admin-notice-section-title::before {
+  content: "";
+  width: 5px;
+  height: 20px;
+  margin-right: 10px;
+  background: #334155;
+}
+
+/* 입력 행 */
 .admin-notice-form-row {
   display: grid;
   grid-template-columns: 150px minmax(0, 1fr);
   gap: 24px;
   align-items: center;
-  margin-bottom: 26px;
+  margin-bottom: 18px;
 }
 
-.admin-notice-form-row > label,
-.admin-notice-file-section > label {
+.admin-notice-form-row:last-child {
+  margin-bottom: 0;
+}
+
+.admin-notice-form-row > label {
   color: #0f172a;
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 800;
 }
 
@@ -53,279 +96,170 @@
 .admin-notice-form-row textarea {
   width: 100%;
   border: 1px solid #d6dee9;
-  border-radius: 8px;
+  border-radius: 0;
   color: #1f2937;
   background: #ffffff;
-  font-size: 16px;
+  font-size: 14px;
   outline: none;
   box-sizing: border-box;
 }
 
 .admin-notice-form-row input,
 .admin-notice-form-row select {
-  height: 52px;
-  padding: 0 16px;
+  height: 42px;
+  padding: 0 14px;
+}
+
+.admin-notice-form-row textarea {
+  min-height: 320px;
+  padding: 16px 16px 40px;
+  resize: vertical;
+  line-height: 1.7;
+}
+
+.admin-notice-form-row input::placeholder,
+.admin-notice-form-row textarea::placeholder {
+  color: #9ca3af;
 }
 
 .admin-notice-form-row input:focus,
 .admin-notice-form-row select:focus,
 .admin-notice-form-row textarea:focus {
-  border-color: #1f6feb;
-  box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.12);
+  border-color: #334155;
+  box-shadow: none;
 }
 
-.input-with-count {
+/* 글자 수 */
+.input-with-count,
+.textarea-with-count {
   position: relative;
 }
 
 .input-with-count input {
-  padding-right: 96px;
+  padding-right: 100px;
 }
 
 .input-with-count span {
   position: absolute;
   top: 50%;
-  right: 16px;
+  right: 14px;
   color: #94a3b8;
   font-size: 13px;
+  font-weight: 700;
   transform: translateY(-50%);
 }
 
+.textarea-with-count span {
+  position: absolute;
+  right: 16px;
+  bottom: 14px;
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* 라디오 */
 .radio-group {
+  min-height: 42px;
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 22px;
 }
 
 .radio-item {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
   color: #334155;
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 800;
   cursor: pointer;
 }
 
 .radio-item input {
-  width: 18px;
-  height: 18px;
-  accent-color: #1f6feb;
+  width: 16px;
+  height: 16px;
+  accent-color: #334155;
+  cursor: pointer;
 }
 
+.radio-item span {
+  line-height: 1;
+}
+
+/* textarea 행 */
 .textarea-row {
   align-items: start;
 }
 
 .textarea-row > label {
-  padding-top: 14px;
+  padding-top: 12px;
 }
 
-.editor-box {
-  position: relative;
-  border: 1px solid #d6dee9;
-  border-radius: 10px;
-  overflow: hidden;
-  background: #ffffff;
-}
-
-.editor-box:focus-within {
-  border-color: #1f6feb;
-  box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.12);
-}
-
-.editor-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 48px;
-  padding: 8px 12px;
-  border-bottom: 1px solid #e2e8f0;
-  background: #fbfdff;
-}
-
-.editor-toolbar select {
-  width: 110px;
-  height: 34px;
-  padding: 0 10px;
-  font-size: 14px;
-}
-
-.editor-toolbar button {
-  width: 34px;
-  height: 34px;
-  border: 1px solid #d6dee9;
-  border-radius: 6px;
-  background: #ffffff;
-  color: #334155;
-  font-size: 14px;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.editor-toolbar button:hover {
-  background: #f0f6ff;
-  border-color: #1f6feb;
-  color: #1f6feb;
-}
-
-.editor-box textarea {
-  min-height: 300px;
-  padding: 18px 20px 44px;
-  border: none;
-  border-radius: 0;
-  resize: vertical;
-  line-height: 1.7;
-}
-
-.editor-box textarea:focus {
-  box-shadow: none;
-}
-
-.content-count {
-  position: absolute;
-  right: 18px;
-  bottom: 14px;
-  color: #94a3b8;
-  font-size: 13px;
-}
-
-.admin-notice-file-section {
-  display: grid;
-  grid-template-columns: 150px minmax(0, 1fr);
-  gap: 24px;
-  align-items: start;
-  margin-bottom: 34px;
-}
-
-.file-upload-area {
-  width: 100%;
-}
-
-.file-upload-area input[type="file"] {
-  display: none;
-}
-
-.file-upload-label {
-  min-height: 140px;
-  border: 1px dashed #aebdcc;
-  border-radius: 12px;
-  background: #f8fbff;
-  color: #475569;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  text-align: center;
-  cursor: pointer;
-}
-
-.file-upload-label:hover {
-  border-color: #1f6feb;
-  background: #f0f6ff;
-}
-
-.upload-icon {
-  color: #1f6feb;
-  font-size: 34px;
-}
-
-.file-upload-label strong {
-  color: #0f172a;
-  font-size: 16px;
-}
-
-.file-upload-label p {
-  margin: 0;
-  color: #64748b;
-  font-size: 14px;
-}
-
-.selected-file-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 14px;
-  padding: 14px 16px;
-  border: 1px solid #d6dee9;
-  border-radius: 10px;
-  background: #ffffff;
-}
-
-.selected-file-item span {
-  color: #334155;
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.selected-file-item button {
-  width: 28px;
-  height: 28px;
-  border: none;
-  border-radius: 50%;
-  background: #f1f5f9;
-  color: #64748b;
-  font-size: 18px;
-  cursor: pointer;
-}
-
-.selected-file-item button:hover {
-  background: #fee2e2;
-  color: #ef4444;
-}
-
+/* 하단 버튼 */
 .admin-notice-write-button-area {
   display: flex;
-  justify-content: flex-end;
-  gap: 16px;
-  margin-top: 34px;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  padding: 24px 36px 30px;
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
 }
 
 .admin-notice-write-button-area button {
-  width: 150px;
-  height: 52px;
-  border-radius: 8px;
-  font-size: 17px;
+  width: auto;
+  min-width: 120px;
+  height: 42px;
+  padding: 0 20px;
+  border-radius: 0;
+  font-size: 14px;
   font-weight: 800;
   cursor: pointer;
+  box-sizing: border-box;
 }
 
-.cancel-button {
+.admin-notice-write-button-area button:disabled {
+  background: #9ca3af !important;
+  color: #ffffff !important;
+  cursor: not-allowed;
+}
+
+/* 취소 버튼 */
+.admin-notice-write-button-area .cancel-button {
   border: 1px solid #d6dee9;
   background: #ffffff;
   color: #334155;
 }
 
-.cancel-button:hover {
+.admin-notice-write-button-area .cancel-button:hover {
   background: #f8fafc;
 }
 
-.submit-button {
-  border: none;
-  background: #1f6feb;
+/* 등록 버튼 */
+.admin-notice-write-button-area .submit-button {
+  border: 1px solid #334155;
+  background: #334155;
   color: #ffffff;
 }
 
-.submit-button:hover {
-  background: #155dcc;
+.admin-notice-write-button-area .submit-button:hover {
+  background: #1f2937;
+  border-color: #1f2937;
 }
 
+/* 반응형 */
 @media (max-width: 768px) {
-  .admin-notice-write-page {
-    padding: 28px 20px;
-  }
-
   .admin-notice-write-header h1 {
     font-size: 28px;
   }
 
-  .admin-notice-write-form-card {
-    padding: 28px 24px 34px;
+  .admin-notice-form-section,
+  .admin-notice-content-section {
+    padding: 26px 22px;
   }
 
-  .admin-notice-form-row,
-  .admin-notice-file-section {
+  .admin-notice-form-row {
     grid-template-columns: 1fr;
     gap: 10px;
   }
@@ -335,20 +269,30 @@
   }
 
   .radio-group {
-    flex-direction: column;
     align-items: flex-start;
+    flex-direction: column;
     gap: 12px;
   }
 
-  .editor-toolbar {
-    flex-wrap: wrap;
-  }
-
   .admin-notice-write-button-area {
+    align-items: stretch;
     flex-direction: column;
+    padding: 22px;
   }
 
   .admin-notice-write-button-area button {
     width: 100%;
+  }
+
+  .admin-notice-loading-message {
+    min-height: 180px;
+    padding: 44px;
+    color: #64748b;
+    font-size: 15px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
   }
 }

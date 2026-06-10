@@ -1,6 +1,6 @@
 // src/board/admin/pages/AdminInquiryManagePage.jsx
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAdminInquiryListApi } from "../../api/inquiryApi";
 import "../css/AdminInquiryManagePage.css";
@@ -14,8 +14,11 @@ function AdminInquiryManagePage() {
   const [statusCode, setStatusCode] = useState("");
   const [isLoading, setLoading] = useState(false);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 15;
+
   const inquiryCategoryList = [
-    { code: "", name: "전체" },
+    { code: "", name: "문의 분류 전체" },
     { code: "SYSTEM_USE", name: "시스템 이용" },
     { code: "DATA", name: "데이터 문의" },
     { code: "ERROR", name: "오류 문의" },
@@ -23,7 +26,7 @@ function AdminInquiryManagePage() {
   ];
 
   const inquiryStatusList = [
-    { code: "", name: "전체" },
+    { code: "", name: "답변 상태 전체" },
     { code: "RECEIVED", name: "접수완료" },
     { code: "CHECKING", name: "확인중" },
     { code: "ANSWERED", name: "답변완료" },
@@ -50,26 +53,42 @@ function AdminInquiryManagePage() {
     getAdminInquiryList();
   }, []);
 
-  const handleMoveDetail = (postId) => {
-    navigate(`/admin/board/inquiry/${postId}`);
-  };
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchWord, categoryCode, statusCode]);
 
-  const filteredInquiryList = inquiryList.filter((inquiry) => {
-    const title = inquiry.title ?? "";
-    const writer = String(inquiry.userId ?? "");
+  const filteredInquiryList = useMemo(() => {
+    return inquiryList.filter((inquiry) => {
+      const title = inquiry.title ?? "";
+      const writer = String(inquiry.userId ?? "");
 
-    const matchSearch =
-      title.toLowerCase().includes(searchWord.toLowerCase()) ||
-      writer.includes(searchWord);
+      const matchSearch =
+        title.toLowerCase().includes(searchWord.toLowerCase()) ||
+        writer.includes(searchWord);
 
-    const matchCategory =
-      categoryCode === "" || inquiry.inquiryCategoryCode === categoryCode;
+      const matchCategory =
+        categoryCode === "" || inquiry.inquiryCategoryCode === categoryCode;
 
-    const matchStatus =
-      statusCode === "" || inquiry.inquiryStatusCode === statusCode;
+      const matchStatus =
+        statusCode === "" || inquiry.inquiryStatusCode === statusCode;
 
-    return matchSearch && matchCategory && matchStatus;
-  });
+      return matchSearch && matchCategory && matchStatus;
+    });
+  }, [inquiryList, searchWord, categoryCode, statusCode]);
+
+  const totalPage = Math.max(
+    1,
+    Math.ceil(filteredInquiryList.length / pageSize)
+  );
+
+  const startIndex = (currentPage - 1) * pageSize;
+
+  const pagedInquiryList = filteredInquiryList.slice(
+    startIndex,
+    startIndex + pageSize
+  );
+
+  const pageNumbers = Array.from({ length: totalPage }, (_, index) => index + 1);
 
   const totalCount = inquiryList.length;
 
@@ -85,11 +104,23 @@ function AdminInquiryManagePage() {
     (inquiry) => inquiry.inquiryStatusCode === "ANSWERED"
   ).length;
 
+  const handleMoveDetail = (postId) => {
+    navigate(`/admin/board/inquiry/${postId}`);
+  };
+
+  const handleResetSearch = () => {
+    setSearchWord("");
+    setCategoryCode("");
+    setStatusCode("");
+    setCurrentPage(1);
+  };
+
   const getCategoryClassName = (categoryCode) => {
     if (categoryCode === "SYSTEM_USE") return "category-system";
     if (categoryCode === "DATA") return "category-data";
-    if (categoryCode === "ERROR") return "category-service";
-    return "category-etc";
+    if (categoryCode === "ERROR") return "category-error";
+    if (categoryCode === "ETC") return "category-etc";
+    return "";
   };
 
   const getCategoryName = (categoryCode) => {
@@ -120,7 +151,7 @@ function AdminInquiryManagePage() {
   };
 
   return (
-    <div className="admin-inquiry-manage-page">
+    <div className="container-fluid px-4 py-3 admin-inquiry-manage-page">
       <section className="admin-inquiry-header">
         <div>
           <h1>문의 관리</h1>
@@ -130,60 +161,38 @@ function AdminInquiryManagePage() {
 
       <section className="admin-inquiry-summary-section">
         <div className="admin-inquiry-summary-card">
-          <div className="summary-icon">💬</div>
-
-          <div>
-            <p>전체 문의</p>
-            <strong>{totalCount}건</strong>
-            <span>전체 문의 내역</span>
-          </div>
+          <p>전체 문의</p>
+          <strong>{totalCount}건</strong>
+          <span>전체 문의 내역</span>
         </div>
 
         <div className="admin-inquiry-summary-card">
-          <div className="summary-icon">📥</div>
-
-          <div>
-            <p>접수</p>
-            <strong>{receivedCount}건</strong>
-            <span>신규 접수된 문의</span>
-          </div>
+          <p>접수완료</p>
+          <strong>{receivedCount}건</strong>
+          <span>신규 접수된 문의</span>
         </div>
 
         <div className="admin-inquiry-summary-card">
-          <div className="summary-icon">🔎</div>
-
-          <div>
-            <p>확인 중</p>
-            <strong>{checkingCount}건</strong>
-            <span>검토 중인 문의</span>
-          </div>
+          <p>확인중</p>
+          <strong>{checkingCount}건</strong>
+          <span>검토 중인 문의</span>
         </div>
 
         <div className="admin-inquiry-summary-card">
-          <div className="summary-icon">✅</div>
-
-          <div>
-            <p>답변 완료</p>
-            <strong>{answeredCount}건</strong>
-            <span>답변 완료된 문의</span>
-          </div>
+          <p>답변완료</p>
+          <strong>{answeredCount}건</strong>
+          <span>답변 완료된 문의</span>
         </div>
       </section>
 
-      <section className="admin-inquiry-filter-section">
-        <div className="filter-item search-item">
-          <label>제목 / 작성자 검색</label>
-
+      <section className="admin-inquiry-board-section">
+        <div className="admin-inquiry-filter-section">
           <input
             type="text"
             placeholder="제목 또는 작성자 ID를 입력하세요."
             value={searchWord}
             onChange={(e) => setSearchWord(e.target.value)}
           />
-        </div>
-
-        <div className="filter-item">
-          <label>문의 분류</label>
 
           <select
             value={categoryCode}
@@ -195,10 +204,6 @@ function AdminInquiryManagePage() {
               </option>
             ))}
           </select>
-        </div>
-
-        <div className="filter-item">
-          <label>답변 상태</label>
 
           <select
             value={statusCode}
@@ -210,96 +215,93 @@ function AdminInquiryManagePage() {
               </option>
             ))}
           </select>
+
+          <button
+            type="button"
+            className="inquiry-reset-button"
+            onClick={handleResetSearch}
+          >
+            초기화
+          </button>
         </div>
 
-        <button
-          type="button"
-          className="inquiry-search-button"
-          onClick={getAdminInquiryList}
-        >
-          🔍 새로고침
-        </button>
+        <div className="admin-inquiry-table-header">
+          <div>
+            <h2>문의 목록</h2>
+            <span>
+              검색 결과 {filteredInquiryList.length}건 / 전체 {totalCount}건
+            </span>
+          </div>
+        </div>
 
-        <button
-          type="button"
-          className="inquiry-reset-button"
-          onClick={() => {
-            setSearchWord("");
-            setCategoryCode("");
-            setStatusCode("");
-          }}
-        >
-          초기화
-        </button>
-      </section>
-
-      <section className="admin-inquiry-table-section">
-        <table>
-          <thead>
-            <tr>
-              <th>번호</th>
-              <th>제목</th>
-              <th>문의 분류</th>
-              <th>작성자</th>
-              <th>상태</th>
-              <th>작성일</th>
-              <th>상세</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {filteredInquiryList.map((inquiry) => (
-              <tr
-                key={inquiry.postId}
-                className="admin-inquiry-clickable-row"
-                onClick={() => handleMoveDetail(inquiry.postId)}
-              >
-                <td>{inquiry.postId}</td>
-
-                <td className="inquiry-title-cell">
-                  {inquiry.title}
-                </td>
-
-                <td>
-                  <span
-                    className={`inquiry-category-badge ${getCategoryClassName(
-                      inquiry.inquiryCategoryCode
-                    )}`}
-                  >
-                    {getCategoryName(inquiry.inquiryCategoryCode)}
-                  </span>
-                </td>
-
-                <td>{inquiry.userId}</td>
-
-                <td>
-                  <span
-                    className={`inquiry-status-badge ${getStatusClassName(
-                      inquiry.inquiryStatusCode
-                    )}`}
-                  >
-                    {getStatusName(inquiry.inquiryStatusCode)}
-                  </span>
-                </td>
-
-                <td>{formatDate(inquiry.createdAt)}</td>
-
-                <td>
-                  <button
-                    type="button"
-                    className="inquiry-detail-button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleMoveDetail(inquiry.postId);
-                    }}
-                  >
-                    보기
-                  </button>
-                </td>
+        <div className="admin-inquiry-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>번호</th>
+                <th>제목</th>
+                <th>문의 분류</th>
+                <th>작성자</th>
+                <th>상태</th>
+                <th>작성일</th>
+                <th>상세</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+
+            <tbody>
+              {pagedInquiryList.map((inquiry) => (
+                <tr
+                  key={inquiry.postId}
+                  className="admin-inquiry-clickable-row"
+                  onClick={() => handleMoveDetail(inquiry.postId)}
+                >
+                  <td>{inquiry.postId}</td>
+
+                  <td className="inquiry-title-cell">
+                    <span className="inquiry-title-text">{inquiry.title}</span>
+                  </td>
+
+                  <td>
+                    <span
+                      className={`inquiry-category-badge ${getCategoryClassName(
+                        inquiry.inquiryCategoryCode
+                      )}`}
+                    >
+                      {getCategoryName(inquiry.inquiryCategoryCode)}
+                    </span>
+                  </td>
+
+                  <td>{inquiry.userId}</td>
+
+                  <td>
+                    <span
+                      className={`inquiry-status-badge ${getStatusClassName(
+                        inquiry.inquiryStatusCode
+                      )}`}
+                    >
+                      {getStatusName(inquiry.inquiryStatusCode)}
+                    </span>
+                  </td>
+
+                  <td>{formatDate(inquiry.createdAt)}</td>
+
+                  <td>
+                    <button
+                      type="button"
+                      className="inquiry-detail-button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleMoveDetail(inquiry.postId);
+                      }}
+                    >
+                      보기
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
         {isLoading && (
           <div className="admin-inquiry-empty-message">
@@ -310,6 +312,47 @@ function AdminInquiryManagePage() {
         {!isLoading && filteredInquiryList.length === 0 && (
           <div className="admin-inquiry-empty-message">
             검색 결과가 없습니다.
+          </div>
+        )}
+
+        {!isLoading && filteredInquiryList.length > 0 && (
+          <div className="admin-inquiry-list-bottom">
+            <div className="admin-inquiry-pagination">
+              <button
+                type="button"
+                className="pagination-arrow-button"
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+              >
+                &lt;
+              </button>
+
+              {pageNumbers.map((pageNumber) => (
+                <button
+                  key={pageNumber}
+                  type="button"
+                  className={currentPage === pageNumber ? "active" : ""}
+                  onClick={() => setCurrentPage(pageNumber)}
+                >
+                  {pageNumber}
+                </button>
+              ))}
+
+              <button
+                type="button"
+                className="pagination-arrow-button"
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(prev + 1, totalPage))
+                }
+                disabled={currentPage === totalPage}
+              >
+                &gt;
+              </button>
+            </div>
+
+            <div className="admin-inquiry-page-info">
+              {currentPage} / {totalPage}페이지
+            </div>
           </div>
         )}
       </section>

@@ -431,11 +431,11 @@ function GisReportListPage() {
   };
 
   const getStatusClassName = (statusCode) => {
-    if (statusCode === "RECEIVED") return "status-received";
-    if (statusCode === "REVIEWING") return "status-checking";
-    if (statusCode === "CHECKING") return "status-checking";
-    if (statusCode === "PROCESSING") return "status-checking";
-    if (statusCode === "COMPLETED") return "status-completed";
+    if (statusCode === "RECEIVED") return "user-gis-status-received";
+    if (statusCode === "REVIEWING") return "user-gis-status-checking";
+    if (statusCode === "CHECKING") return "user-gis-status-checking";
+    if (statusCode === "PROCESSING") return "user-gis-status-checking";
+    if (statusCode === "COMPLETED") return "user-gis-status-completed";
     return "";
   };
 

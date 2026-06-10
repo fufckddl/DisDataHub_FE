@@ -43,8 +43,7 @@ function AdminGisReportDetailPage() {
 
   const adminGisProcessStatusList = [
     { code: "RECEIVED", name: "제보완료" },
-    { code: "REVIEWING", name: "검토중" },
-    { code: "PROCESSING", name: "조치중" },
+    { code: "PROCESSING", name: "처리중" },
     { code: "COMPLETED", name: "처리완료" },
   ];
 
@@ -59,8 +58,13 @@ function AdminGisReportDetailPage() {
       if (data.result === "success") {
         const detail = data.adminGisReportDetail ?? data.gisReportDetail;
 
+        const currentStatusCode =
+          detail?.processStatusCode === "REVIEWING"
+            ? "PROCESSING"
+            : detail?.processStatusCode ?? "RECEIVED";
+
         setReport(detail);
-        setProcessStatusCode(detail?.processStatusCode ?? "RECEIVED");
+        setProcessStatusCode(currentStatusCode);
         setAdminProcessContent("");
         setProcessHistoryList(data.processHistoryList ?? []);
       }
@@ -77,6 +81,7 @@ function AdminGisReportDetailPage() {
       return;
     }
 
+    window.scrollTo(0, 0);
     getAdminGisReportDetail();
   }, [postId]);
 
@@ -98,7 +103,7 @@ function AdminGisReportDetailPage() {
       image: new CircleStyle({
         radius: 9,
         fill: new Fill({
-          color: "#1f6feb",
+          color: "#334155",
         }),
         stroke: new Stroke({
           color: "#ffffff",
@@ -136,9 +141,9 @@ function AdminGisReportDetailPage() {
   }, [report]);
 
   const getErrorTypeClassName = (errorTypeCode) => {
-    if (errorTypeCode === "COORDINATE_ERROR") return "error-spatial";
-    if (errorTypeCode === "NAME_ERROR") return "error-classify";
-    if (errorTypeCode === "VALUE_ERROR") return "error-attribute";
+    if (errorTypeCode === "COORDINATE_ERROR") return "error-coordinate";
+    if (errorTypeCode === "NAME_ERROR") return "error-name";
+    if (errorTypeCode === "VALUE_ERROR") return "error-value";
     return "error-etc";
   };
 
@@ -159,16 +164,18 @@ function AdminGisReportDetailPage() {
 
   const getStatusClassName = (statusCode) => {
     if (statusCode === "RECEIVED") return "status-received";
-    if (statusCode === "REVIEWING") return "status-reviewing";
-    if (statusCode === "PROCESSING") return "status-actioning";
+    if (statusCode === "PROCESSING" || statusCode === "REVIEWING") {
+      return "status-processing";
+    }
     if (statusCode === "COMPLETED") return "status-completed";
     return "";
   };
 
   const getProcessStatusName = (statusCode) => {
     if (statusCode === "RECEIVED") return "제보완료";
-    if (statusCode === "REVIEWING") return "검토중";
-    if (statusCode === "PROCESSING") return "조치중";
+    if (statusCode === "PROCESSING" || statusCode === "REVIEWING") {
+      return "처리중";
+    }
     if (statusCode === "COMPLETED") return "처리완료";
     return statusCode ?? "-";
   };
@@ -201,7 +208,6 @@ function AdminGisReportDetailPage() {
 
       if (data.result === "success") {
         alert("처리 상태와 처리 내용이 저장되었습니다.");
-
         setAdminProcessContent("");
         getAdminGisReportDetail();
       } else {
@@ -245,7 +251,7 @@ function AdminGisReportDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="admin-gis-detail-page">
+      <div className="container-fluid px-4 py-3 admin-gis-detail-page">
         <section className="admin-gis-not-found">
           <h1>GIS 오류 제보 상세 정보를 불러오는 중입니다.</h1>
         </section>
@@ -255,7 +261,7 @@ function AdminGisReportDetailPage() {
 
   if (!report) {
     return (
-      <div className="admin-gis-detail-page">
+      <div className="container-fluid px-4 py-3 admin-gis-detail-page">
         <section className="admin-gis-not-found">
           <h1>GIS 오류 제보글을 찾을 수 없습니다.</h1>
 
@@ -288,96 +294,90 @@ function AdminGisReportDetailPage() {
         ];
 
   return (
-    <div className="admin-gis-detail-page">
+    <div className="container-fluid px-4 py-3 admin-gis-detail-page">
       <div className="admin-gis-detail-container">
         <div className="admin-gis-detail-top">
-          <h1>GIS 오류 제보 상세 관리</h1>
-
-          <div className="admin-gis-top-button-area">
-            <button
-              type="button"
-              className="top-list-button"
-              onClick={() => navigate("/admin/board/gis-report")}
-            >
-              ← 목록으로
-            </button>
-
-            <button
-              type="button"
-              className="delete-button"
-              onClick={handleDelete}
-              disabled={isDeleting}
-            >
-              {isDeleting ? "삭제 중..." : "삭제"}
-            </button>
+          <div>
+            <h1>GIS 오류 제보 상세 관리</h1>
+            <p>제보 내용과 위치 정보를 확인하고 처리 상태를 관리합니다.</p>
           </div>
+
+          <button
+            type="button"
+            className="admin-gis-delete-button"
+            onClick={handleDelete}
+            disabled={isDeleting}
+          >
+            {isDeleting ? "삭제 중..." : "삭제"}
+          </button>
         </div>
 
-        <section className="admin-gis-detail-header-card">
-          <div className="admin-gis-badge-area">
-            <span
-              className={`admin-gis-error-badge ${getErrorTypeClassName(
-                report.errorTypeCode
-              )}`}
-            >
-              {getErrorTypeName(report.errorTypeCode)}
-            </span>
+        <section className="admin-gis-detail-card">
+          <div className="admin-gis-title-area">
+            <div className="admin-gis-badge-area">
+              <span
+                className={`admin-gis-error-badge ${getErrorTypeClassName(
+                  report.errorTypeCode
+                )}`}
+              >
+                {getErrorTypeName(report.errorTypeCode)}
+              </span>
 
-            <span
-              className={`admin-gis-status-badge ${getStatusClassName(
-                report.processStatusCode
-              )}`}
-            >
-              {getProcessStatusName(report.processStatusCode)}
-            </span>
+              <span
+                className={`admin-gis-status-badge ${getStatusClassName(
+                  report.processStatusCode
+                )}`}
+              >
+                {getProcessStatusName(report.processStatusCode)}
+              </span>
+            </div>
+
+            <h2>{report.title || "제목 없음"}</h2>
           </div>
 
-          <h2>{report.title || "제목 없음"}</h2>
+          <div className="admin-gis-info-bar">
+            <div className="admin-gis-info-item">
+              <span>작성자</span>
+              <strong>
+                {report.writerName ||
+                  report.nickname ||
+                  `사용자 ${report.userId ?? "-"}`}
+              </strong>
+            </div>
 
-          <p>
-            {report.content
-              ? report.content.split("\n")[0]
-              : "GIS 데이터 오류 제보 상세 정보를 확인할 수 있습니다."}
-          </p>
-        </section>
+            <div className="admin-gis-info-item">
+              <span>작성일</span>
+              <strong>{formatDate(report.createdAt)}</strong>
+            </div>
 
-        <section className="admin-gis-meta-card">
-          <div>
-            <span>작성자</span>
-            <strong>
-              {report.writerName ||
-                report.nickname ||
-                `사용자 ${report.userId ?? "-"}`}
-            </strong>
+            <div className="admin-gis-info-item">
+              <span>제보 유형</span>
+              <strong>{getReportCategoryName(report.reportCategoryCode)}</strong>
+            </div>
+
+            <div className="admin-gis-info-item">
+              <span>오류 유형</span>
+              <strong>{getErrorTypeName(report.errorTypeCode)}</strong>
+            </div>
+
+            <div className="admin-gis-info-item">
+              <span>조회수</span>
+              <strong>{report.viewCount ?? 0}</strong>
+            </div>
           </div>
 
-          <div>
-            <span>작성일</span>
-            <strong>{formatDate(report.createdAt)}</strong>
-          </div>
+          <section className="admin-gis-content-section">
+            <h3>제보 내용</h3>
+            <p>{report.content || "등록된 제보 내용이 없습니다."}</p>
+          </section>
 
-          <div>
-            <span>제보 유형</span>
-            <strong>{getReportCategoryName(report.reportCategoryCode)}</strong>
-          </div>
-
-          <div>
-            <span>오류 유형</span>
-            <strong>{getErrorTypeName(report.errorTypeCode)}</strong>
-          </div>
-
-          <div>
-            <span>조회수</span>
-            <strong>{report.viewCount ?? 0}</strong>
-          </div>
-        </section>
-
-        <div className="admin-gis-main-grid">
-          <section className="admin-gis-location-card">
+          <section className="admin-gis-location-section">
             <h3>위치 정보</h3>
 
             <div className="admin-gis-location-layout">
-              <div ref={mapRef} className="admin-gis-detail-map"></div>
+              <div className="admin-gis-map-area">
+                <div ref={mapRef} className="admin-gis-detail-map"></div>
+              </div>
 
               <div className="admin-gis-location-info">
                 <div>
@@ -398,81 +398,81 @@ function AdminGisReportDetailPage() {
             </div>
           </section>
 
-          <section className="admin-gis-history-card">
-            <h3>처리 이력</h3>
+          <section className="admin-gis-management-section">
+            <div className="admin-gis-process-area">
+              <h3>처리 관리</h3>
 
-            <div className="admin-gis-timeline">
-              {processHistory.map((history) => (
-                <div className="timeline-item" key={history.historyId}>
-                  <div className="timeline-dot"></div>
+              <div className="admin-gis-process-form-box">
+                <div className="admin-gis-process-row">
+                  <label>처리 상태</label>
 
-                  <div>
-                    <strong>{formatDate(history.processedAt)}</strong>
-                    <span>{history.statusName}</span>
-                    <p>{history.content}</p>
+                  <select
+                    value={processStatusCode}
+                    onChange={(e) => setProcessStatusCode(e.target.value)}
+                  >
+                    {adminGisProcessStatusList.map((status) => (
+                      <option key={status.code} value={status.code}>
+                        {status.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="admin-gis-process-row textarea-row">
+                  <label>관리자 처리 내용</label>
+
+                  <div className="process-textarea-box">
+                    <textarea
+                      placeholder="처리 내용을 입력해주세요."
+                      value={adminProcessContent}
+                      maxLength={500}
+                      onChange={(e) => setAdminProcessContent(e.target.value)}
+                    />
+
+                    <span>{adminProcessContent.length} / 500</span>
                   </div>
                 </div>
-              ))}
-            </div>
-          </section>
-        </div>
-
-        <div className="admin-gis-bottom-grid">
-          <section className="admin-gis-content-card">
-            <h3>제보 내용</h3>
-
-            <p>{report.content || "등록된 제보 내용이 없습니다."}</p>
-
-            <div className="admin-gis-file-area">
-              <h4>첨부 파일</h4>
-
-              <div className="admin-gis-file-empty">첨부파일이 없습니다.</div>
-            </div>
-          </section>
-
-          <section className="admin-gis-process-card">
-            <h3>처리 관리</h3>
-
-            <div className="admin-gis-process-row">
-              <label>처리 상태 *</label>
-
-              <select
-                value={processStatusCode}
-                onChange={(e) => setProcessStatusCode(e.target.value)}
-              >
-                {adminGisProcessStatusList.map((status) => (
-                  <option key={status.code} value={status.code}>
-                    {status.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="admin-gis-process-row textarea-row">
-              <label>관리자 처리 내용 *</label>
-
-              <div className="process-textarea-box">
-                <textarea
-                  placeholder="처리 내용을 입력해주세요."
-                  value={adminProcessContent}
-                  maxLength={500}
-                  onChange={(e) => setAdminProcessContent(e.target.value)}
-                />
-
-                <span>{adminProcessContent.length} / 500</span>
               </div>
             </div>
 
+            <div className="admin-gis-history-area">
+              <h3>처리 이력</h3>
+
+              <div className="admin-gis-timeline">
+                {processHistory.map((history) => (
+                  <div className="timeline-item" key={history.historyId}>
+                    <div className="timeline-dot"></div>
+
+                    <div>
+                      <strong>{formatDate(history.processedAt)}</strong>
+                      <span>{history.statusName}</span>
+                      <p>{history.content}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <div className="admin-gis-detail-bottom">
             <button
               type="button"
-              className="process-save-button"
+              className="admin-gis-list-button"
+              onClick={() => navigate("/admin/board/gis-report")}
+            >
+              목록으로
+            </button>
+
+            <button
+              type="button"
+              className="admin-gis-save-button"
               onClick={handleSave}
               disabled={isSaving}
             >
-              {isSaving ? "저장 중..." : "✓ 저장"}
+              {isSaving ? "저장 중..." : "처리 저장"}
             </button>
-          </section>
-        </div>
+          </div>
+        </section>
       </div>
     </div>
   );

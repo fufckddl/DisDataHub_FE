@@ -48,12 +48,16 @@ function AdminInquiryDetailPage() {
     getAdminInquiryDetail();
   }, [postId]);
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [postId]);
+
   const getCategoryClassName = (categoryCode) => {
     if (categoryCode === "SERVICE") return "category-service";
     if (categoryCode === "SYSTEM") return "category-system";
     if (categoryCode === "SYSTEM_USE") return "category-system";
     if (categoryCode === "DATA") return "category-data";
-    if (categoryCode === "ERROR") return "category-service";
+    if (categoryCode === "ERROR") return "category-error";
     return "category-etc";
   };
 
@@ -132,11 +136,9 @@ function AdminInquiryDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="admin-inquiry-detail-page">
-        <div className="admin-inquiry-detail-container">
-          <section className="admin-inquiry-not-found">
-            <h1>문의 상세 정보를 불러오는 중입니다.</h1>
-          </section>
+      <div className="container-fluid px-4 py-3 admin-inquiry-detail-page">
+        <div className="admin-inquiry-detail-loading">
+          문의 상세 정보를 불러오는 중입니다.
         </div>
       </div>
     );
@@ -144,28 +146,51 @@ function AdminInquiryDetailPage() {
 
   if (!inquiry) {
     return (
-      <div className="admin-inquiry-detail-page">
-        <div className="admin-inquiry-detail-container">
-          <section className="admin-inquiry-not-found">
-            <h1>문의 게시글을 찾을 수 없습니다.</h1>
+      <div className="container-fluid px-4 py-3 admin-inquiry-detail-page">
+        <section className="admin-inquiry-detail-header">
+          <div>
+            <h1>문의 상세</h1>
+            <p>문의 정보를 확인합니다.</p>
+          </div>
+        </section>
 
-            <button
-              type="button"
-              onClick={() => navigate("/admin/board/inquiry")}
-            >
-              목록으로
-            </button>
-          </section>
+        <div className="admin-inquiry-detail-empty">
+          문의 게시글을 찾을 수 없습니다.
+        </div>
+
+        <div className="admin-inquiry-detail-bottom">
+          <button
+            type="button"
+            className="admin-inquiry-list-button"
+            onClick={() => navigate("/admin/board/inquiry")}
+          >
+            목록으로
+          </button>
+
+          <button
+            type="button"
+            className="admin-inquiry-save-button"
+            disabled
+          >
+            답변 저장
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="admin-inquiry-detail-page">
-      <div className="admin-inquiry-detail-container">
-        <section className="admin-inquiry-detail-header">
-          <div className="admin-inquiry-badge-area">
+    <div className="container-fluid px-4 py-3 admin-inquiry-detail-page">
+      <section className="admin-inquiry-detail-header">
+        <div>
+          <h1>문의 상세</h1>
+          <p>사용자 문의 내용과 답변 상태를 관리합니다.</p>
+        </div>
+      </section>
+
+      <section className="admin-inquiry-detail-card">
+        <div className="admin-inquiry-title-area">
+          <div className="admin-inquiry-detail-badges">
             <span
               className={`admin-inquiry-category-badge ${getCategoryClassName(
                 inquiry.inquiryCategoryCode
@@ -183,11 +208,10 @@ function AdminInquiryDetailPage() {
             </span>
           </div>
 
-          <h1>{inquiry.title}</h1>
-          <p>사용자 문의 내용을 확인하고 관리자 답변을 등록할 수 있습니다.</p>
-        </section>
+          <h2>{inquiry.title}</h2>
+        </div>
 
-        <section className="admin-inquiry-detail-meta">
+        <div className="admin-inquiry-info-bar">
           <div>
             <span>작성자 ID</span>
             <strong>{inquiry.userId}</strong>
@@ -196,11 +220,6 @@ function AdminInquiryDetailPage() {
           <div>
             <span>작성일</span>
             <strong>{formatDate(inquiry.createdAt)}</strong>
-          </div>
-
-          <div>
-            <span>문의 분류</span>
-            <strong>{getCategoryName(inquiry.inquiryCategoryCode)}</strong>
           </div>
 
           <div>
@@ -215,26 +234,20 @@ function AdminInquiryDetailPage() {
 
           <div>
             <span>조회수</span>
-            <strong>{inquiry.viewCount}</strong>
+            <strong>{inquiry.viewCount ?? 0}</strong>
           </div>
-        </section>
+        </div>
 
-        <section className="admin-inquiry-content-section">
-          <h2>문의 내용</h2>
+        <div className="admin-inquiry-content-section">
+          <div className="admin-inquiry-content-title">문의 내용</div>
 
-          <p>{inquiry.content || "등록된 문의 내용이 없습니다."}</p>
-        </section>
-
-        <section className="admin-inquiry-file-section">
-          <h2>첨부파일</h2>
-
-          <div className="admin-inquiry-file-empty">
-            첨부파일이 없습니다.
+          <div className="admin-inquiry-detail-content">
+            {inquiry.content || "등록된 문의 내용이 없습니다."}
           </div>
-        </section>
+        </div>
 
-        <section className="admin-inquiry-answer-section">
-          <h2>관리자 답변</h2>
+        <div className="admin-inquiry-answer-section">
+          <div className="admin-inquiry-content-title">관리자 답변</div>
 
           <div className="admin-answer-form-row">
             <label>답변 상태</label>
@@ -265,12 +278,12 @@ function AdminInquiryDetailPage() {
               <span>{answerContent.length} / 2000</span>
             </div>
           </div>
-        </section>
+        </div>
 
-        <section className="admin-inquiry-detail-button-area">
+        <div className="admin-inquiry-detail-bottom">
           <button
             type="button"
-            className="list-button"
+            className="admin-inquiry-list-button"
             onClick={() => navigate("/admin/board/inquiry")}
           >
             목록으로
@@ -278,14 +291,14 @@ function AdminInquiryDetailPage() {
 
           <button
             type="button"
-            className="save-button"
+            className="admin-inquiry-save-button"
             onClick={handleSaveAnswer}
             disabled={isSaving}
           >
             {isSaving ? "저장 중..." : "답변 저장"}
           </button>
-        </section>
-      </div>
+        </div>
+      </section>
     </div>
   );
 }

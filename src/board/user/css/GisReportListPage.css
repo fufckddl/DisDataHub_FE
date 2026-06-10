@@ -127,9 +127,6 @@
 
 .gis-report-map-section {
   order: 2;
-}
-
-.gis-report-map-section {
   min-height: 610px;
   background: #ffffff;
   border: 1px solid #d6dee9;
@@ -430,19 +427,20 @@
   display: none;
 }
 
-.status-received {
-  background: #e8f1ff;
-  color: #1f6feb;
+/* 유저 GIS 전용 상태 클래스 */
+.user-gis-status-received {
+  background: #e8f1ff !important;
+  color: #1f6feb !important;
 }
 
-.status-checking {
-  background: #fff4e5;
-  color: #f97316;
+.user-gis-status-checking {
+  background: #fff4e5 !important;
+  color: #f97316 !important;
 }
 
-.status-completed {
-  background: #e8f8ef;
-  color: #16a34a;
+.user-gis-status-completed {
+  background: #e8f8ef !important;
+  color: #16a34a !important;
 }
 
 .report-content-area {
