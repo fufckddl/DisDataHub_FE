@@ -318,6 +318,7 @@ function AdminApprovalDetailPage() {
                                         <h4 className="fw-bold mb-2">TIFF 이미지 데이터</h4>
                                         <p className="text-light opacity-75 small mb-4" style={{ maxWidth: '400px' }}>
                                             웹 브라우저의 제약으로 인해 원본 TIFF 포맷의 렌더링이 제한됩니다. <br/>원본 파일 무결성 검사는 백엔드에서 완료되었습니다.
+                                            <br/>Tiff 파일은 상단의 <strong className="text-primary">원본 다운로드</strong> 버튼을 통해 내려받은 후 외부 GIS 프로그램에서 검수해 주세요.
                                         </p>
                                         <span className="badge bg-secondary bg-opacity-25 border border-secondary px-3 py-2 rounded-pill">
                                             <i className="bi bi-hdd-fill me-2"></i>클라우드에 안전하게 보관 중
