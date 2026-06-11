@@ -7,10 +7,11 @@
 
 .simulation-test3-map-shell {
     --simulation-test3-panel-width: 360px;
-    --simulation-test3-edge-gap: 14px;
+    --simulation-test3-result-panel-width: 320px;
+    --simulation-test3-edge-gap: 0px;
     --simulation-test3-ui-gap: 24px;
     --simulation-test3-left-anchor: 24px;
-    --simulation-test3-right-anchor: 24px;
+    --simulation-test3-right-anchor: 12px;
     --simulation-test3-z-map: 1;
     --simulation-test3-z-overlay: 5;
     --simulation-test3-z-floating: 20;
@@ -33,7 +34,7 @@
 }
 
 .simulation-test3-map-shell.result-open {
-    --simulation-test3-right-anchor: calc(var(--simulation-test3-edge-gap) + var(--simulation-test3-panel-width) + var(--simulation-test3-ui-gap));
+    --simulation-test3-right-anchor: calc(var(--simulation-test3-edge-gap) + var(--simulation-test3-result-panel-width) + 12px);
 }
 
 .simulation-test3-map-canvas {
@@ -61,6 +62,10 @@
     background: #edf3fb;
 }
 
+.simulation-test3-leaflet-stage.selecting-point .leaflet-container {
+    cursor: crosshair;
+}
+
 .simulation-test3-leaflet-map {
     position: relative;
     z-index: 0;
@@ -70,18 +75,85 @@
     background: #edf3fb;
 }
 
+.simulation-test3-map-canvas .leaflet-interactive:focus {
+    outline: none;
+}
+
+.simulation-test3-map-canvas .leaflet-interactive.simulation-test3-preview-point,
+.simulation-test3-map-canvas .leaflet-interactive.simulation-test3-result-point,
+.simulation-test3-map-canvas .leaflet-interactive.simulation-test3-selected-point-object,
+.simulation-test3-map-canvas .leaflet-interactive.simulation-test3-selected-point-marker,
+.simulation-test3-map-canvas .leaflet-interactive.simulation-test3-preview-path,
+.simulation-test3-map-canvas .leaflet-interactive.simulation-test3-result-path,
+.simulation-test3-map-canvas .leaflet-interactive.simulation-test3-selected-path {
+    filter: drop-shadow(0 2px 3px rgba(15, 23, 42, 0.42));
+}
+
+.simulation-test3-map-canvas .leaflet-interactive.simulation-test3-preview-point,
+.simulation-test3-map-canvas .leaflet-interactive.simulation-test3-result-point,
+.simulation-test3-map-canvas .leaflet-interactive.simulation-test3-selected-point-object {
+    paint-order: stroke;
+}
+
+.simulation-test3-map-canvas .leaflet-interactive.simulation-test3-selected-path,
+.simulation-test3-map-canvas .leaflet-interactive.simulation-test3-selected-point-object {
+    filter: drop-shadow(0 3px 5px rgba(15, 23, 42, 0.52));
+}
+
+.simulation-test3-map-canvas .leaflet-interactive.simulation-test3-selected-layer {
+    filter:
+        drop-shadow(0 0 3px #ffffff)
+        drop-shadow(0 0 7px rgba(249, 115, 22, 0.78))
+        drop-shadow(0 4px 9px rgba(15, 23, 42, 0.65));
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
 .simulation-test3-map-shell .leaflet-bottom.leaflet-right {
     right: var(--simulation-test3-right-anchor);
-    bottom: 24px;
+    bottom: 16px;
     transition: right 0.24s ease;
 }
 
+.simulation-test3-map-shell .leaflet-right .leaflet-control {
+    margin-right: 0;
+}
+
+.simulation-test3-map-shell .leaflet-bottom .leaflet-control {
+    margin-bottom: 0;
+}
+
 .simulation-test3-map-shell .leaflet-control-zoom a {
+    width: 40px !important;
+    height: 40px !important;
+    border: 0;
+    border-bottom: 1px solid #e2e8f0;
+    background: #ffffff;
     color: #334155;
+    font-size: 1.05rem;
+    font-weight: 800;
+    line-height: 40px !important;
+}
+
+.simulation-test3-map-shell .leaflet-control-zoom a:last-child {
+    border-bottom: 0;
+}
+
+.simulation-test3-map-shell .leaflet-control-zoom.leaflet-bar {
+    overflow: hidden;
+    border: 1px solid #d8e2ef;
+    border-radius: 8px !important;
+    background: #ffffff;
+    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.1);
 }
 
 .simulation-test3-map-shell .leaflet-control-attribution {
+    position: absolute;
+    right: 0;
+    bottom: -24px;
+    margin: 0 !important;
     font-size: 0.68rem;
+    white-space: nowrap;
 }
 
 .simulation-test3-map-canvas::before {
@@ -98,9 +170,11 @@
 .simulation-test3-radius,
 .simulation-test3-marker,
 .simulation-test3-top-tools,
+.simulation-test3-base-map-control,
 .simulation-test3-map-tools,
 .simulation-test3-zoom-tools,
 .simulation-test3-map-summary,
+.simulation-test3-selected-feature-card,
 .simulation-test3-setting-panel,
 .simulation-test3-result-panel,
 .simulation-test3-setting-toggle {
@@ -249,18 +323,92 @@
 }
 
 .simulation-test3-top-tools,
+.simulation-test3-base-map-control,
+.simulation-test3-selected-feature-card,
 .simulation-test3-map-summary {
     z-index: var(--simulation-test3-z-floating);
 }
 
 .simulation-test3-top-tools {
-    top: 22px;
+    top: 16px;
     left: var(--simulation-test3-left-anchor);
-    right: var(--simulation-test3-right-anchor);
+    right: calc(var(--simulation-test3-right-anchor) + 166px);
     display: flex;
     gap: 10px;
     overflow-x: auto;
     transition: left 0.24s ease, right 0.24s ease;
+}
+
+.simulation-test3-base-map-control {
+    top: 16px;
+    right: var(--simulation-test3-right-anchor);
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    width: 148px;
+    min-height: 0;
+    padding: 8px;
+    border: 1px solid #d8e2ef;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.12);
+    backdrop-filter: blur(10px);
+    transition: right 0.24s ease;
+}
+
+.simulation-test3-base-map-control > span {
+    color: #64748b;
+    font-size: 0.72rem;
+    font-weight: 900;
+    white-space: nowrap;
+}
+
+.simulation-test3-base-map-control > div {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 5px;
+    min-width: 0;
+}
+
+.simulation-test3-base-map-control button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-width: 0;
+    height: 32px;
+    padding: 0 5px;
+    border: 1px solid #d8e2ef;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #475569;
+    font-size: 0.68rem;
+    font-weight: 800;
+    transition: all 0.18s ease;
+}
+
+.simulation-test3-base-map-control button i {
+    color: #2563eb;
+    font-size: 0.82rem;
+}
+
+.simulation-test3-base-map-control button em {
+    overflow: hidden;
+    font-style: normal;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.simulation-test3-base-map-control button.active {
+    border-color: #2563eb;
+    background: #2563eb;
+    color: #ffffff;
+    box-shadow: 0 8px 16px rgba(37, 99, 235, 0.16);
+}
+
+.simulation-test3-base-map-control button.active i {
+    color: #ffffff;
 }
 
 .simulation-test3-top-tools button,
@@ -301,11 +449,14 @@
 }
 
 .simulation-test3-top-tools button:focus-visible,
+.simulation-test3-base-map-control button:focus-visible,
 .simulation-test3-map-tools button:focus-visible,
 .simulation-test3-zoom-tools button:focus-visible,
 .simulation-test3-icon-button:focus-visible,
 .simulation-test3-setting-toggle:focus-visible,
 .simulation-test3-button:focus-visible,
+.simulation-test3-select-point-button:focus-visible,
+.simulation-test3-selected-feature-head button:focus-visible,
 .simulation-test3-tabs button:focus-visible,
 .simulation-test3-segmented button:focus-visible,
 .simulation-test3-measure-head button:focus-visible,
@@ -315,11 +466,11 @@
 }
 
 .simulation-test3-map-tools {
-    top: 132px;
+    top: 138px;
     right: var(--simulation-test3-right-anchor);
     z-index: var(--simulation-test3-z-floating);
     display: grid;
-    gap: 8px;
+    gap: 6px;
     transition: right 0.24s ease;
 }
 
@@ -328,21 +479,26 @@
     align-items: center;
     justify-content: center;
     flex-direction: column;
-    gap: 4px;
-    width: 58px;
-    height: 58px;
+    gap: 2px;
+    width: 44px;
+    height: 46px;
     border: 1px solid #d8e2ef;
     border-radius: 8px;
     background: #ffffff;
     color: #334155;
-    font-size: 0.74rem;
+    font-size: 0.64rem;
     font-weight: 800;
     box-shadow: 0 10px 20px rgba(15, 23, 42, 0.1);
 }
 
 .simulation-test3-map-tools i {
     color: #2563eb;
-    font-size: 1rem;
+    font-size: 0.9rem;
+}
+
+.simulation-test3-map-tools button:hover {
+    border-color: #bfdbfe;
+    background: #f8fbff;
 }
 
 .simulation-test3-map-tools button.active {
@@ -551,28 +707,125 @@
 
 .simulation-test3-legend i {
     display: inline-block;
-    width: 11px;
-    height: 11px;
-    border-radius: 50%;
+    width: 24px;
+    height: 4px;
+    border-radius: 999px;
 }
 
 .simulation-test3-legend i.preview {
-    background: #64748b;
+    background: #4f6df5;
 }
 
 .simulation-test3-legend i.result {
-    background: #2563eb;
+    background: #4e9f53;
+}
+
+.simulation-test3-legend i.feature-selected {
+    background: #e17024;
+}
+
+.simulation-test3-legend i.result-empty {
+    background: #94a3b8;
+}
+
+.simulation-test3-selected-feature-card {
+    top: 86px;
+    left: var(--simulation-test3-left-anchor);
+    display: grid;
+    gap: 12px;
+    width: min(300px, calc(100% - 48px));
+    padding: 14px;
+    border: 1px solid #fed7aa;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.97);
+    box-shadow: 0 16px 30px rgba(15, 23, 42, 0.16);
+    backdrop-filter: blur(10px);
+    transition: left 0.24s ease;
+}
+
+.simulation-test3-selected-feature-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.simulation-test3-selected-feature-head div {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+}
+
+.simulation-test3-selected-feature-head span {
+    color: #ea580c;
+    font-size: 0.72rem;
+    font-weight: 900;
+}
+
+.simulation-test3-selected-feature-head strong {
+    overflow: hidden;
+    color: #0f172a;
+    font-size: 0.96rem;
+    font-weight: 900;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.simulation-test3-selected-feature-head button {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border: 1px solid #fed7aa;
+    border-radius: 8px;
+    background: #fff7ed;
+    color: #ea580c;
+    font-size: 0.76rem;
+}
+
+.simulation-test3-selected-feature-card dl {
+    display: grid;
+    gap: 7px;
+    margin: 0;
+}
+
+.simulation-test3-selected-feature-card dl div {
+    display: grid;
+    grid-template-columns: 76px minmax(0, 1fr);
+    gap: 10px;
+    align-items: center;
+}
+
+.simulation-test3-selected-feature-card dt,
+.simulation-test3-selected-feature-card dd {
+    margin: 0;
+    min-width: 0;
+    font-size: 0.78rem;
+    font-weight: 800;
+}
+
+.simulation-test3-selected-feature-card dt {
+    color: #94a3b8;
+}
+
+.simulation-test3-selected-feature-card dd {
+    overflow: hidden;
+    color: #475569;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .simulation-test3-measure-panel {
     position: absolute;
-    top: 348px;
-    right: var(--simulation-test3-right-anchor);
+    top: 214px;
+    right: calc(var(--simulation-test3-right-anchor) + 74px);
     z-index: var(--simulation-test3-z-popup);
     display: grid;
-    gap: 14px;
-    width: min(250px, calc(100% - 48px));
-    padding: 14px;
+    gap: 10px;
+    width: min(218px, calc(100% - 112px));
+    padding: 12px;
     border: 1px solid rgba(226, 232, 240, 0.94);
     border-radius: 8px;
     background: rgba(255, 255, 255, 0.96);
@@ -584,7 +837,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
+    gap: 8px;
 }
 
 .simulation-test3-measure-head div {
@@ -621,8 +874,8 @@
 
 .simulation-test3-measure-value-card {
     display: grid;
-    gap: 4px;
-    padding: 12px;
+    gap: 2px;
+    padding: 10px;
     border: 1px solid #bfdbfe;
     border-radius: 8px;
     background: #eff6ff;
@@ -636,14 +889,14 @@
 
 .simulation-test3-measure-value-card strong {
     color: #0f172a;
-    font-size: 1.45rem;
+    font-size: 1.22rem;
     font-weight: 800;
 }
 
 .simulation-test3-measure-panel p {
     margin: 0;
     color: #64748b;
-    font-size: 0.78rem;
+    font-size: 0.74rem;
     font-weight: 700;
     line-height: 1.45;
 }
@@ -653,7 +906,7 @@
 }
 
 .simulation-test3-measure-reset {
-    min-height: 34px;
+    min-height: 32px;
     border: 1px dashed #cbd5e1;
     border-radius: 8px;
     background: #ffffff;
@@ -690,17 +943,23 @@
     font-weight: 800;
 }
 
-.simulation-test3-home-control {
-    margin-bottom: 10px;
+.simulation-test3-map-shell .simulation-test3-home-control.leaflet-bar {
+    margin-bottom: 8px;
+    overflow: hidden;
+    border: 1px solid #d8e2ef;
+    border-radius: 8px !important;
+    background: #ffffff;
+    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.1);
 }
 
 .simulation-test3-home-control-button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 30px;
-    height: 30px;
+    width: 40px;
+    height: 40px;
     border: 0;
+    border-radius: 8px;
     background: #ffffff;
     color: #334155;
     font-size: 0.9rem;
@@ -744,14 +1003,14 @@
 
 .simulation-test3-setting-panel,
 .simulation-test3-result-panel {
-    top: 14px;
-    bottom: 14px;
+    top: 0;
+    bottom: 0;
     z-index: var(--simulation-test3-z-panel);
     width: var(--simulation-test3-panel-width);
     overflow-y: auto;
     padding: 22px;
     border: 1px solid rgba(226, 232, 240, 0.94);
-    border-radius: 8px;
+    border-radius: 0;
     background: rgba(255, 255, 255, 0.98);
     box-shadow: 0 18px 36px rgba(15, 23, 42, 0.16);
     backdrop-filter: blur(10px);
@@ -762,13 +1021,18 @@
 }
 
 .simulation-test3-setting-panel {
-    left: 14px;
-    transform: translateX(calc(-100% - 28px));
+    left: 0;
+    border-width: 0 1px 0 0;
+    border-radius: 0 8px 8px 0;
+    transform: translateX(-100%);
 }
 
 .simulation-test3-result-panel {
-    right: 14px;
-    transform: translateX(calc(100% + 28px));
+    right: 0;
+    width: var(--simulation-test3-result-panel-width);
+    border-width: 0 0 0 1px;
+    border-radius: 8px 0 0 8px;
+    transform: translateX(100%);
 }
 
 .simulation-test3-setting-panel.open,
@@ -909,6 +1173,75 @@
     color: #94a3b8;
 }
 
+.simulation-test3-select-point-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 42px;
+    border: 1px solid #cfe0ff;
+    border-radius: 8px;
+    background: #f8fbff;
+    color: #2563eb;
+    font-size: 0.86rem;
+    font-weight: 800;
+    transition: all 0.18s ease;
+}
+
+.simulation-test3-select-point-button i {
+    font-size: 1rem;
+}
+
+.simulation-test3-select-point-button:hover,
+.simulation-test3-select-point-button.active {
+    border-color: #2563eb;
+    background: #2563eb;
+    color: #ffffff;
+    box-shadow: 0 10px 22px rgba(37, 99, 235, 0.16);
+}
+
+.simulation-test3-select-point-button:disabled {
+    border-color: #e2e8f0;
+    background: #f8fafc;
+    color: #94a3b8;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.simulation-test3-selected-point {
+    display: grid;
+    gap: 4px;
+    margin-top: 9px;
+    padding: 11px 12px;
+    border: 1px dashed #cbd5e1;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #64748b;
+    font-size: 0.78rem;
+    font-weight: 800;
+    line-height: 1.45;
+}
+
+.simulation-test3-selected-point.selected {
+    border-style: solid;
+    border-color: #bfdbfe;
+    background: #eff6ff;
+    color: #1e3a8a;
+}
+
+.simulation-test3-selected-point span {
+    color: #64748b;
+    font-size: 0.72rem;
+    font-weight: 800;
+}
+
+.simulation-test3-selected-point strong {
+    color: #0f172a;
+    font-size: 0.86rem;
+    font-weight: 800;
+}
+
 .simulation-test3-segmented,
 .simulation-test3-tabs {
     display: grid;
@@ -934,6 +1267,11 @@
 .simulation-test3-field input[type="range"] {
     width: 100%;
     accent-color: #2563eb;
+}
+
+.simulation-test3-field input[type="range"]:disabled {
+    opacity: 0.46;
+    cursor: not-allowed;
 }
 
 .simulation-test3-range-labels {
@@ -1031,6 +1369,14 @@
     box-shadow: 0 10px 22px rgba(37, 99, 235, 0.16);
 }
 
+.simulation-test3-button.primary:disabled {
+    border-color: #cbd5e1;
+    background: #94a3b8;
+    color: #ffffff;
+    box-shadow: none;
+    cursor: not-allowed;
+}
+
 .simulation-test3-button.secondary {
     border: 1px solid #d8e2ef;
     background: #ffffff;
@@ -1072,6 +1418,7 @@
 
 .simulation-test3-tabs {
     margin-top: 18px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .simulation-test3-result-content {
@@ -1145,6 +1492,16 @@
     border-radius: 8px;
     background: #ffffff;
     text-align: left;
+}
+
+.simulation-test3-result-list button:hover,
+.simulation-test3-result-list button.active {
+    border-color: #93c5fd;
+    background: #eff6ff;
+}
+
+.simulation-test3-result-list button.active {
+    box-shadow: inset 3px 0 0 #2563eb;
 }
 
 .simulation-test3-result-list span {
@@ -1236,6 +1593,7 @@
 @media (max-width: 1199.98px) {
     .simulation-test3-map-shell {
         --simulation-test3-panel-width: 330px;
+        --simulation-test3-result-panel-width: 300px;
     }
 
     .simulation-test3-setting-panel,
@@ -1281,14 +1639,28 @@
     }
 
     .simulation-test3-top-tools {
-        right: 16px;
-        left: 16px;
+        right: calc(10px + 160px);
+        left: 12px;
         max-width: none;
     }
 
+    .simulation-test3-base-map-control {
+        top: 12px;
+        left: auto;
+        right: 10px;
+        width: 148px;
+    }
+
     .simulation-test3-map-tools {
-        top: 142px;
-        right: 16px;
+        top: 134px;
+        right: 10px;
+    }
+
+    .simulation-test3-selected-feature-card {
+        top: 126px;
+        right: 104px;
+        left: 16px;
+        width: auto;
     }
 
     .simulation-test3-setting-toggle,
