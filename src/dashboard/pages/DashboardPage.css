@@ -34,6 +34,7 @@
     display: inline-flex;
     gap: 4px;
     align-items: center;
+    min-width: 0;
 }
 
 .dashboard-breadcrumb-separator {
@@ -1711,6 +1712,7 @@
 .dashboard-control-select,
 .dashboard-control-button,
 .dashboard-control-pill,
+.dashboard-control-layer,
 .dashboard-control-location {
     display: inline-flex;
     align-items: center;
@@ -1724,6 +1726,39 @@
     font-size: 14px;
     font-weight: 800;
     white-space: nowrap;
+}
+
+.dashboard-control-layer {
+    max-width: 360px;
+    padding-right: 8px;
+    border-color: rgba(249, 115, 22, 0.3);
+    background: rgba(255, 247, 237, 0.94);
+    color: #9a3412;
+}
+
+.dashboard-control-layer span {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 6px;
+}
+
+.dashboard-control-layer select {
+    min-width: 170px;
+    max-width: 240px;
+    border: 0;
+    background: transparent;
+    color: #7c2d12;
+    font: inherit;
+    font-size: 13px;
+    outline: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dashboard-control-layer option:disabled {
+    color: #94a3b8;
 }
 
 .dashboard-status-chip {
@@ -1800,6 +1835,7 @@
 .dashboard-map-stage {
     position: relative;
     min-width: 0;
+    height: calc(100vh - 117px);
     min-height: calc(100vh - 117px);
     overflow: hidden;
     background: #ffffff;
@@ -1955,12 +1991,16 @@
     display: inline-flex;
     align-items: center;
     min-height: 30px;
+    max-width: 240px;
+    overflow: hidden;
     padding: 4px 10px;
     border: 1px solid rgba(37, 99, 235, 0.22);
     border-radius: 9px;
     background: #eff6ff;
     color: #1d4ed8;
     line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .dashboard-map-actions {
@@ -2098,6 +2138,16 @@
 
 .legend-line.selected {
     background: var(--dash-orange);
+}
+
+.legend-point {
+    display: inline-block;
+    width: 11px;
+    height: 11px;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    background: var(--dash-orange);
+    box-shadow: 0 0 0 2px rgba(255, 159, 28, 0.3);
 }
 
 .dashboard-map-card .ol-attribution {
@@ -2476,6 +2526,7 @@
     .dashboard-map-stage,
     .dashboard-map-wrap,
     .dashboard-map {
+        height: 620px;
         min-height: 620px;
     }
 
@@ -2512,7 +2563,8 @@
     .dashboard-map-stage,
     .dashboard-map-wrap,
     .dashboard-map {
-        min-height: 500px;
+        height: clamp(420px, calc(100vh - 220px), 560px);
+        min-height: 420px;
     }
 
     .dashboard-map-top-overlay {
@@ -2523,13 +2575,36 @@
     }
 
     .dashboard-map-breadcrumb {
-        max-width: calc(100% - 100px);
+        max-width: calc(100% - 112px);
+    }
+
+    .dashboard-breadcrumb-current {
+        max-width: 118px;
     }
 
     .dashboard-map-legend {
         left: 14px;
         bottom: 14px;
         min-width: 160px;
+        max-width: calc(100% - 28px);
+        padding: 10px 12px;
+    }
+
+    .dashboard-map-layer-badge {
+        right: 12px;
+        bottom: 12px;
+        max-width: min(260px, calc(100% - 24px));
+    }
+
+    .dashboard-map-notice {
+        top: 104px;
+        left: 12px;
+        right: 12px;
+    }
+
+    .dashboard-map-notice span {
+        border-radius: 12px;
+        white-space: normal;
     }
 
     .dashboard-side-tabs,

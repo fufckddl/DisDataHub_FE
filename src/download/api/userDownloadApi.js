@@ -26,6 +26,10 @@ export const getDatasetPreviewGeoJsonApi = (datasetId) => {
   return axiosInstance.get(`/api/download/datasets/${datasetId}/preview-geojson`)
 }
 
+export const getDatasetSimulationSummaryApi = (datasetId) => {
+  return axiosInstance.get(`/api/download/simulation/datasets/${datasetId}/summary`);
+};
+
 export const getDownloadDatasetFilApi = () => {
   
 }
@@ -70,10 +74,10 @@ export const toggleDatasetFavoriteApi = (datasetId) => {
   return axiosInstance.post(`/api/download/datasets/${datasetId}/favorite`);
 };
 
-export const runPointRadiusSimulationApi = (datasetId, radius) => {
-  return axiosInstance.post(`/api/download/simulation/datasets/${datasetId}/point-radius`, {
-    radius,
-  });
+export const runPointRadiusSimulationApi = (datasetId, payload) => {
+  const requestBody = typeof payload === "number" ? { radius: payload } : payload;
+
+  return axiosInstance.post(`/api/download/simulation/datasets/${datasetId}/point-radius`, requestBody);
 };
 
 export const measureSimulationAreaApi = (datasetId, points) => {

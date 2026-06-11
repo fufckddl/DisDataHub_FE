@@ -1105,10 +1105,10 @@ function UserDatasetDetailPage(){
 
 
             {/* 테스트 */}
-            <Link to="simulation">초기 시물레이션</Link><br />
+            {/* <Link to="simulation">초기 시물레이션</Link><br />
             <Link to="simulationTest">시뮬레이션 테스트</Link><br />
             <Link to="simulationTest2">시뮬레이션 테스트2</Link><br />
-            <Link to="simulationTest3">시뮬레이션 테스트3</Link><br />
+            <Link to="simulationTest3">시뮬레이션 테스트3</Link><br /> */}
             
 
         </>

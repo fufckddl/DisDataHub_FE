@@ -23,24 +23,9 @@ const SORT_OPTIONS = [
 ];
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50];
-const FAVORITE_DATASET_STORAGE_KEY = "downloadFavoriteDatasetIds";
-
-function getStoredFavoriteDatasetIds() {
-    try {
-        const rawValue = window.localStorage.getItem(FAVORITE_DATASET_STORAGE_KEY);
-        const parsedValue = rawValue ? JSON.parse(rawValue) : [];
-        return Array.isArray(parsedValue) ? parsedValue.map(String) : [];
-    } catch {
-        return [];
-    }
-}
 
 function isFavoriteDataset(item) {
-    if (item.favorite === true || item.favorite === "true") {
-        return true;
-    }
-
-    return getStoredFavoriteDatasetIds().includes(String(item.datasetId));
+    return item.favorite === true || item.favorite === "true";
 }
 
 function formatNumber(value) {
