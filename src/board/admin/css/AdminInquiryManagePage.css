@@ -269,7 +269,7 @@
   font-size: 14px;
   font-weight: 800;
   display: inline-block;
-  max-width: 100%;
+  max-width: calc(100% - 60px);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -278,6 +278,31 @@
 
 .admin-inquiry-clickable-row:hover .inquiry-title-text {
   text-decoration: underline;
+}
+
+.inquiry-deleted-text {
+  margin-left: 8px;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 800;
+  vertical-align: middle;
+}
+
+/* 삭제된 행 */
+.deleted-inquiry-row {
+  background: #f8fafc;
+}
+
+.deleted-inquiry-row td {
+  color: #94a3b8;
+}
+
+.deleted-inquiry-row .inquiry-title-text {
+  color: #94a3b8;
+}
+
+.deleted-inquiry-row:hover {
+  background: #f1f5f9 !important;
 }
 
 /* 문의 분류 뱃지 */

@@ -32,11 +32,10 @@ function InquiryListPage() {
         setCurrentPage(1);
       }
     } catch (error) {
-      console.error("질문게시판 목록 조회 실패:", error);
+      console.error("문의 게시판 목록 조회 실패:", error);
     }
   };
 
-  
   useEffect(() => {
     getInquiryList();
   }, []);
@@ -101,6 +100,54 @@ function InquiryListPage() {
     }
 
     return "inquiry-status-badge status-received";
+  };
+
+  const getInquiryVisibilityCode = (inquiry) => {
+    const visibility =
+      inquiry.visibilityStatus ??
+      inquiry.visibility ??
+      inquiry.publicStatus ??
+      inquiry.openStatus ??
+      inquiry.disclosureStatus ??
+      "";
+
+    const privateYn =
+      inquiry.privateYn ??
+      inquiry.secretYn ??
+      inquiry.isPrivate ??
+      inquiry.private ??
+      false;
+
+    if (
+      visibility === "PRIVATE" ||
+      visibility === "비공개" ||
+      visibility === "SECRET" ||
+      privateYn === true ||
+      privateYn === "Y" ||
+      privateYn === "true"
+    ) {
+      return "PRIVATE";
+    }
+
+    return "PUBLIC";
+  };
+
+  const getInquiryVisibilityName = (inquiry) => {
+    const visibilityCode = getInquiryVisibilityCode(inquiry);
+
+    if (visibilityCode === "PRIVATE") return "비공개";
+
+    return "공개";
+  };
+
+  const getInquiryVisibilityClassName = (inquiry) => {
+    const visibilityCode = getInquiryVisibilityCode(inquiry);
+
+    if (visibilityCode === "PRIVATE") {
+      return "inquiry-visibility-badge visibility-private";
+    }
+
+    return "inquiry-visibility-badge visibility-public";
   };
 
   const getInquiryCategoryName = (categoryCode) => {
@@ -181,7 +228,7 @@ function InquiryListPage() {
     <div className="container-fluid px-4 py-3 inquiry-list-page">
       <div className="inquiry-list-header">
         <div>
-          <h1>질문게시판</h1>
+          <h1>문의 게시판</h1>
           <p>서비스 이용 중 궁금한 사항을 등록하고 답변을 확인할 수 있습니다.</p>
         </div>
       </div>
@@ -205,10 +252,6 @@ function InquiryListPage() {
               </option>
             ))}
           </select>
-
-          <button type="button" onClick={getInquiryList}>
-            새로고침
-          </button>
 
           <button
             type="button"
@@ -241,6 +284,7 @@ function InquiryListPage() {
                 <th>제목</th>
                 <th>작성자</th>
                 <th>분류</th>
+                <th>공개여부</th>
                 <th>작성일</th>
                 <th>상태</th>
                 <th>조회수</th>
@@ -274,6 +318,12 @@ function InquiryListPage() {
                     )}
                   </td>
 
+                  <td>
+                    <span className={getInquiryVisibilityClassName(inquiry)}>
+                      {getInquiryVisibilityName(inquiry)}
+                    </span>
+                  </td>
+
                   <td>{formatDate(inquiry.createdAt)}</td>
 
                   <td>
@@ -289,9 +339,7 @@ function InquiryListPage() {
           </table>
 
           {filteredInquiryList.length === 0 && (
-            <div className="inquiry-empty-message">
-              등록된 질문이 없습니다.
-            </div>
+            <div className="inquiry-empty-message">등록된 질문이 없습니다.</div>
           )}
 
           {filteredInquiryList.length > 0 && (

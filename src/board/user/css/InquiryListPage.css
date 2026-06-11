@@ -34,7 +34,7 @@
 
 .inquiry-search-section {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 160px 110px 90px;
+  grid-template-columns: minmax(0, 1fr) 190px 130px;
   gap: 12px;
   margin-bottom: 0;
   padding: 18px 22px;
@@ -84,13 +84,13 @@
 }
 
 .inquiry-reset-button {
-  background: #ffffff !important;
-  color: #334155 !important;
-  border: 1px solid #d6dee9 !important;
+  background: #334155 !important;
+  color: #ffffff !important;
+  border: none !important;
 }
 
 .inquiry-reset-button:hover {
-  background: #f8fafc !important;
+  background: #1f2937 !important;
 }
 
 .inquiry-list-section {
@@ -160,6 +160,7 @@
   border-bottom: 1px solid #edf2f7;
   color: #334155;
   font-size: 15px;
+  font-weight: 500;
   text-align: center;
   vertical-align: middle;
   white-space: nowrap;
@@ -169,7 +170,7 @@
 
 .inquiry-list-section th:nth-child(1),
 .inquiry-list-section td:nth-child(1) {
-  width: 90px;
+  width: 80px;
 }
 
 .inquiry-list-section th:nth-child(2),
@@ -179,27 +180,32 @@
 
 .inquiry-list-section th:nth-child(3),
 .inquiry-list-section td:nth-child(3) {
-  width: 150px;
+  width: 130px;
 }
 
 .inquiry-list-section th:nth-child(4),
 .inquiry-list-section td:nth-child(4) {
-  width: 130px;
+  width: 120px;
 }
 
 .inquiry-list-section th:nth-child(5),
 .inquiry-list-section td:nth-child(5) {
-  width: 130px;
+  width: 110px;
 }
 
 .inquiry-list-section th:nth-child(6),
 .inquiry-list-section td:nth-child(6) {
-  width: 130px;
+  width: 120px;
 }
 
 .inquiry-list-section th:nth-child(7),
 .inquiry-list-section td:nth-child(7) {
-  width: 100px;
+  width: 120px;
+}
+
+.inquiry-list-section th:nth-child(8),
+.inquiry-list-section td:nth-child(8) {
+  width: 90px;
 }
 
 .inquiry-row {
@@ -211,19 +217,22 @@
   background: #f8fbff;
 }
 
+/* 공지사항 일반 게시글 제목과 동일하게 조정 */
 .inquiry-title-cell {
   text-align: left !important;
   color: #0f172a;
-  font-weight: 800;
+  font-size: 15px;
+  font-weight: 500;
 }
 
-.inquiry-status-badge {
+.inquiry-status-badge,
+.inquiry-visibility-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-height: 28px;
   padding: 0 10px;
-  border-radius: 999px;
+  border-radius: 0;
   font-size: 13px;
   font-weight: 800;
 }
@@ -241,6 +250,16 @@
 .status-answered {
   background: #dcfce7;
   color: #15803d;
+}
+
+.visibility-public {
+  background: #e8f1ff;
+  color: #1f6feb;
+}
+
+.visibility-private {
+  background: #f1f5f9;
+  color: #475569;
 }
 
 .inquiry-empty-message {

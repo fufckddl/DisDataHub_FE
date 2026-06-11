@@ -136,10 +136,6 @@ function NoticeListPage() {
                 ))}
               </select>
 
-              <button type="button" onClick={getNoticeList}>
-                새로고침
-              </button>
-
               <button
                 type="button"
                 className="notice-reset-button"

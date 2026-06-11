@@ -26,6 +26,23 @@ export const createInquiryApi = async (inquiryData) => {
   return response.data;
 };
 
+// 사용자 본인 문의 수정
+export const updateMyInquiryApi = async (postId, inquiryData) => {
+  const response = await axiosInstance.put(
+    `${BASE_URL}/${postId}`,
+    inquiryData
+  );
+
+  return response.data;
+};
+
+// 사용자 본인 문의 삭제
+export const deleteMyInquiryApi = async (postId) => {
+  const response = await axiosInstance.delete(`${BASE_URL}/${postId}`);
+
+  return response.data;
+};
+
 // 관리자 문의 목록 조회
 export const getAdminInquiryListApi = async () => {
   const response = await axiosInstance.get(`${BASE_URL}/adminInquiryList`);
@@ -48,23 +65,6 @@ export const saveAdminInquiryAnswerApi = async (postId, answerData) => {
     `${BASE_URL}/${postId}/answer`,
     answerData
   );
-
-  return response.data;
-};
-
-// 사용자 본인 문의 수정
-export const updateMyInquiryApi = async (postId, inquiryData) => {
-  const response = await axiosInstance.put(
-    `${BASE_URL}/${postId}`,
-    inquiryData
-  );
-
-  return response.data;
-};
-
-// 사용자 본인 문의 삭제
-export const deleteMyInquiryApi = async (postId) => {
-  const response = await axiosInstance.delete(`${BASE_URL}/${postId}`);
 
   return response.data;
 };

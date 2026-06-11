@@ -95,7 +95,8 @@
 }
 
 .admin-gis-error-badge,
-.admin-gis-status-badge {
+.admin-gis-status-badge,
+.admin-gis-deleted-badge {
   min-width: 76px;
   height: 28px;
   padding: 0 10px;
@@ -144,6 +145,12 @@
 .admin-gis-status-badge.status-completed {
   background: #111827;
   border-color: #111827;
+}
+
+.admin-gis-deleted-badge {
+  background: #e5e7eb;
+  border-color: #d1d5db;
+  color: #6b7280 !important;
 }
 
 .admin-gis-title-area h2 {
@@ -458,6 +465,12 @@
   box-sizing: border-box;
 }
 
+.admin-gis-process-row select:disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
 .admin-gis-process-row.textarea-row {
   flex: 1;
   min-height: 0;
@@ -488,6 +501,12 @@
   resize: none;
   outline: none;
   box-sizing: border-box;
+}
+
+.process-textarea-box textarea:disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
 }
 
 .admin-gis-process-row select:focus,
@@ -635,6 +654,10 @@
     font-size: 28px;
   }
 
+  .admin-gis-delete-button {
+    width: 100%;
+  }
+
   .admin-gis-title-area,
   .admin-gis-info-bar,
   .admin-gis-content-section,
@@ -668,7 +691,6 @@
   .admin-gis-save-button {
     width: 100%;
   }
-
 
   /* OSM / OpenLayers 출처 표시 */
   .admin-gis-detail-map .ol-attribution {

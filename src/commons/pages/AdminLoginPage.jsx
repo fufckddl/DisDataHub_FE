@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
-import { getUserInfoFromTokenApi, loginApi } from "../api/userApi";
+import { adminLoginApi } from "../api/userApi";
 import useAuthStore from "../auth/useAuthStore";
 
 function AdminLoginPage() {
@@ -25,7 +25,7 @@ function AdminLoginPage() {
         setLoginError("");
 
         try {
-            const response = await loginApi(data);
+            const response = await adminLoginApi(data);
 
             if (!response.data.result) {
                 resetAuth();
@@ -33,20 +33,17 @@ function AdminLoginPage() {
                 return;
             }
 
-            localStorage.setItem("token", response.data.token);
-            const meResponse = await getUserInfoFromTokenApi();
-            const user = meResponse.data;
-
-            if (user.role !== "ADMIN") {
+            if (response.data.role !== "ADMIN") {
                 resetAuth();
                 setLoginError("관리자 권한이 있는 계정만 접속할 수 있습니다.");
                 return;
             }
 
+            localStorage.setItem("token", response.data.token);
             login({
-                userId: user.id,
-                nickname: user.username,
-                role: user.role,
+                userId: response.data.userId,
+                nickname: response.data.username,
+                role: response.data.role,
             });
             navigate("/admin/board/notices");
         } catch {

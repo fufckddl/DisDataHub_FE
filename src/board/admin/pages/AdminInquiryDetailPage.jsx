@@ -35,6 +35,8 @@ function AdminInquiryDetailPage() {
         setInquiry(detail);
         setAnswerStatus(detail?.inquiryStatusCode ?? "RECEIVED");
         setAnswerContent(detail?.answerContent ?? "");
+      } else {
+        setInquiry(null);
       }
     } catch (error) {
       console.error("관리자 문의 상세 조회 실패:", error);
@@ -97,12 +99,29 @@ function AdminInquiryDetailPage() {
     return "-";
   };
 
+  const getWriterDisplayName = (inquiryData) => {
+    return (
+      inquiryData?.writerName ||
+      inquiryData?.name ||
+      inquiryData?.userName ||
+      inquiryData?.memberName ||
+      inquiryData?.nickname ||
+      inquiryData?.writerNickname ||
+      `사용자 ${inquiryData?.userId ?? "-"}`
+    );
+  };
+
   const formatDate = (dateValue) => {
     if (!dateValue) return "-";
     return dateValue.substring(0, 10);
   };
 
   const handleSaveAnswer = async () => {
+    if (inquiry?.deletedYn === "Y") {
+      alert("삭제된 문의 게시글은 답변을 저장할 수 없습니다.");
+      return;
+    }
+
     if (answerStatus === "ANSWERED" && !answerContent.trim()) {
       alert("답변 완료 상태에서는 답변 내용을 입력해주세요.");
       return;
@@ -179,6 +198,8 @@ function AdminInquiryDetailPage() {
     );
   }
 
+  const isDeleted = inquiry.deletedYn === "Y";
+
   return (
     <div className="container-fluid px-4 py-3 admin-inquiry-detail-page">
       <section className="admin-inquiry-detail-header">
@@ -206,6 +227,10 @@ function AdminInquiryDetailPage() {
             >
               {getStatusName(inquiry.inquiryStatusCode)}
             </span>
+
+            {isDeleted && (
+              <span className="admin-inquiry-deleted-badge">삭제됨</span>
+            )}
           </div>
 
           <h2>{inquiry.title}</h2>
@@ -213,8 +238,8 @@ function AdminInquiryDetailPage() {
 
         <div className="admin-inquiry-info-bar">
           <div>
-            <span>작성자 ID</span>
-            <strong>{inquiry.userId}</strong>
+            <span>작성자</span>
+            <strong>{getWriterDisplayName(inquiry)}</strong>
           </div>
 
           <div>
@@ -255,6 +280,7 @@ function AdminInquiryDetailPage() {
             <select
               value={answerStatus}
               onChange={(e) => setAnswerStatus(e.target.value)}
+              disabled={isDeleted}
             >
               {adminInquiryStatusList.map((status) => (
                 <option key={status.code} value={status.code}>
@@ -269,10 +295,15 @@ function AdminInquiryDetailPage() {
 
             <div className="answer-textarea-box">
               <textarea
-                placeholder="답변 내용을 입력해주세요."
+                placeholder={
+                  isDeleted
+                    ? "삭제된 문의 게시글은 답변을 수정할 수 없습니다."
+                    : "답변 내용을 입력해주세요."
+                }
                 value={answerContent}
                 maxLength={2000}
                 onChange={(e) => setAnswerContent(e.target.value)}
+                disabled={isDeleted}
               />
 
               <span>{answerContent.length} / 2000</span>
@@ -293,7 +324,7 @@ function AdminInquiryDetailPage() {
             type="button"
             className="admin-inquiry-save-button"
             onClick={handleSaveAnswer}
-            disabled={isSaving}
+            disabled={isSaving || isDeleted}
           >
             {isSaving ? "저장 중..." : "답변 저장"}
           </button>

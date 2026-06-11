@@ -43,7 +43,7 @@
   justify-content: center;
   min-height: 28px;
   padding: 0 11px;
-  border-radius: 999px;
+  border-radius: 0;
   font-size: 13px;
   font-weight: 800;
   white-space: nowrap;
@@ -143,53 +143,6 @@
   font-size: 16px;
   line-height: 1.9;
   white-space: pre-line;
-}
-
-/* 첨부파일 영역 */
-.notice-detail-files {
-  padding: 26px 36px 28px;
-  background: #ffffff;
-  border: none;
-  border-top: 1px solid #e2e8f0;
-  border-radius: 0;
-  box-shadow: none;
-}
-
-/* 첨부파일 제목 포인트 */
-.notice-detail-files h2 {
-  display: flex;
-  align-items: center;
-  margin: 0 0 16px;
-  color: #0f172a;
-  font-size: 21px;
-  font-weight: 800;
-}
-
-.notice-detail-files h2::before {
-  content: "";
-  width: 5px;
-  height: 20px;
-  margin-right: 10px;
-  background: #1f6feb;
-}
-
-.notice-file-item {
-  display: flex;
-  align-items: center;
-  min-height: 42px;
-  padding: 0 14px;
-  background: #f8fafc;
-  border: none;
-  border-radius: 0;
-  color: #64748b;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.notice-file-item::before {
-  content: "📎";
-  margin-right: 8px;
-  font-size: 15px;
 }
 
 /* 하단 버튼 */
