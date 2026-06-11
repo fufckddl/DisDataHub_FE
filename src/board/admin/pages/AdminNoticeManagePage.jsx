@@ -8,6 +8,7 @@ function AdminNoticeManagePage() {
 
   const [noticeList, setNoticeList] = useState([]);
   const [searchWord, setSearchWord] = useState("");
+  const [pinnedYn, setPinnedYn] = useState("");
   const [visibilityStatus, setVisibilityStatus] = useState("");
   const [deletedYn, setDeletedYn] = useState("");
   const [isLoading, setLoading] = useState(false);
@@ -38,7 +39,7 @@ function AdminNoticeManagePage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchWord, visibilityStatus, deletedYn]);
+  }, [searchWord, pinnedYn, visibilityStatus, deletedYn]);
 
   const filteredNoticeList = useMemo(() => {
     return noticeList.filter((notice) => {
@@ -48,14 +49,16 @@ function AdminNoticeManagePage() {
         .toLowerCase()
         .includes(searchWord.toLowerCase());
 
+      const matchPinned = pinnedYn === "" || notice.pinnedYn === pinnedYn;
+
       const matchVisibility =
         visibilityStatus === "" || notice.visibilityStatus === visibilityStatus;
 
       const matchDeleted = deletedYn === "" || notice.deletedYn === deletedYn;
 
-      return matchSearch && matchVisibility && matchDeleted;
+      return matchSearch && matchPinned && matchVisibility && matchDeleted;
     });
-  }, [noticeList, searchWord, visibilityStatus, deletedYn]);
+  }, [noticeList, searchWord, pinnedYn, visibilityStatus, deletedYn]);
 
   const totalPage = Math.max(
     1,
@@ -115,6 +118,7 @@ function AdminNoticeManagePage() {
 
   const handleResetSearch = () => {
     setSearchWord("");
+    setPinnedYn("");
     setVisibilityStatus("");
     setDeletedYn("");
     setCurrentPage(1);
@@ -187,6 +191,15 @@ function AdminNoticeManagePage() {
             value={searchWord}
             onChange={(e) => setSearchWord(e.target.value)}
           />
+
+          <select
+            value={pinnedYn}
+            onChange={(e) => setPinnedYn(e.target.value)}
+          >
+            <option value="">공지 분류 전체</option>
+            <option value="Y">고정 게시글</option>
+            <option value="N">일반 게시글</option>
+          </select>
 
           <select
             value={visibilityStatus}

@@ -94,7 +94,7 @@
 /* 검색 영역 */
 .admin-notice-filter-section {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 160px 160px 90px;
+  grid-template-columns: minmax(0, 1fr) 150px 150px 150px 90px;
   gap: 12px;
   align-items: center;
   padding: 18px 22px;

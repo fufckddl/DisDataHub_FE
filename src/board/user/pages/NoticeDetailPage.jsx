@@ -147,12 +147,6 @@ function NoticeDetailPage() {
             <p>{noticeDetail.content || "등록된 공지 내용이 없습니다."}</p>
           </div>
 
-          <div className="notice-detail-files">
-            <h2>첨부파일</h2>
-
-            <div className="notice-file-item">첨부파일이 없습니다.</div>
-          </div>
-
           <div className="notice-detail-button-area">
             <button
               type="button"

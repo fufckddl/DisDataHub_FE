@@ -145,6 +145,19 @@ function AdminInquiryManagePage() {
     return statusCode ?? "-";
   };
 
+  const getWriterDisplayName = (inquiry) => {
+    return (
+      inquiry.writerName ||
+      inquiry.name ||
+      inquiry.userName ||
+      inquiry.memberName ||
+      inquiry.nickname ||
+      inquiry.writerNickname ||
+      inquiry.userId ||
+      "-"
+    );
+  };
+
   const formatDate = (dateValue) => {
     if (!dateValue) return "-";
     return dateValue.substring(0, 10);
@@ -249,56 +262,70 @@ function AdminInquiryManagePage() {
             </thead>
 
             <tbody>
-              {pagedInquiryList.map((inquiry) => (
-                <tr
-                  key={inquiry.postId}
-                  className="admin-inquiry-clickable-row"
-                  onClick={() => handleMoveDetail(inquiry.postId)}
-                >
-                  <td>{inquiry.postId}</td>
+              {pagedInquiryList.map((inquiry) => {
+                const isDeleted = inquiry.deletedYn === "Y";
 
-                  <td className="inquiry-title-cell">
-                    <span className="inquiry-title-text">{inquiry.title}</span>
-                  </td>
+                return (
+                  <tr
+                    key={inquiry.postId}
+                    className={
+                      isDeleted
+                        ? "deleted-inquiry-row admin-inquiry-clickable-row"
+                        : "admin-inquiry-clickable-row"
+                    }
+                    onClick={() => handleMoveDetail(inquiry.postId)}
+                  >
+                    <td>{inquiry.postId}</td>
 
-                  <td>
-                    <span
-                      className={`inquiry-category-badge ${getCategoryClassName(
-                        inquiry.inquiryCategoryCode
-                      )}`}
-                    >
-                      {getCategoryName(inquiry.inquiryCategoryCode)}
-                    </span>
-                  </td>
+                    <td className="inquiry-title-cell">
+                      <span className="inquiry-title-text">
+                        {inquiry.title}
+                      </span>
 
-                  <td>{inquiry.userId}</td>
+                      {isDeleted && (
+                        <span className="inquiry-deleted-text">삭제됨</span>
+                      )}
+                    </td>
 
-                  <td>
-                    <span
-                      className={`inquiry-status-badge ${getStatusClassName(
-                        inquiry.inquiryStatusCode
-                      )}`}
-                    >
-                      {getStatusName(inquiry.inquiryStatusCode)}
-                    </span>
-                  </td>
+                    <td>
+                      <span
+                        className={`inquiry-category-badge ${getCategoryClassName(
+                          inquiry.inquiryCategoryCode
+                        )}`}
+                      >
+                        {getCategoryName(inquiry.inquiryCategoryCode)}
+                      </span>
+                    </td>
 
-                  <td>{formatDate(inquiry.createdAt)}</td>
+                    <td>{getWriterDisplayName(inquiry)}</td>
 
-                  <td>
-                    <button
-                      type="button"
-                      className="inquiry-detail-button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleMoveDetail(inquiry.postId);
-                      }}
-                    >
-                      보기
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                    <td>
+                      <span
+                        className={`inquiry-status-badge ${getStatusClassName(
+                          inquiry.inquiryStatusCode
+                        )}`}
+                      >
+                        {getStatusName(inquiry.inquiryStatusCode)}
+                      </span>
+                    </td>
+
+                    <td>{formatDate(inquiry.createdAt)}</td>
+
+                    <td>
+                      <button
+                        type="button"
+                        className="inquiry-detail-button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleMoveDetail(inquiry.postId);
+                        }}
+                      >
+                        보기
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

@@ -66,6 +66,8 @@ function AdminGisReportDetailPage() {
         setProcessStatusCode(currentStatusCode);
         setAdminProcessContent("");
         setProcessHistoryList(data.processHistoryList ?? []);
+      } else {
+        setReport(null);
       }
     } catch (error) {
       console.error("관리자 GIS 오류제보 상세 조회 실패:", error);
@@ -185,12 +187,35 @@ function AdminGisReportDetailPage() {
     return statusCode ?? "-";
   };
 
+  const getDeletedName = (deletedYn) => {
+    if (deletedYn === "Y") return "삭제됨";
+    if (deletedYn === "N") return "정상";
+    return "-";
+  };
+
+  const getWriterDisplayName = (reportData) => {
+    return (
+      reportData?.writerName ||
+      reportData?.name ||
+      reportData?.userName ||
+      reportData?.memberName ||
+      reportData?.nickname ||
+      reportData?.writerNickname ||
+      `사용자 ${reportData?.userId ?? "-"}`
+    );
+  };
+
   const formatDate = (dateValue) => {
     if (!dateValue) return "-";
     return dateValue.substring(0, 10);
   };
 
   const handleSave = async () => {
+    if (report?.deletedYn === "Y") {
+      alert("삭제된 GIS 오류 제보 게시글은 처리 내용을 저장할 수 없습니다.");
+      return;
+    }
+
     if (!processStatusCode) {
       alert("처리 상태를 선택해주세요.");
       return;
@@ -281,6 +306,8 @@ function AdminGisReportDetailPage() {
     );
   }
 
+  const isDeleted = report.deletedYn === "Y";
+
   const processHistory =
     processHistoryList.length > 0
       ? processHistoryList.map((history) => ({
@@ -307,14 +334,16 @@ function AdminGisReportDetailPage() {
             <p>제보 내용과 위치 정보를 확인하고 처리 상태를 관리합니다.</p>
           </div>
 
-          <button
-            type="button"
-            className="admin-gis-delete-button"
-            onClick={handleDelete}
-            disabled={isDeleting}
-          >
-            {isDeleting ? "삭제 중..." : "삭제"}
-          </button>
+          {!isDeleted && (
+            <button
+              type="button"
+              className="admin-gis-delete-button"
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "삭제 중..." : "삭제"}
+            </button>
+          )}
         </div>
 
         <section className="admin-gis-detail-card">
@@ -335,6 +364,10 @@ function AdminGisReportDetailPage() {
               >
                 {getProcessStatusName(report.processStatusCode)}
               </span>
+
+              {isDeleted && (
+                <span className="admin-gis-deleted-badge">삭제됨</span>
+              )}
             </div>
 
             <h2>{report.title || "제목 없음"}</h2>
@@ -343,11 +376,7 @@ function AdminGisReportDetailPage() {
           <div className="admin-gis-info-bar">
             <div className="admin-gis-info-item">
               <span>작성자</span>
-              <strong>
-                {report.writerName ||
-                  report.nickname ||
-                  `사용자 ${report.userId ?? "-"}`}
-              </strong>
+              <strong>{getWriterDisplayName(report)}</strong>
             </div>
 
             <div className="admin-gis-info-item">
@@ -363,6 +392,11 @@ function AdminGisReportDetailPage() {
             <div className="admin-gis-info-item">
               <span>오류 유형</span>
               <strong>{getErrorTypeName(report.errorTypeCode)}</strong>
+            </div>
+
+            <div className="admin-gis-info-item">
+              <span>삭제 여부</span>
+              <strong>{getDeletedName(report.deletedYn)}</strong>
             </div>
 
             <div className="admin-gis-info-item">
@@ -414,6 +448,7 @@ function AdminGisReportDetailPage() {
                   <select
                     value={processStatusCode}
                     onChange={(e) => setProcessStatusCode(e.target.value)}
+                    disabled={isDeleted}
                   >
                     {adminGisProcessStatusList.map((status) => (
                       <option key={status.code} value={status.code}>
@@ -428,10 +463,15 @@ function AdminGisReportDetailPage() {
 
                   <div className="process-textarea-box">
                     <textarea
-                      placeholder="처리 내용을 입력해주세요."
+                      placeholder={
+                        isDeleted
+                          ? "삭제된 GIS 오류 제보 게시글은 처리 내용을 수정할 수 없습니다."
+                          : "처리 내용을 입력해주세요."
+                      }
                       value={adminProcessContent}
                       maxLength={500}
                       onChange={(e) => setAdminProcessContent(e.target.value)}
+                      disabled={isDeleted}
                     />
 
                     <span>{adminProcessContent.length} / 500</span>
@@ -472,7 +512,7 @@ function AdminGisReportDetailPage() {
               type="button"
               className="admin-gis-save-button"
               onClick={handleSave}
-              disabled={isSaving}
+              disabled={isSaving || isDeleted}
             >
               {isSaving ? "저장 중..." : "처리 저장"}
             </button>

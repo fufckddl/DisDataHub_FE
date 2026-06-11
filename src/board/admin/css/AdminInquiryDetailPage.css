@@ -59,7 +59,8 @@
 }
 
 .admin-inquiry-category-badge,
-.admin-inquiry-status-badge {
+.admin-inquiry-status-badge,
+.admin-inquiry-deleted-badge {
   min-width: 76px;
   height: 28px;
   padding: 0 10px;
@@ -109,6 +110,12 @@
 .admin-inquiry-status-badge.status-answered {
   background: #111827;
   border-color: #111827;
+}
+
+.admin-inquiry-deleted-badge {
+  background: #e5e7eb;
+  border-color: #d1d5db;
+  color: #6b7280 !important;
 }
 
 .admin-inquiry-title-area h2 {
@@ -245,6 +252,12 @@
   box-shadow: none;
 }
 
+.admin-answer-form-row select:disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
 .textarea-row {
   align-items: start;
 }
@@ -275,6 +288,12 @@
 .answer-textarea-box textarea:focus {
   border-color: #334155;
   box-shadow: none;
+}
+
+.answer-textarea-box textarea:disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
 }
 
 .answer-textarea-box span {
