@@ -609,8 +609,9 @@
 
 .dashboard-insight-value-table {
     width: 100%;
-    min-width: 420px;
+    min-width: 460px;
     border-collapse: collapse;
+    table-layout: fixed;
 }
 
 .dashboard-insight-value-table th,
@@ -629,14 +630,27 @@
     text-align: left;
 }
 
+.dashboard-insight-value-table th:first-child,
+.dashboard-insight-value-table td:first-child {
+    width: auto;
+}
+
+.dashboard-insight-value-table th:nth-child(2),
+.dashboard-insight-value-table td:nth-child(2) {
+    width: 120px;
+    text-align: right;
+}
+
+.dashboard-insight-value-table th:last-child,
+.dashboard-insight-value-table td:last-child {
+    width: 160px;
+    text-align: right;
+}
+
 .dashboard-insight-value-table td {
     color: #0f172a;
     font-size: 12px;
     font-weight: 800;
-}
-
-.dashboard-insight-value-table td:first-child {
-    min-width: 160px;
 }
 
 .dashboard-insight-value-table td:first-child strong,
@@ -644,6 +658,7 @@
     display: block;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .dashboard-insight-value-table td:first-child strong {
@@ -663,13 +678,11 @@
     color: #0f172a;
     font-size: 13px;
     font-weight: 950;
-    text-align: right;
 }
 
 .dashboard-insight-value-table td:last-child {
     color: #64748b;
     font-size: 11px;
-    text-align: right;
 }
 
 .dashboard-insight-value-table tr:last-child td {

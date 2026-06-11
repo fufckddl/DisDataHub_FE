@@ -18,7 +18,6 @@ export const INSIGHT_DATASETS = [
         icon: "bi-person-lines-fill",
         tone: "green",
         decimals: 1,
-        kpiAggregation: "average",
     },
     {
         key: "populationChange",
