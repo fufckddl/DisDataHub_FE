@@ -496,7 +496,6 @@ function PaginationFooter({ totalCount, currentPage, pageSize, loading, onPageCh
                     <i className="bi bi-chevron-right"></i>
                 </button>
             </div>
-            <span>전체 {formatNumber(totalCount)}건</span>
         </div>
     );
 }
@@ -509,12 +508,12 @@ function SideCard({ title, caption, actionLabel, className = "", children }) {
                     <h5>{title}</h5>
                     {caption && <small>{caption}</small>}
                 </div>
-                {actionLabel && (
+                {/* {actionLabel && (
                     <button type="button">
                         {actionLabel}
                         <i className="bi bi-chevron-right"></i>
                     </button>
-                )}
+                )} */}
             </div>
             {children}
         </div>

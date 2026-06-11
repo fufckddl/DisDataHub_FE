@@ -404,12 +404,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    position: relative;
     min-height: 56px;
     padding-top: 16px;
-    color: #64748b;
-    font-size: 12px;
-    font-weight: 900;
 }
 
 .my-download-page-buttons {
@@ -424,11 +420,6 @@
     border-radius: 6px;
     font-size: 13px;
     font-weight: 900;
-}
-
-.my-download-pagination > span {
-    position: absolute;
-    right: 0;
 }
 
 .my-download-side-card {
@@ -719,10 +710,6 @@
         align-items: flex-start;
         flex-direction: column;
         gap: 10px;
-    }
-
-    .my-download-pagination > span {
-        position: static;
     }
 
     .my-download-chart-wrap {

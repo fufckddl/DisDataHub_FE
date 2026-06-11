@@ -100,6 +100,11 @@
     display: none;
 }
 
+.map-preview-fixed .leaflet-interactive.map-preview-feature-point,
+.map-preview-fixed .leaflet-interactive.map-preview-feature-path {
+    filter: drop-shadow(0 2px 3px rgba(15, 23, 42, 0.42));
+}
+
 
 
 
@@ -359,6 +364,34 @@
     gap: 10px;
 }
 
+.download-filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 34px;
+    padding: 0 12px;
+    border: 1px solid #bfdbfe;
+    border-radius: 999px;
+    background: #eff6ff;
+    color: #2563eb;
+    font-size: 13px;
+    font-weight: 800;
+    white-space: nowrap;
+    box-shadow: none;
+    transition: border-color 0.18s ease, background-color 0.18s ease, color 0.18s ease;
+}
+
+.download-filter-chip:hover {
+    border-color: #93c5fd;
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.download-filter-chip i {
+    font-size: 12px;
+    line-height: 1;
+}
+
 .download-list-controls .form-select {
     width: 132px;
     border-color: #dbe3ee;
@@ -394,6 +427,12 @@
     border-color: #bfdbfe;
     box-shadow: 0 10px 24px rgba(37, 99, 235, 0.12) !important;
     transform: translateY(-1px);
+}
+
+.download-summary-card-clickable.active {
+    border-color: #93c5fd;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+    box-shadow: 0 8px 22px rgba(37, 99, 235, 0.1) !important;
 }
 
 .download-summary-card-action {
@@ -631,7 +670,38 @@
 }
 
 .download-format-main .badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     flex: 0 0 auto;
+    min-height: 24px;
+    padding: 0 10px;
+    border-width: 1px !important;
+    border-style: solid !important;
+    border-radius: 8px;
+    line-height: 1;
+    background-clip: padding-box;
+    box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.02);
+}
+
+.download-format-main .badge.text-success {
+    border-color: #9ac7ae !important;
+}
+
+.download-format-main .badge.text-warning {
+    border-color: #f1d676 !important;
+}
+
+.download-format-main .badge.text-danger {
+    border-color: #e7a7ad !important;
+}
+
+.download-format-main .badge.text-info {
+    border-color: #94d6e8 !important;
+}
+
+.download-format-main .badge.text-secondary {
+    border-color: #cbd5e1 !important;
 }
 
 .download-format-option:disabled {

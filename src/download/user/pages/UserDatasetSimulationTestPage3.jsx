@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Circle, CircleMarker, GeoJSON, MapContainer, Polygon, Polyline, TileLayer, useMap, useMapEvents, ZoomControl } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import TopTitle from "../../components/TopTitle";
 import "../../style/simulationTest3.css";
 import {
   getDatasetDownloadPageApi,
@@ -23,6 +22,54 @@ const MAP_FILTERS = [
   { id: "result", label: "반경 결과" },
   { id: "preview", label: "원본 데이터" },
   { id: "heat", label: "밀집 보기" },
+];
+
+const REGION_OPTIONS = [
+  {
+    id: "gyeonggi",
+    label: "경기도",
+    children: [
+      {
+        id: "suwon-yeongtong",
+        label: "수원시 영통구",
+        children: [
+          { id: "maetan4", label: "매탄4동", center: [37.2599, 127.0436], zoom: 15 },
+          { id: "yeongtong1", label: "영통1동", center: [37.2658, 127.0783], zoom: 15 },
+          { id: "woncheon", label: "원천동", center: [37.2747, 127.0489], zoom: 15 },
+        ],
+      },
+      {
+        id: "suwon-paldal",
+        label: "수원시 팔달구",
+        children: [
+          { id: "ingye", label: "인계동", center: [37.2636, 127.0286], zoom: 15 },
+          { id: "maesan", label: "매산동", center: [37.2672, 127.0009], zoom: 15 },
+        ],
+      },
+    ],
+  },
+  {
+    id: "seoul",
+    label: "서울특별시",
+    children: [
+      {
+        id: "seoul-gangnam",
+        label: "강남구",
+        children: [
+          { id: "yeoksam", label: "역삼동", center: [37.5007, 127.0365], zoom: 15 },
+          { id: "samsung", label: "삼성동", center: [37.5146, 127.0627], zoom: 15 },
+        ],
+      },
+      {
+        id: "seoul-songpa",
+        label: "송파구",
+        children: [
+          { id: "jamsil", label: "잠실동", center: [37.5133, 127.1002], zoom: 15 },
+          { id: "munjeong", label: "문정동", center: [37.4856, 127.1227], zoom: 15 },
+        ],
+      },
+    ],
+  },
 ];
 
 const BASE_MAPS = [
@@ -64,6 +111,7 @@ const GEOMETRY_LABELS = {
   point: "포인트",
   linestring: "라인",
   polygon: "폴리곤",
+  mixed: "복합",
 };
 
 function formatCount(value) {
@@ -117,17 +165,26 @@ function parseGeoJson(data) {
 }
 
 function inferSimulationGeometryType(geoJsonData) {
-  const firstGeometryType = geoJsonData?.features?.find((feature) => feature?.geometry?.type)?.geometry?.type;
+  const geometryTypes = new Set(
+    (geoJsonData?.features ?? [])
+      .map((feature) => feature?.geometry?.type)
+      .filter(Boolean)
+      .map((type) => {
+        if (type.includes("Point")) return "point";
+        if (type.includes("LineString")) return "linestring";
+        if (type.includes("Polygon")) return "polygon";
+        return "mixed";
+      }),
+  );
 
-  if (!firstGeometryType) return "point";
-  if (firstGeometryType.includes("Point")) return "point";
-  if (firstGeometryType.includes("LineString")) return "linestring";
-  if (firstGeometryType.includes("Polygon")) return "polygon";
+  if (geometryTypes.size === 0) return "point";
+  if (geometryTypes.size > 1 || geometryTypes.has("mixed")) return "mixed";
 
-  return "point";
+  return [...geometryTypes][0];
 }
 
 function formatGeometryTypeName(geometryType) {
+  const normalizedType = String(geometryType ?? "").replace(/^ST_/i, "");
   const labels = {
     Point: "포인트",
     MultiPoint: "멀티포인트",
@@ -135,9 +192,17 @@ function formatGeometryTypeName(geometryType) {
     MultiLineString: "멀티라인",
     Polygon: "폴리곤",
     MultiPolygon: "멀티폴리곤",
+    GeometryCollection: "복합",
+    POINT: "포인트",
+    MULTIPOINT: "멀티포인트",
+    LINESTRING: "라인",
+    MULTILINESTRING: "멀티라인",
+    POLYGON: "폴리곤",
+    MULTIPOLYGON: "멀티폴리곤",
+    GEOMETRYCOLLECTION: "복합",
   };
 
-  return labels[geometryType] ?? geometryType ?? "-";
+  return labels[normalizedType] ?? normalizedType ?? "-";
 }
 
 function getFeatureDisplayName(feature, index) {
@@ -270,7 +335,7 @@ function buildMapFeatureInfo(feature, layer, layerId, layerLabel) {
     ? "반경 영역"
     : properties.layerType === "center"
       ? "중심 포인트"
-      : properties.layerType === "resultPoint"
+      : properties.layerType === "resultPoint" || properties.layerType === "resultFeature"
         ? "반경 내 데이터"
       : layerLabel;
 
@@ -335,7 +400,7 @@ function buildSimulationRows(tableRows) {
     featureKey: `result-${row.featureId ?? `result-${index}`}`,
     rank: row.rank ?? index + 1,
     name: row.featureName ?? `객체 ${index + 1}`,
-    type: "Point",
+    type: formatGeometryTypeName(row.geometryType),
     metric: formatDistance(row.distanceMeters),
     nearbyCount: row.nearbyCount ?? 0,
     distanceMeters: row.distanceMeters ?? null,
@@ -413,6 +478,23 @@ function SimulationFeatureFocus({ focusRequest, previewGeoJson, resultGeoJson })
       padding: [64, 64],
     });
   }, [focusRequest, map, previewGeoJson, resultGeoJson]);
+
+  return null;
+}
+
+function SimulationRegionFocus({ focusRequest }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!focusRequest || focusRequest.lat == null || focusRequest.lng == null) {
+      return;
+    }
+
+    map.flyTo([focusRequest.lat, focusRequest.lng], focusRequest.zoom ?? 15, {
+      animate: true,
+      duration: 0.65,
+    });
+  }, [focusRequest, map]);
 
   return null;
 }
@@ -529,6 +611,7 @@ function SimulationLeafletMap({
   selectedFeature,
   selectedFeatureKey,
   focusRequest,
+  regionFocusRequest,
   onFeatureSelect,
   onClearFeatureSelect,
   previewLoading,
@@ -708,6 +791,7 @@ function SimulationLeafletMap({
           previewGeoJson={previewGeoJson}
           resultGeoJson={resultGeoJson}
         />
+        <SimulationRegionFocus focusRequest={regionFocusRequest} />
         <SimulationMapHomeControl geoJsonData={focusGeoJson} />
         <ZoomControl position="bottomright" />
         <SimulationMeasureEvents
@@ -892,6 +976,7 @@ function SimulationLeafletMap({
 
 function UserDatasetSimulationTestPage3() {
   const { datasetId } = useParams();
+  const navigate = useNavigate();
   const [isSettingOpen, setIsSettingOpen] = useState(true);
   const [isResultOpen, setIsResultOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("summary");
@@ -923,6 +1008,10 @@ function UserDatasetSimulationTestPage3() {
   const [pointSelectMode, setPointSelectMode] = useState(false);
   const [selectedMapFeature, setSelectedMapFeature] = useState(null);
   const [mapFocusRequest, setMapFocusRequest] = useState(null);
+  const [selectedSidoId, setSelectedSidoId] = useState(REGION_OPTIONS[0]?.id ?? "");
+  const [selectedSigunguId, setSelectedSigunguId] = useState(REGION_OPTIONS[0]?.children?.[0]?.id ?? "");
+  const [selectedDongId, setSelectedDongId] = useState(REGION_OPTIONS[0]?.children?.[0]?.children?.[0]?.id ?? "");
+  const [regionFocusRequest, setRegionFocusRequest] = useState(null);
 
   const dataset = datasetPage?.dataset;
   const datasetTitle = dataset?.title ?? "데이터셋";
@@ -937,8 +1026,18 @@ function UserDatasetSimulationTestPage3() {
   const hasSimulationResult = Boolean(simulationSummary);
   const resultRows = hasSimulationResult ? simulationRows : [];
   const currentMapFilter = mapFilter === "result" && !hasSimulationResult ? "all" : mapFilter;
-  const matchedPointCount = Number(simulationSummary?.matchedPointCount ?? simulationSummary?.hotspotCount ?? 0);
+  const matchedFeatureCount = Number(
+    simulationSummary?.matchedFeatureCount ??
+    simulationSummary?.matchedPointCount ??
+    simulationSummary?.hotspotCount ??
+    0,
+  );
   const selectedBaseMap = BASE_MAPS.find((baseMap) => baseMap.id === selectedBaseMapId) ?? BASE_MAPS[0];
+  const selectedSido = REGION_OPTIONS.find((region) => region.id === selectedSidoId) ?? REGION_OPTIONS[0];
+  const sigunguOptions = selectedSido?.children ?? [];
+  const selectedSigungu = sigunguOptions.find((region) => region.id === selectedSigunguId) ?? sigunguOptions[0];
+  const dongOptions = selectedSigungu?.children ?? [];
+  const selectedDong = dongOptions.find((region) => region.id === selectedDongId) ?? dongOptions[0];
   const canAdjustRadius = Boolean(selectedPoint);
   const totalFeatureCount = Number.isFinite(Number(datasetFeatureTotalCount))
     ? Number(datasetFeatureTotalCount)
@@ -946,10 +1045,10 @@ function UserDatasetSimulationTestPage3() {
 
   const summaryStats = hasSimulationResult
     ? [
-        { label: "전체 포인트", value: `${formatCount(simulationSummary?.totalPointCount ?? totalFeatureCount)}건` },
-        { label: "포함 데이터", value: `${formatCount(matchedPointCount)}건` },
-        { label: "평균 거리", value: matchedPointCount > 0 ? formatDistance(simulationSummary?.averageDistanceMeters) : "-" },
-        { label: "가장 가까움", value: matchedPointCount > 0 ? formatDistance(simulationSummary?.nearestDistanceMeters) : "-" },
+        { label: "전체 객체", value: `${formatCount(simulationSummary?.totalFeatureCount ?? simulationSummary?.totalPointCount ?? totalFeatureCount)}건` },
+        { label: "포함 데이터", value: `${formatCount(matchedFeatureCount)}건` },
+        { label: "평균 거리", value: matchedFeatureCount > 0 ? formatDistance(simulationSummary?.averageDistanceMeters) : "-" },
+        { label: "가장 가까움", value: matchedFeatureCount > 0 ? formatDistance(simulationSummary?.nearestDistanceMeters) : "-" },
       ]
     : [
         { label: "전체 객체", value: `${formatCount(totalFeatureCount)}건` },
@@ -961,11 +1060,9 @@ function UserDatasetSimulationTestPage3() {
   const noticeText =
     simulationErrorMessage ||
     simulationRunMessage ||
-    (geometryType === "point"
-      ? (selectedPoint
-        ? "반경을 설정하고 실행하면 기준 지점 주변 데이터를 찾습니다."
-        : "지도에서 기준 지점을 선택한 뒤 반경 분석을 실행하세요.")
-      : "현재 1차 시뮬레이션 API는 포인트 데이터셋만 지원합니다.");
+    (selectedPoint
+      ? "반경을 설정하고 실행하면 기준 지점 주변 공간 객체를 찾습니다."
+      : "지도에서 기준 지점을 선택한 뒤 반경 분석을 실행하세요.");
 
   useEffect(() => {
     let cancelled = false;
@@ -1168,12 +1265,6 @@ function UserDatasetSimulationTestPage3() {
       return;
     }
 
-    if (geometryType !== "point") {
-      setSimulationErrorMessage("현재 1차 시뮬레이션 API는 포인트 데이터셋만 지원합니다.");
-      setIsResultOpen(true);
-      return;
-    }
-
     if (!selectedPoint) {
       setSimulationErrorMessage("지도에서 분석 기준 지점을 먼저 선택해주세요.");
       setIsResultOpen(true);
@@ -1195,7 +1286,12 @@ function UserDatasetSimulationTestPage3() {
       });
       const responseData = response?.data ?? {};
       const resultGeoJson = parseGeoJson(responseData.resultGeoJson);
-      const resultCount = Number(responseData.summary?.matchedPointCount ?? responseData.summary?.hotspotCount ?? 0);
+      const resultCount = Number(
+        responseData.summary?.matchedFeatureCount ??
+        responseData.summary?.matchedPointCount ??
+        responseData.summary?.hotspotCount ??
+        0,
+      );
 
       setSimulationSummary(responseData.summary ?? null);
       setSimulationTableRows(Array.isArray(responseData.table) ? responseData.table : []);
@@ -1306,6 +1402,42 @@ function UserDatasetSimulationTestPage3() {
     setMapFilter("result");
   };
 
+  const handleSidoChange = (event) => {
+    const nextSido = REGION_OPTIONS.find((region) => region.id === event.target.value) ?? REGION_OPTIONS[0];
+    const nextSigungu = nextSido?.children?.[0];
+    const nextDong = nextSigungu?.children?.[0];
+
+    setSelectedSidoId(nextSido?.id ?? "");
+    setSelectedSigunguId(nextSigungu?.id ?? "");
+    setSelectedDongId(nextDong?.id ?? "");
+  };
+
+  const handleSigunguChange = (event) => {
+    const nextSigungu = sigunguOptions.find((region) => region.id === event.target.value) ?? sigunguOptions[0];
+    const nextDong = nextSigungu?.children?.[0];
+
+    setSelectedSigunguId(nextSigungu?.id ?? "");
+    setSelectedDongId(nextDong?.id ?? "");
+  };
+
+  const handleDongChange = (event) => {
+    setSelectedDongId(event.target.value);
+  };
+
+  const handleRegionMove = () => {
+    if (!selectedDong?.center) {
+      return;
+    }
+
+    setRegionFocusRequest({
+      lat: selectedDong.center[0],
+      lng: selectedDong.center[1],
+      zoom: selectedDong.zoom ?? 15,
+      label: `${selectedSido?.label ?? ""} ${selectedSigungu?.label ?? ""} ${selectedDong.label}`,
+      requestedAt: Date.now(),
+    });
+  };
+
   return (
     <div className="simulation-test3-page">
       <div className={`simulation-test3-map-shell ${isSettingOpen ? "setting-open" : ""} ${isResultOpen ? "result-open" : ""}`}>
@@ -1323,6 +1455,7 @@ function UserDatasetSimulationTestPage3() {
             selectedFeature={selectedMapFeature}
             selectedFeatureKey={selectedMapFeature?.key}
             focusRequest={mapFocusRequest}
+            regionFocusRequest={regionFocusRequest}
             onFeatureSelect={setSelectedMapFeature}
             onClearFeatureSelect={() => setSelectedMapFeature(null)}
             previewLoading={previewLoading}
@@ -1339,19 +1472,55 @@ function UserDatasetSimulationTestPage3() {
             measureAreaError={measureAreaError}
           />
 
-          <div className="simulation-test3-top-tools" aria-label="지도 데이터 보기">
-            {MAP_FILTERS.map((filter) => (
-              <button
-                key={filter.id}
-                type="button"
-                className={currentMapFilter === filter.id ? "active" : ""}
-                aria-pressed={currentMapFilter === filter.id}
-                disabled={filter.id === "result" && !hasSimulationResult}
-                onClick={() => setMapFilter(filter.id)}
+          <div className="simulation-test3-top-tools simulation-test3-region-toolbar" aria-label="지역 이동">
+            <span className="simulation-test3-region-title">
+              <i className="bi bi-geo-alt" />
+              지역 이동
+            </span>
+            <div className="simulation-test3-region-selects">
+              <select
+                className="simulation-test3-region-select"
+                value={selectedSido?.id ?? ""}
+                aria-label="시도 선택"
+                onChange={handleSidoChange}
               >
-                {filter.label}
-              </button>
-            ))}
+                {REGION_OPTIONS.map((region) => (
+                  <option key={region.id} value={region.id}>
+                    {region.label}
+                  </option>
+                ))}
+              </select>
+              <span aria-hidden="true">›</span>
+              <select
+                className="simulation-test3-region-select"
+                value={selectedSigungu?.id ?? ""}
+                aria-label="시군구 선택"
+                onChange={handleSigunguChange}
+              >
+                {sigunguOptions.map((region) => (
+                  <option key={region.id} value={region.id}>
+                    {region.label}
+                  </option>
+                ))}
+              </select>
+              <span aria-hidden="true">›</span>
+              <select
+                className="simulation-test3-region-select"
+                value={selectedDong?.id ?? ""}
+                aria-label="읍면동 선택"
+                onChange={handleDongChange}
+              >
+                {dongOptions.map((region) => (
+                  <option key={region.id} value={region.id}>
+                    {region.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button type="button" className="simulation-test3-region-move-button" onClick={handleRegionMove}>
+              <i className="bi bi-crosshair" />
+              이동
+            </button>
           </div>
 
           <div className="simulation-test3-base-map-control" aria-label="지도 유형 선택">
@@ -1405,20 +1574,20 @@ function UserDatasetSimulationTestPage3() {
             </button>
           </div>
 
-          <div className="simulation-test3-map-summary">
+          {/* <div className="simulation-test3-map-summary">
             <div>
-              <span>반경</span>
+              <span>반경1</span>
               <strong>{canAdjustRadius ? `${formatCount(radius)}m` : "미설정"}</strong>
             </div>
             <div>
               <span>{hasSimulationResult ? "포함" : "기준 지점"}</span>
-              <strong>{hasSimulationResult ? `${formatCount(matchedPointCount)}건` : (selectedPoint ? "선택됨" : "미선택")}</strong>
+              <strong>{hasSimulationResult ? `${formatCount(matchedFeatureCount)}건` : (selectedPoint ? "선택됨" : "미선택")}</strong>
             </div>
             <div>
               <span>{hasSimulationResult ? "평균 거리" : "공간 유형"}</span>
-              <strong>{hasSimulationResult ? (matchedPointCount > 0 ? formatDistance(simulationSummary?.averageDistanceMeters) : "-") : GEOMETRY_LABELS[geometryType]}</strong>
+              <strong>{hasSimulationResult ? (matchedFeatureCount > 0 ? formatDistance(simulationSummary?.averageDistanceMeters) : "-") : GEOMETRY_LABELS[geometryType]}</strong>
             </div>
-          </div>
+          </div> */}
         </main>
 
         <aside
@@ -1429,12 +1598,17 @@ function UserDatasetSimulationTestPage3() {
         >
           <div className="simulation-test3-panel-head">
             <div className="simulation-test3-title-wrap">
-              <TopTitle
-                title={`${datasetTitle} 시뮬레이션`}
-                subTitle={datasetSubtitle}
-                showGuide={false}
-              />
+              <h2>시뮬레이션</h2>
             </div>
+            <button
+              type="button"
+              className="simulation-test3-detail-link-button"
+              onClick={() => navigate(`/download/user/${datasetId}`)}
+              disabled={!datasetId}
+            >
+              <i className="bi bi-arrow-left" />
+              <span>상세로</span>
+            </button>
 
           </div>
 
@@ -1471,7 +1645,6 @@ function UserDatasetSimulationTestPage3() {
               type="button"
               className={`simulation-test3-select-point-button ${pointSelectMode ? "active" : ""}`}
               onClick={handlePointSelectMode}
-              disabled={geometryType !== "point"}
             >
               <i className="bi bi-geo-alt" />
               {pointSelectMode ? "지도에서 선택 중" : "지도에서 지점 선택"}
@@ -1509,7 +1682,7 @@ function UserDatasetSimulationTestPage3() {
             </div>
           </div>
 
-          <div className="simulation-test3-field">
+          {/* <div className="simulation-test3-field">
             <span className="simulation-test3-label">표시 옵션</span>
             <div className="simulation-test3-check-list">
               <label>
@@ -1537,7 +1710,7 @@ function UserDatasetSimulationTestPage3() {
                 밀집 강조 보기
               </label>
             </div>
-          </div>
+          </div> */}
 
           <div className={`simulation-test3-notice ${simulationErrorMessage ? "error" : ""}`}>
             <i className="bi bi-info-circle" />
@@ -1561,7 +1734,7 @@ function UserDatasetSimulationTestPage3() {
               type="button"
               className="simulation-test3-button primary"
               onClick={handleRun}
-              disabled={simulationLoading || geometryType !== "point" || !selectedPoint}
+              disabled={simulationLoading || !selectedPoint}
             >
               {simulationLoading ? "실행 중..." : selectedPoint ? "실행" : "지점 선택 필요"}
             </button>

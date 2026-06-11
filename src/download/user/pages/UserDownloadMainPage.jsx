@@ -12,6 +12,7 @@ const DEFAULT_SEARCH_FILTERS = {
     categoryId: "",
     startDate: "",
     endDate: "",
+    downloadedToday: false,
 };
 
 const SORT_OPTIONS = [
@@ -188,15 +189,39 @@ function Search({ filters, setFilters, options, onSearch, onReset }) {
     );
 }
 
-function DatasetList({ datasetList, loading, pagination, sort, onSortChange, onPageChange, onSizeChange }) {
+function DatasetList({
+    datasetList,
+    loading,
+    pagination,
+    sort,
+    downloadedToday,
+    onClearTodayDownloadFilter,
+    onSortChange,
+    onPageChange,
+    onSizeChange,
+}) {
     return (
         <div className="row">
             <div className="col">
                 <div className="card shadow-sm overflow-hidden">
                     <div className="download-list-toolbar">
-                        <div className="download-list-total">전체 {formatNumber(pagination.totalCount)}건</div>
+                        <div className="download-list-total">
+                            전체 {formatNumber(pagination.totalCount)}건
+                        </div>
 
                         <div className="download-list-controls">
+                            {downloadedToday && (
+                                <button
+                                    type="button"
+                                    className="download-filter-chip"
+                                    onClick={onClearTodayDownloadFilter}
+                                    aria-label="오늘 다운로드 필터 해제"
+                                >
+                                    오늘 다운로드
+                                    <i className="bi bi-x-lg"></i>
+                                </button>
+                            )}
+
                             <select
                                 className="form-select form-select-sm"
                                 value={sort}
@@ -331,6 +356,7 @@ function DatasetForm({ dataset }) {
                     className="btn btn-light btn-sm sm-text border text-secondary "
                     onClick={() => handleDetailPageClick(dataset.isPublic)}
                 >
+                    <i className="bi bi-box-arrow-up-right me-1"></i>
                     상세보기
                 </button>
                 {/* <button className="btn btn-primary btn-sm" style={{ fontSize: "13px" }}>
@@ -341,13 +367,13 @@ function DatasetForm({ dataset }) {
     );
 }
 
-function CardForm({ children, color, title, content, caption, onClick, isCompactContent = false }) {
+function CardForm({ children, color, title, content, caption, onClick, isActive = false, isCompactContent = false }) {
     const isClickable = typeof onClick === "function";
 
     return (
         <div className="col">
             <div
-                className={`card shadow-sm p-4 h-100 download-summary-card ${isClickable ? "download-summary-card-clickable" : ""}`}
+                className={`card shadow-sm p-4 h-100 download-summary-card ${isClickable ? "download-summary-card-clickable" : ""} ${isActive ? "active" : ""}`}
                 role={isClickable ? "button" : undefined}
                 tabIndex={isClickable ? 0 : undefined}
                 onClick={onClick}
@@ -558,6 +584,29 @@ function UserDownloadMainPage() {
         navigate(`/download/user/${popularDataset.id}`);
     };
 
+    const handleTodayDownloadCardClick = () => {
+        const nextFilters = {
+            ...DEFAULT_SEARCH_FILTERS,
+            downloadedToday: true,
+        };
+
+        setSearchFilters(nextFilters);
+        setAppliedFilters(nextFilters);
+        setPage(1);
+    };
+
+    const handleClearTodayDownloadFilter = () => {
+        setSearchFilters((prev) => ({
+            ...prev,
+            downloadedToday: false,
+        }));
+        setAppliedFilters((prev) => ({
+            ...prev,
+            downloadedToday: false,
+        }));
+        setPage(1);
+    };
+
     const summaryCards = [
         {
             color: "primary",
@@ -577,6 +626,8 @@ function UserDownloadMainPage() {
                 />
             ),
             icon: "bi-download",
+            onClick: handleTodayDownloadCardClick,
+            isActive: appliedFilters.downloadedToday,
         },
         {
             color: "warning",
@@ -613,6 +664,7 @@ function UserDownloadMainPage() {
                 categoryId: appliedFilters.categoryId || undefined,
                 startDate: appliedFilters.startDate || undefined,
                 endDate: appliedFilters.endDate || undefined,
+                downloadedToday: appliedFilters.downloadedToday || undefined,
             };
             const response = await getDownloadDatasetMainPageApi(params);
             const responseData = response.data ?? {};
@@ -698,6 +750,7 @@ function UserDownloadMainPage() {
                         content={card.content}
                         caption={card.caption}
                         onClick={card.onClick}
+                        isActive={card.isActive}
                         isCompactContent={card.isCompactContent}
                     >
                         <i className={`bi ${card.icon} fs-3`}></i>
@@ -711,6 +764,8 @@ function UserDownloadMainPage() {
                 loading={loading}
                 pagination={pagination}
                 sort={sort}
+                downloadedToday={appliedFilters.downloadedToday}
+                onClearTodayDownloadFilter={handleClearTodayDownloadFilter}
                 onSortChange={handleSortChange}
                 onPageChange={handlePageChange}
                 onSizeChange={handleSizeChange}

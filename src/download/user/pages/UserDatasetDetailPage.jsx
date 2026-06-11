@@ -226,6 +226,32 @@ function DatasetInfoPairRow({ leftTitle, leftContent, rightTitle, rightContent, 
 }
 
 // 지도 시각화
+const detailMapPreviewStyle = (feature) => {
+    const geometryType = feature?.geometry?.type?.toLowerCase() ?? "";
+    const isLine = geometryType.includes("line");
+
+    return {
+        color: "#2563eb",
+        weight: isLine ? 4 : 2.5,
+        opacity: 1,
+        fillColor: "#3b82f6",
+        fillOpacity: geometryType.includes("polygon") ? 0.24 : 0.16,
+        className: "map-preview-feature-path",
+    };
+};
+
+const detailMapPreviewPointToLayer = (feature, latlng) => (
+    L.circleMarker(latlng, {
+        radius: 6.5,
+        fillColor: "#2563eb",
+        color: "#2563eb",
+        weight: 2.4,
+        opacity: 1,
+        fillOpacity: 0.2,
+        className: "map-preview-feature-point",
+    })
+);
+
 function MapVisualizationCard({previewGeoJson, dataset}){
     
     const isSpatialDataset = Boolean(dataset.isSpatial);
@@ -288,7 +314,13 @@ function MapVisualizationCard({previewGeoJson, dataset}){
                                             attribution="&copy; OpenStreetMap contributors"
                                         />
                                         {previewGeoJson && <MapBoundsUpdater geoJsonData={previewGeoJson} />} {/* 코드 안에서 계산/조작 하기 위한 용도 */}
-                                        {previewGeoJson && <GeoJSON data={previewGeoJson} />}  {/* 지도를 실제로 그리는 기술 */}
+                                        {previewGeoJson && (
+                                            <GeoJSON
+                                                data={previewGeoJson}
+                                                style={detailMapPreviewStyle}
+                                                pointToLayer={detailMapPreviewPointToLayer}
+                                            />
+                                        )}  {/* 지도를 실제로 그리는 기술 */}
                                         
                                     </MapContainer>
                                 )}           

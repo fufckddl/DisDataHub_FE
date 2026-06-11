@@ -9,9 +9,11 @@
     --simulation-test3-panel-width: 360px;
     --simulation-test3-result-panel-width: 320px;
     --simulation-test3-edge-gap: 0px;
-    --simulation-test3-ui-gap: 24px;
-    --simulation-test3-left-anchor: 24px;
+    --simulation-test3-ui-gap: 12px;
+    --simulation-test3-left-anchor: 12px;
     --simulation-test3-right-anchor: 12px;
+    --simulation-test3-base-map-reserved-width: 182px;
+    --simulation-test3-region-toolbar-max-width: 860px;
     --simulation-test3-z-map: 1;
     --simulation-test3-z-overlay: 5;
     --simulation-test3-z-floating: 20;
@@ -124,8 +126,8 @@
 }
 
 .simulation-test3-map-shell .leaflet-control-zoom a {
-    width: 40px !important;
-    height: 40px !important;
+    width: 38px !important;
+    height: 38px !important;
     border: 0;
     border-bottom: 1px solid #e2e8f0;
     background: #ffffff;
@@ -332,11 +334,65 @@
 .simulation-test3-top-tools {
     top: 16px;
     left: var(--simulation-test3-left-anchor);
-    right: calc(var(--simulation-test3-right-anchor) + 166px);
+    right: auto;
+    width: calc(100% - var(--simulation-test3-left-anchor) - var(--simulation-test3-right-anchor) - var(--simulation-test3-base-map-reserved-width));
+    max-width: var(--simulation-test3-region-toolbar-max-width);
     display: flex;
-    gap: 10px;
+    align-items: center;
+    gap: 8px;
+    min-height: 48px;
+    padding: 8px;
+    border: 1px solid #d8e2ef;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.12);
+    backdrop-filter: blur(10px);
     overflow-x: auto;
-    transition: left 0.24s ease, right 0.24s ease;
+    transition: left 0.24s ease, right 0.24s ease, width 0.24s ease;
+}
+
+.simulation-test3-region-title {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 5px;
+    color: #334155;
+    font-size: 0.78rem;
+    font-weight: 900;
+    white-space: nowrap;
+}
+
+.simulation-test3-region-title i {
+    color: #2563eb;
+    font-size: 0.9rem;
+}
+
+.simulation-test3-region-selects {
+    display: inline-flex;
+    flex: 1 1 auto;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+.simulation-test3-region-selects > span {
+    flex: 0 0 auto;
+    color: #94a3b8;
+    font-size: 1rem;
+    font-weight: 900;
+}
+
+.simulation-test3-region-select {
+    flex: 0 1 148px;
+    min-width: 112px;
+    height: 32px;
+    padding: 0 28px 0 10px;
+    border: 1px solid #d8e2ef;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #334155;
+    font-size: 0.75rem;
+    font-weight: 800;
 }
 
 .simulation-test3-base-map-control {
@@ -439,6 +495,48 @@
     box-shadow: 0 8px 18px rgba(15, 23, 42, 0.11);
 }
 
+.simulation-test3-region-toolbar .simulation-test3-region-move-button {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    height: 32px;
+    padding: 0 12px;
+    border-color: #2563eb;
+    background: #2563eb;
+    color: #ffffff;
+    box-shadow: 0 8px 16px rgba(37, 99, 235, 0.18);
+    white-space: nowrap;
+}
+
+.simulation-test3-region-toolbar .simulation-test3-region-move-button i {
+    font-size: 0.86rem;
+}
+
+.simulation-test3-region-toolbar .simulation-test3-region-move-button:hover {
+    background: #1d4ed8;
+}
+
+.simulation-test3-map-shell.setting-open.result-open .simulation-test3-region-title {
+    gap: 4px;
+    font-size: 0.72rem;
+}
+
+.simulation-test3-map-shell.setting-open.result-open .simulation-test3-region-selects {
+    gap: 4px;
+}
+
+.simulation-test3-map-shell.setting-open.result-open .simulation-test3-region-select {
+    flex-basis: 126px;
+    min-width: 92px;
+    padding-left: 8px;
+}
+
+.simulation-test3-map-shell.setting-open.result-open .simulation-test3-region-toolbar .simulation-test3-region-move-button {
+    padding: 0 10px;
+}
+
 .simulation-test3-top-tools button.active,
 .simulation-test3-tabs button.active,
 .simulation-test3-segmented button.active {
@@ -452,6 +550,7 @@
 .simulation-test3-base-map-control button:focus-visible,
 .simulation-test3-map-tools button:focus-visible,
 .simulation-test3-zoom-tools button:focus-visible,
+.simulation-test3-region-select:focus-visible,
 .simulation-test3-icon-button:focus-visible,
 .simulation-test3-setting-toggle:focus-visible,
 .simulation-test3-button:focus-visible,
@@ -678,7 +777,8 @@
 .simulation-test3-legend {
     position: absolute;
     left: var(--simulation-test3-left-anchor);
-    bottom: 112px;
+    /* bottom: 112px; */
+    bottom: 10px;
     z-index: var(--simulation-test3-z-floating);
     display: grid;
     gap: 7px;
@@ -956,8 +1056,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
+    width: 38px;
+    height: 38px;
     border: 0;
     border-radius: 8px;
     background: #ffffff;
@@ -1066,10 +1166,40 @@
 }
 
 .simulation-test3-title-wrap h2 {
-    margin-bottom: 6px !important;
+    margin: 0 !important;
     color: #0f172a;
-    font-size: 1.18rem;
+    font-size: 1.28rem;
     line-height: 1.28;
+}
+
+.simulation-test3-detail-link-button {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 38px;
+    padding: 0 12px;
+    border: 1px solid #d8e2ef;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #475569;
+    font-size: 0.88rem;
+    font-weight: 800;
+    white-space: nowrap;
+    transition: border-color 0.18s ease, color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.simulation-test3-detail-link-button:hover:not(:disabled) {
+    border-color: #4f6df5;
+    background: #f6f8ff;
+    color: #3150d4;
+    box-shadow: 0 8px 18px rgba(79, 109, 245, 0.12);
+}
+
+.simulation-test3-detail-link-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
 }
 
 .simulation-test3-kicker {
@@ -1390,8 +1520,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 42px;
-    height: 74px;
+    width: 38px;
+    height: 60px;
     border: 1px solid #d8e2ef;
     border-left: 0;
     border-radius: 0 8px 8px 0;
@@ -1639,8 +1769,9 @@
     }
 
     .simulation-test3-top-tools {
-        right: calc(10px + 160px);
+        right: auto;
         left: 12px;
+        width: calc(100% - 10px - 12px - var(--simulation-test3-base-map-reserved-width));
         max-width: none;
     }
 
